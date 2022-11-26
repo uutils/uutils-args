@@ -1,0 +1,13 @@
+[package]
+name = "uutils-args"
+version = "0.1.0"
+edition = "2021"
+proc-macro = true
+authors = ["Terts Diepraam"]
+license = "MIT"
+
+homepage = "https://github.com/tertsdiepraam/uutils-args"
+repository = "https://github.com/tertsdiepraam/uutils-args"
+readme = "README.md"
+
+[dependencies]
