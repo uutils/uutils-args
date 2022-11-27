@@ -73,7 +73,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                     for flag in flags {
                         map.entry(flag)
                             .or_default()
-                            .push(quote!(_self.#field_ident = true;));
+                            .push(quote!(self.#field_ident = true;));
                     }
                 }
             }
@@ -90,14 +90,12 @@ pub fn options(input: TokenStream) -> TokenStream {
 
     let expanded = quote!(
         impl #impl_generics Options for #name #ty_generics #where_clause {
-            fn parse<I>(args: I) -> Result<Self, lexopt::Error>
+            fn apply_args<I>(&mut self, args: I) -> Result<(), lexopt::Error>
             where
                 I: IntoIterator + 'static,
                 I::Item: Into<std::ffi::OsString>,
             {
                 use uutils_args::lexopt;
-                let mut _self = #name::default();
-
                 let mut parser = lexopt::Parser::from_args(args);
                 while let Some(arg) = parser.next()? {
                     match arg {
@@ -105,7 +103,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                         _ => { return Err(arg.unexpected());}
                     }
                 }
-                Ok(_self)
+                Ok(())
             }
         }
     );
