@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use proc_macro::TokenStream;
-use proc_macro2::{TokenStream as TokenStream2, TokenTree as TokenTree2};
+use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
@@ -9,7 +9,7 @@ use syn::{
     punctuated::Punctuated,
     Attribute,
     Data::Struct,
-    DeriveInput, Fields, Ident, LitStr, Token,
+    DeriveInput, Fields, LitStr, Token,
 };
 
 #[derive(Eq, Hash, PartialEq, Debug)]
