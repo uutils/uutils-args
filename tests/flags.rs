@@ -60,7 +60,7 @@ fn long_and_short_flag() {
 fn short_alias() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     struct Settings {
-        #[flag(-b)]
+        #[flag("-b")]
         foo: bool,
     }
 
@@ -71,7 +71,7 @@ fn short_alias() {
 fn long_alias() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     struct Settings {
-        #[flag(--bar)]
+        #[flag("--bar")]
         foo: bool,
     }
 
@@ -82,9 +82,9 @@ fn long_alias() {
 fn short_and_long_alias() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     struct Settings {
-        #[flag(-b, --bar)]
+        #[flag("-b", "--bar")]
         foo: bool,
-        #[flag(-f, --foo)]
+        #[flag("-f", "--foo")]
         bar: bool,
     }
 
@@ -108,11 +108,11 @@ fn short_and_long_alias() {
 fn xyz_map_to_abc() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     struct Settings {
-        #[flag(-x, -z)]
+        #[flag("-x", "-z")]
         a: bool,
-        #[flag(-x, -y, -z)]
+        #[flag("-x", "-y", "-z")]
         b: bool,
-        #[flag(-y, -z)]
+        #[flag("-y", "-z")]
         c: bool,
     }
 
@@ -151,4 +151,31 @@ fn xyz_map_to_abc() {
             c: true,
         },
     );
+}
+
+#[test]
+fn non_rust_ident() {
+    #[derive(Default, Options, PartialEq, Eq, Debug)]
+    struct Settings {
+        #[flag("--foo-bar")]
+        a: bool,
+        #[flag("--super")]
+        b: bool,
+    }
+
+    assert_eq!(
+        Settings::parse(["--foo-bar", "--super"]).unwrap(),
+        Settings { a: true, b: true }
+    )
+}
+
+#[test]
+fn number_flag() {
+    #[derive(Default, Options, PartialEq, Eq, Debug)]
+    struct Settings {
+        #[flag("-1")]
+        one: bool,
+    }
+
+    assert_eq!(Settings::parse(["-1"]).unwrap(), Settings { one: true })
 }

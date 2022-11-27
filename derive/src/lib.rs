@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{TokenStream as TokenStream2, TokenTree as TokenTree2};
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
@@ -9,7 +9,7 @@ use syn::{
     punctuated::Punctuated,
     Attribute,
     Data::Struct,
-    DeriveInput, Fields, Ident, Token,
+    DeriveInput, Fields, Ident, LitStr, Token,
 };
 
 #[derive(Eq, Hash, PartialEq, Debug)]
@@ -138,32 +138,20 @@ fn parse_flag_attr(attr: Attribute) -> FlagAttribute {
 
 impl Parse for FlagArg {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        // If the arg starts with a `-`, then it's a flag
-        if input.peek(Token![-]) {
-            // Eat the first `-` and check for the second one
-            // If there is one, it's a long arg, otherwise it's
-            // a short arg.
-            input.parse::<Token![-]>()?;
-
-            if input.peek(Token![-]) {
-                // long flag
-                // Eat the second `-` and parse the identifier
-                // FIXME: This should accept more than just rust
-                // identifiers. For example, we want to support `-`
-                // in the name.
-                input.parse::<Token![-]>()?;
-                let ident = input.parse::<Ident>()?;
-                Ok(Self::Long(ident.to_string()))
-            } else {
-                // short flag
-                let ident = input.parse::<Ident>()?;
-                let name = ident.to_string();
-                assert_eq!(name.len(), 1, "Short flag must be one character long");
-                Ok(Self::Short(name.chars().next().unwrap()))
+        if input.peek(LitStr) {
+            let str = input.parse::<LitStr>().unwrap().value();
+            if let Some(s) = str.strip_prefix("--") {
+                return Ok(FlagArg::Long(s.to_owned()));
+            } else if let Some(s) = str.strip_prefix('-') {
+                assert_eq!(
+                    s.len(),
+                    1,
+                    "Exactly one character must follow '-' in a flag attribute"
+                );
+                return Ok(FlagArg::Short(s.chars().next().unwrap()));
             }
-        } else {
-            // FIXME: Better error message
-            panic!("Argument is not a flag");
+            panic!("Arguments to flag must start with \"-\" or \"--\"");
         }
+        panic!("Arguments to flag attribute must be string literals");
     }
 }
