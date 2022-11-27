@@ -1,4 +1,4 @@
-use uutils_args::Options;
+use uutils_args::{FromValue, Options};
 
 #[test]
 fn one_flag() {
@@ -254,4 +254,148 @@ fn count() {
     assert_eq!(Settings::parse(["-v"]).unwrap().verbosity, 1);
     assert_eq!(Settings::parse(["-vv"]).unwrap().verbosity, 2);
     assert_eq!(Settings::parse(["-vvv"]).unwrap().verbosity, 3);
+}
+
+#[test]
+fn string_option() {
+    #[derive(Default, Options)]
+    struct Settings {
+        #[option("--message")]
+        message: String,
+    }
+
+    assert_eq!(
+        Settings::parse(["--message=hello"]).unwrap().message,
+        "hello"
+    );
+}
+
+#[test]
+fn enum_option() {
+    #[derive(FromValue, Default, Debug, PartialEq, Eq)]
+    enum Format {
+        #[default]
+        #[value]
+        Foo,
+        #[value]
+        Bar,
+        #[value]
+        Baz,
+    }
+
+    #[derive(Default, Options)]
+    struct Settings {
+        #[option("--format")]
+        format: Format,
+    }
+
+    assert_eq!(
+        Settings::parse(["--format=bar"]).unwrap().format,
+        Format::Bar
+    );
+
+    assert_eq!(
+        Settings::parse(["--format", "baz"]).unwrap().format,
+        Format::Baz
+    );
+}
+
+#[test]
+fn enum_option_with_fields() {
+    #[derive(FromValue, Default, Debug, PartialEq, Eq)]
+    enum Indent {
+        #[default]
+        Tabs,
+        #[value("thin", value = Self::Spaces(4))]
+        #[value("wide", value = Self::Spaces(8))]
+        Spaces(u8),
+    }
+
+    #[derive(Default, Options)]
+    struct Settings {
+        #[option]
+        indent: Indent,
+    }
+
+    assert_eq!(
+        Settings::parse(["-i=thin"]).unwrap().indent,
+        Indent::Spaces(4)
+    );
+    assert_eq!(
+        Settings::parse(["-i=wide"]).unwrap().indent,
+        Indent::Spaces(8)
+    );
+}
+
+#[test]
+fn enum_with_complex_from_value() {
+    #[derive(Default, Debug, PartialEq, Eq)]
+    enum Indent {
+        #[default]
+        Tabs,
+        Spaces(u8),
+    }
+
+    impl FromValue for Indent {
+        fn from_value(value: std::ffi::OsString) -> Result<Self, lexopt::Error> {
+            let value = value.into_string()?;
+            if value == "tabs" {
+                Ok(Self::Tabs)
+            } else if let Ok(n) = value.parse() {
+                Ok(Self::Spaces(n))
+            } else {
+                Err(lexopt::Error::ParsingFailed {
+                    value,
+                    error: "Failure!".into(),
+                })
+            }
+        }
+    }
+
+    #[derive(Default, Options)]
+    struct Settings {
+        #[option]
+        indent: Indent,
+    }
+
+    assert_eq!(Settings::parse(["-i=tabs"]).unwrap().indent, Indent::Tabs);
+    assert_eq!(Settings::parse(["-i=4"]).unwrap().indent, Indent::Spaces(4));
+}
+
+#[test]
+fn color() {
+    #[derive(Default, FromValue, Debug, PartialEq, Eq)]
+    enum Color {
+        #[value("yes", "always")]
+        Always,
+        #[default]
+        #[value("auto")]
+        Auto,
+        #[value("no", "never")]
+        Never,
+    }
+
+    #[derive(Default, Options)]
+    struct Settings {
+        #[option]
+        color: Color,
+    }
+
+    assert_eq!(
+        Settings::parse(["--color=yes"]).unwrap().color,
+        Color::Always
+    );
+    assert_eq!(
+        Settings::parse(["--color=always"]).unwrap().color,
+        Color::Always
+    );
+    assert_eq!(Settings::parse(["--color=no"]).unwrap().color, Color::Never);
+    assert_eq!(
+        Settings::parse(["--color=never"]).unwrap().color,
+        Color::Never
+    );
+    assert_eq!(
+        Settings::parse(["--color=auto"]).unwrap().color,
+        Color::Auto
+    );
 }

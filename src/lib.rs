@@ -19,3 +19,19 @@ pub trait Options: Sized + Default {
         I: IntoIterator + 'static,
         I::Item: Into<OsString>;
 }
+
+pub trait FromValue: Sized {
+    fn from_value(value: OsString) -> Result<Self, lexopt::Error>;
+}
+
+impl FromValue for OsString {
+    fn from_value(value: OsString) -> Result<Self, lexopt::Error> {
+        Ok(value)
+    }
+}
+
+impl FromValue for String {
+    fn from_value(value: OsString) -> Result<Self, lexopt::Error> {
+        Ok(value.into_string()?)
+    }
+}

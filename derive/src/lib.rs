@@ -1,40 +1,32 @@
+mod attributes;
+use attributes::{
+    parse_flag_attr, parse_option_attr, parse_value_attr, FlagAttr, OptionAttr, ValueAttr,
+};
+
 use std::collections::HashMap;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input,
-    punctuated::Punctuated,
-    Attribute,
-    Data::Struct,
-    DeriveInput, Expr, Fields, Ident, LitStr, Token,
+    parse_macro_input, Attribute,
+    Data::{Enum, Struct},
+    DeriveInput, Expr, Fields,
 };
 
-#[derive(Eq, Hash, PartialEq, Debug)]
+#[derive(Eq, Hash, PartialEq, Debug, Clone)]
 enum Arg {
     Short(char),
     Long(String),
 }
 
-enum OptionsAttribute {
-    Flag(FlagAttribute),
-}
-
-struct FlagAttribute {
-    flags: Vec<Arg>,
-    value: Option<syn::Expr>,
-}
-
-enum FlagArg {
-    Short(char),
-    Long(String),
-    Value(Expr),
+enum DeriveAttribute {
+    Flag(FlagAttr),
+    Option(OptionAttr),
 }
 
 // FIXME: Think of a better name
-#[proc_macro_derive(Options, attributes(flag))]
+#[proc_macro_derive(Options, attributes(flag, option))]
 pub fn options(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -58,26 +50,29 @@ pub fn options(input: TokenStream) -> TokenStream {
     for field in fields.named {
         let field_ident = field.ident.as_ref().expect("Each field must be named.");
         let field_name = field_ident.to_string();
-        let field_char = field_name.chars().next().unwrap();
         for attr in field.attrs {
             let Some(attr) = parse_attr(attr) else { continue; };
             match attr {
-                OptionsAttribute::Flag(f) => {
-                    let flags = if f.flags.is_empty() {
-                        if field_name.len() > 1 {
-                            vec![Arg::Short(field_char), Arg::Long(field_name.clone())]
-                        } else {
-                            vec![Arg::Short(field_char)]
-                        }
-                    } else {
-                        f.flags
-                    };
-
+                DeriveAttribute::Flag(f) => {
                     let stmt = match f.value {
                         Some(e) => quote!(self.#field_ident = #e;),
                         None => quote!(self.#field_ident = true;),
                     };
 
+                    let flags = flag_names(f.flags, &field_name);
+                    for flag in flags {
+                        map.entry(flag).or_default().push(stmt.clone());
+                    }
+                }
+                DeriveAttribute::Option(o) => {
+                    let stmt = match o.parser {
+                        Some(e) => quote!(self.#field_ident = #e(parser.value()?)?;),
+                        None => {
+                            quote!(self.#field_ident = FromValue::from_value(parser.value()?)?;)
+                        }
+                    };
+
+                    let flags = flag_names(o.flags, &field_name);
                     for flag in flags {
                         map.entry(flag).or_default().push(stmt.clone());
                     }
@@ -102,6 +97,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                 I::Item: Into<std::ffi::OsString>,
             {
                 use uutils_args::lexopt;
+                use uutils_args::FromValue;
                 let mut parser = lexopt::Parser::from_args(args);
                 while let Some(arg) = parser.next()? {
                     match arg {
@@ -117,58 +113,86 @@ pub fn options(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-fn parse_attr(attr: Attribute) -> Option<OptionsAttribute> {
-    if attr.path.is_ident("flag") {
-        return Some(OptionsAttribute::Flag(parse_flag_attr(attr)));
-    }
-    None
-}
+#[proc_macro_derive(FromValue, attributes(value))]
+pub fn from_value(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
 
-fn parse_flag_attr(attr: Attribute) -> FlagAttribute {
-    let mut flag_attr = FlagAttribute {
-        flags: vec![],
-        value: None,
-    };
-    let Ok(parsed_args) = attr
-        .parse_args_with(Punctuated::<FlagArg, Token![,]>::parse_terminated)
-    else {
-        return flag_attr;
-    };
-    for arg in parsed_args {
-        match arg {
-            FlagArg::Long(s) => flag_attr.flags.push(Arg::Long(s)),
-            FlagArg::Short(c) => flag_attr.flags.push(Arg::Short(c)),
-            FlagArg::Value(e) => flag_attr.value = Some(e),
-        };
-    }
-    flag_attr
-}
+    // Used in the quasi-quotation below as `#name`.
+    let name = input.ident;
 
-impl Parse for FlagArg {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        if input.peek(LitStr) {
-            let str = input.parse::<LitStr>().unwrap().value();
-            if let Some(s) = str.strip_prefix("--") {
-                return Ok(FlagArg::Long(s.to_owned()));
-            } else if let Some(s) = str.strip_prefix('-') {
-                assert_eq!(
-                    s.len(),
-                    1,
-                    "Exactly one character must follow '-' in a flag attribute"
-                );
-                return Ok(FlagArg::Short(s.chars().next().unwrap()));
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    let Enum(data) = input.data else {
+        panic!("Input should be a struct!");
+    };
+
+    let mut match_arms = vec![];
+    for variant in data.variants {
+        let variant_name = variant.ident.to_string();
+        let attrs = variant.attrs.clone();
+        for attr in attrs {
+            if !attr.path.is_ident("value") {
+                continue;
             }
-            panic!("Arguments to flag must start with \"-\" or \"--\"");
-        }
 
-        if input.peek(Ident) {
-            let name = input.parse::<Ident>()?.to_string();
-            input.parse::<Token![=]>()?;
-            match name.as_str() {
-                "value" => return Ok(FlagArg::Value(input.parse::<Expr>()?)),
-                _ => panic!("Unrecognized argument {} for flag attribute", name),
+            let ValueAttr { keys, value } = parse_value_attr(attr);
+
+            let keys = if keys.is_empty() {
+                vec![variant_name.to_lowercase()]
+            } else {
+                keys
             };
+
+            let stmt = if let Some(v) = value {
+                quote!(#(| #keys)* => #v)
+            } else {
+                let mut v = variant.clone();
+                v.attrs = vec![];
+                quote!(#(| #keys)* => Self::#v)
+            };
+            match_arms.push(stmt);
         }
-        panic!("Arguments to flag attribute must be string literals");
+    }
+
+    let expanded = quote!(
+        impl #impl_generics FromValue for #name #ty_generics #where_clause {
+            fn from_value(value: std::ffi::OsString) -> Result<Self, lexopt::Error> {
+                let value = value.into_string()?;
+                Ok(match value.as_str() {
+                    #(#match_arms),*,
+                    _ => {
+                        return Err(lexopt::Error::ParsingFailed {
+                            value,
+                            error: "Invalid value".into(),
+                        });
+                    }
+                })
+            }
+        }
+    );
+
+    TokenStream::from(expanded)
+}
+
+fn flag_names(flags: Vec<Arg>, field_name: &str) -> Vec<Arg> {
+    if flags.is_empty() {
+        let first_char = field_name.chars().next().unwrap();
+        if field_name.len() > 1 {
+            vec![Arg::Short(first_char), Arg::Long(field_name.to_string())]
+        } else {
+            vec![Arg::Short(first_char)]
+        }
+    } else {
+        flags
+    }
+}
+
+fn parse_attr(attr: Attribute) -> Option<DeriveAttribute> {
+    if attr.path.is_ident("flag") {
+        Some(DeriveAttribute::Flag(parse_flag_attr(attr)))
+    } else if attr.path.is_ident("option") {
+        Some(DeriveAttribute::Option(parse_option_attr(attr)))
+    } else {
+        None
     }
 }
