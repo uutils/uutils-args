@@ -9,7 +9,7 @@ use syn::{
     punctuated::Punctuated,
     Attribute,
     Data::Struct,
-    DeriveInput, Fields, LitStr, Token,
+    DeriveInput, Expr, Fields, Ident, LitStr, Token,
 };
 
 #[derive(Eq, Hash, PartialEq, Debug)]
@@ -24,11 +24,13 @@ enum OptionsAttribute {
 
 struct FlagAttribute {
     flags: Vec<Arg>,
+    value: Option<syn::Expr>,
 }
 
 enum FlagArg {
     Short(char),
     Long(String),
+    Value(Expr),
 }
 
 // FIXME: Think of a better name
@@ -70,10 +72,14 @@ pub fn options(input: TokenStream) -> TokenStream {
                     } else {
                         f.flags
                     };
+
+                    let stmt = match f.value {
+                        Some(e) => quote!(self.#field_ident = #e;),
+                        None => quote!(self.#field_ident = true;),
+                    };
+
                     for flag in flags {
-                        map.entry(flag)
-                            .or_default()
-                            .push(quote!(self.#field_ident = true;));
+                        map.entry(flag).or_default().push(stmt.clone());
                     }
                 }
             }
@@ -119,7 +125,10 @@ fn parse_attr(attr: Attribute) -> Option<OptionsAttribute> {
 }
 
 fn parse_flag_attr(attr: Attribute) -> FlagAttribute {
-    let mut flag_attr = FlagAttribute { flags: vec![] };
+    let mut flag_attr = FlagAttribute {
+        flags: vec![],
+        value: None,
+    };
     let Ok(parsed_args) = attr
         .parse_args_with(Punctuated::<FlagArg, Token![,]>::parse_terminated)
     else {
@@ -129,6 +138,7 @@ fn parse_flag_attr(attr: Attribute) -> FlagAttribute {
         match arg {
             FlagArg::Long(s) => flag_attr.flags.push(Arg::Long(s)),
             FlagArg::Short(c) => flag_attr.flags.push(Arg::Short(c)),
+            FlagArg::Value(e) => flag_attr.value = Some(e),
         };
     }
     flag_attr
@@ -149,6 +159,15 @@ impl Parse for FlagArg {
                 return Ok(FlagArg::Short(s.chars().next().unwrap()));
             }
             panic!("Arguments to flag must start with \"-\" or \"--\"");
+        }
+
+        if input.peek(Ident) {
+            let name = input.parse::<Ident>()?.to_string();
+            input.parse::<Token![=]>()?;
+            match name.as_str() {
+                "value" => return Ok(FlagArg::Value(input.parse::<Expr>()?)),
+                _ => panic!("Unrecognized argument {} for flag attribute", name),
+            };
         }
         panic!("Arguments to flag attribute must be string literals");
     }

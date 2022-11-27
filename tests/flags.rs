@@ -179,3 +179,79 @@ fn number_flag() {
 
     assert_eq!(Settings::parse(["-1"]).unwrap(), Settings { one: true })
 }
+
+#[test]
+fn false_bool() {
+    #[derive(Default, Options, PartialEq, Eq, Debug)]
+    struct Settings {
+        #[flag("-a")]
+        #[flag("-b", value = false)]
+        foo: bool,
+    }
+
+    assert_eq!(Settings::parse(["-a"]).unwrap(), Settings { foo: true });
+    assert_eq!(Settings::parse(["-b"]).unwrap(), Settings { foo: false });
+    assert_eq!(Settings::parse(["-ab"]).unwrap(), Settings { foo: false });
+    assert_eq!(Settings::parse(["-ba"]).unwrap(), Settings { foo: true });
+    assert_eq!(
+        Settings::parse(["-a", "-b"]).unwrap(),
+        Settings { foo: false }
+    );
+    assert_eq!(
+        Settings::parse(["-b", "-a"]).unwrap(),
+        Settings { foo: true }
+    );
+}
+
+#[test]
+fn enum_flag() {
+    #[derive(Default, PartialEq, Eq, Debug)]
+    enum SomeEnum {
+        #[default]
+        VariantFoo,
+        VariantBar,
+        VariantBaz,
+    }
+
+    #[derive(Default, Options, PartialEq, Eq, Debug)]
+    struct Settings {
+        #[flag(value = SomeEnum::VariantFoo)]
+        #[flag("--bar", value = SomeEnum::VariantBar)]
+        #[flag("--baz", value = SomeEnum::VariantBaz)]
+        foo: SomeEnum,
+    }
+
+    assert_eq!(
+        Settings::parse(&[] as &[&str]).unwrap(),
+        Settings {
+            foo: SomeEnum::VariantFoo
+        }
+    );
+
+    assert_eq!(
+        Settings::parse(["--bar"]).unwrap(),
+        Settings {
+            foo: SomeEnum::VariantBar
+        }
+    );
+
+    assert_eq!(
+        Settings::parse(["--baz"]).unwrap(),
+        Settings {
+            foo: SomeEnum::VariantBaz
+        }
+    );
+}
+
+#[test]
+fn count() {
+    #[derive(Default, Options)]
+    struct Settings {
+        #[flag(value = self.verbosity + 1)]
+        verbosity: u8,
+    }
+
+    assert_eq!(Settings::parse(["-v"]).unwrap().verbosity, 1);
+    assert_eq!(Settings::parse(["-vv"]).unwrap().verbosity, 2);
+    assert_eq!(Settings::parse(["-vvv"]).unwrap().verbosity, 3);
+}
