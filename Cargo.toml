@@ -9,7 +9,5 @@ homepage = "https://github.com/tertsdiepraam/uutils-args"
 repository = "https://github.com/tertsdiepraam/uutils-args"
 readme = "README.md"
 
-[lib]
-proc-macro = true
-
 [dependencies]
+derive = { version = "0.1.0", path = "derive" }
