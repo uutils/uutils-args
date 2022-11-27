@@ -74,11 +74,11 @@ As a small teaser, consider this example:
 
 ```rust
 struct Settings {
-    #[flag(-x, -z)]
+    #[flag("-x", "-z")]
     a: bool,
-    #[flag(-x, -y, -z)]
+    #[flag("-x", "-y", "-z")]
     b: bool,
-    #[flag(-y, -z)]
+    #[flag("-y", "-z")]
     c: bool,
 }
 ```
@@ -108,19 +108,19 @@ struct Settings {
     one: bool,
     
     // Only -t, not --two
-    #[flag(-t)]
+    #[flag("-t")]
     two: bool,
     
     // Only --three, not -t
-    #[flag(--three)]
+    #[flag("--three")]
     three: bool,
 
     // Explicit form of `#[flag]`
-    #[flag(-f, --four)]
+    #[flag("-f", "--four")]
     four: bool,
     
     // We can define as many flags as we want
-    #[flag(-a, -b, --five, --six)]
+    #[flag("-a", "-b", "--five", "--six")]
     five: bool,
     
     // Cannot be set by an argument
@@ -170,7 +170,7 @@ struct Settings {
     force: bool,
 
     #[flag]
-    #[hidden_flag(-f, --force, false)]
+    #[hidden_flag("-f", "--force", value = false)]
     interactive: bool
 }
 ```
@@ -240,12 +240,12 @@ but making it zero-size is probablty a good idea (so either `()` or
 struct Settings {
     /// Some help for `-a`
     #[flag]
-    #[hidden_flag(-c)]
+    #[hidden_flag("-c")]
     a: bool,
     
     /// Some help for `-b`
     #[flag]
-    #[hidden_flag(-c)]
+    #[hidden_flag("-c")]
     b: bool,
     
     /// Some help for `-c`
@@ -268,12 +268,12 @@ Similarly, we can do something like this:
 #[derive(Options, Default)]
 struct Settings {
     /// Enable long format
-    #[flag(-l, --long)]
-    #[hidden_flag(-s, --short, false)]
+    #[flag("-l", "--long")]
+    #[hidden_flag("-s", "--short", value = false)]
     long_format: bool,
     
     /// Disable long format
-    #[dummy_flag(-s, --short)]
+    #[dummy_flag("-s", "--short")]
     short_format: ()
 }
 ```
@@ -290,8 +290,8 @@ different attributes. Another possible representation could be:
 #[derive(Options)]
 struct Settings {
     /// Enable long format
-    #[flag(-l, --long)]
-    #[flag(-s, --short, false, help = "Disable long format")]
+    #[flag("-l", "--long")]
+    #[flag("-s", "--short", value = false, help = "Disable long format")]
     long_format: bool,
 }
 ```
@@ -318,7 +318,7 @@ enum Color {
 
 #[derive(Options, Default)]
 struct Settings {
-    #[option(--color)]
+    #[option("--color")]
     color: Color; 
 }
 ```
@@ -329,26 +329,26 @@ this by adding `flag` attributes to the `enum`.
 ```rust
 #[derive(FromOpt, Default)]
 enum Sort {
-    #[flag(-U)]
+    #[flag("-U")]
     #[value]
     None,
     
     #[default]
     Name,
     
-    #[flag(-S)]
+    #[flag("-S")]
     #[value]
     Size,
     
-    #[flag(-t)]
+    #[flag("-t")]
     #[value]
     Time,
     
-    #[flag(-v)]
+    #[flag("-v")]
     #[value]
     Version,
 
-    #[flag(-X)]
+    #[flag("-X")]
     #[value]
     Extension,
 
@@ -358,7 +358,7 @@ enum Sort {
 
 #[derive(Options, Default)]
 struct Settings {
-    #[option(--sort)]
+    #[option("--sort")]
     sort: Sort; 
 }
 ```
@@ -414,8 +414,8 @@ overridden by `-l`. Here's how we can handle them:
 
 #[derive(FromOpt, Default)]
 enum Format {
-    #[flag(-l)]
-    #[hidden_flag(-g, -o, -n, --numeric-uid-gid)]
+    #[flag("-l")]
+    #[hidden_flag("-g", "-o", "-n", "--numeric-uid-gid")]
     #[value("long", "verbose")]
     Long,
 
@@ -423,31 +423,31 @@ enum Format {
     SingleColumn,
 
     #[default]
-    #[flag(-C)]
+    #[flag("-C")]
     #[value("columns", "vertical")]
     Columns,
     
-    #[flag(-x)]
+    #[flag("-x")]
     #[value("across", "horizontal")]
     Across,
 
     #[value]
-    #[flag(-m)]
+    #[flag("-m")]
     Commas,
 }
 
 #[derive(Options, Default)]
 struct Settings {
-    #[flag(-g)]
+    #[flag("-g")]
     long_hide_owner: bool,
 
-    #[flag(-o)]
+    #[flag("-o")]
     long_hide_group: bool,
 
-    #[flag(-n, --numeric-uid-gid)]
+    #[flag("-n", "--numeric-uid-gid")]
     long_numeric_id: bool,
 
-    #[option(--format)]
+    #[option("--format")]
     format: Format,
 }
 ```
@@ -459,22 +459,22 @@ even though I'm not very happy with it:
 ```rust
 enum Format {
     #[value]
-    #[flag(-l)]
+    #[flag("-l")]
     Long,
 
     #[default]
     #[value]
-    #[flag(-C)]
+    #[flag("-C")]
     Columns,
 }
 
 struct Settings {
-    #[flag(-1, -l)]
-    #[hidden_flag(-C, false)]
-    #[option(--format=single-column)]
+    #[flag("-1", "-l")]
+    #[hidden_flag("-C", value = false)]
+    #[option("--format=single-column")]
     single_column: bool,
     
-    #[option(--format)]
+    #[option("--format")]
     format: Format,
 }
 ```
