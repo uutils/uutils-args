@@ -1,14 +1,13 @@
 mod attributes;
 use attributes::{
-    parse_flag_attr, parse_option_attr, parse_value_attr, FlagAttr, OptionAttr, ValueAttr,
+    parse_flag_attr, parse_map, parse_option_attr, parse_value_attr, FlagAttr, MapAttr, OptionAttr,
+    ValueAttr,
 };
 
-use std::collections::HashMap;
-
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{
+    parse::Parse,
     parse_macro_input, Attribute,
     Data::{Enum, Struct},
     DeriveInput, Expr, Fields,
@@ -25,14 +24,18 @@ enum DeriveAttribute {
     Option(OptionAttr),
 }
 
-// FIXME: Think of a better name
-#[proc_macro_derive(Options, attributes(flag, option))]
+#[proc_macro_derive(Options, attributes(arg_type, map))]
 pub fn options(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
-    // Used in the quasi-quotation below as `#name`.
     let name = input.ident;
-
+    let arg_type = input
+        .attrs
+        .iter()
+        .find(|a| a.path.is_ident("arg_type"))
+        .expect("An Options struct must have a `arg_type` attribute")
+        .parse_args_with(syn::Ident::parse)
+        .expect("The `arg_type` attribute must contain a valid identifier.");
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
     let Struct(data) = input.data else {
@@ -45,67 +48,127 @@ pub fn options(input: TokenStream) -> TokenStream {
 
     // The key of this map is a literal pattern and the value
     // is whatever code needs to be run when that pattern is encountered.
-    let mut map: HashMap<Arg, Vec<TokenStream2>> = HashMap::new();
+    let mut if_lets = Vec::new();
 
     for field in fields.named {
-        let field_ident = field.ident.as_ref().expect("Each field must be named.");
-        let field_name = field_ident.to_string();
+        let field_ident = field.ident.as_ref().unwrap();
         for attr in field.attrs {
-            let Some(attr) = parse_attr(attr) else { continue; };
-            match attr {
-                DeriveAttribute::Flag(f) => {
-                    let stmt = match f.value {
-                        Some(e) => quote!(self.#field_ident = #e;),
-                        None => quote!(self.#field_ident = true;),
-                    };
-
-                    let flags = flag_names(f.flags, &field_name);
-                    for flag in flags {
-                        map.entry(flag).or_default().push(stmt.clone());
+            let Some(MapAttr { arms }) = parse_map(attr) else { continue; };
+            for arm in arms {
+                let pat = arm.pat;
+                let expr = arm.body;
+                if_lets.push(quote!(
+                    if let #pat = arg {
+                        self.#field_ident = #expr;
                     }
-                }
-                DeriveAttribute::Option(o) => {
-                    let stmt = match o.parser {
-                        Some(e) => quote!(self.#field_ident = #e(parser.value()?)?;),
-                        None => {
-                            quote!(self.#field_ident = FromValue::from_value(parser.value()?)?;)
-                        }
-                    };
-
-                    let flags = flag_names(o.flags, &field_name);
-                    for flag in flags {
-                        map.entry(flag).or_default().push(stmt.clone());
-                    }
-                }
+                ))
             }
-        }
-    }
-
-    let mut match_arms = vec![];
-    for (pattern, arms) in map {
-        match pattern {
-            Arg::Short(char) => match_arms.push(quote!(lexopt::Arg::Short(#char) => {#(#arms)*})),
-            Arg::Long(string) => match_arms.push(quote!(lexopt::Arg::Long(#string) => {#(#arms)*})),
         }
     }
 
     let expanded = quote!(
         impl #impl_generics Options for #name #ty_generics #where_clause {
-            fn apply_args<I>(&mut self, args: I) -> Result<(), lexopt::Error>
+            fn apply_args<I>(&mut self, args: I) -> Result<(), uutils_args::Error>
             where
                 I: IntoIterator + 'static,
                 I::Item: Into<std::ffi::OsString>,
             {
                 use uutils_args::lexopt;
                 use uutils_args::FromValue;
-                let mut parser = lexopt::Parser::from_args(args);
-                while let Some(arg) = parser.next()? {
-                    match arg {
-                        #(#match_arms)*,
-                        _ => { return Err(arg.unexpected());}
-                    }
+                let mut iter = #arg_type::parse(args);
+                while let Some(arg) = iter.next_arg()? {
+                    #(#if_lets)*
                 }
                 Ok(())
+            }
+        }
+    );
+
+    TokenStream::from(expanded)
+}
+
+#[proc_macro_derive(Arguments, attributes(flag, option))]
+pub fn arguments(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    let name = input.ident;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    let Enum(data) = input.data else {
+        panic!("Input should be an enum!");
+    };
+
+    let mut match_arms = Vec::new();
+
+    for variant in data.variants {
+        let variant_ident = variant.ident;
+        let variant_name = variant_ident.to_string();
+        let mut short_flags = Vec::new();
+        let mut long_flags = Vec::new();
+        let parse_expr = match variant.fields {
+            Fields::Unit => {
+                for attr in variant.attrs {
+                    let Some(attr) = parse_attr(attr) else { continue; };
+                    let DeriveAttribute::Flag(f) = attr else {
+                        panic!("unsupported attribute");
+                    };
+                    let (mut shorts, mut longs) = flag_names(f.flags, &variant_name);
+                    short_flags.append(&mut shorts);
+                    long_flags.append(&mut longs);
+                }
+                quote!(Self::#variant_ident)
+            }
+            Fields::Unnamed(f) => {
+                let v: Vec<_> = f.unnamed.iter().collect();
+                assert_eq!(v.len(), 1, "Options can have only one field");
+                for attr in variant.attrs {
+                    let Some(attr) = parse_attr(attr) else { continue; };
+                    let DeriveAttribute::Option(f) = attr else {
+                        panic!("unsupported attribute");
+                    };
+                    let (mut shorts, mut longs) = flag_names(f.flags, &variant_name);
+                    short_flags.append(&mut shorts);
+                    long_flags.append(&mut longs);
+                }
+                quote!(Self::#variant_ident (FromValue::from_value(parser.value()?)?))
+            }
+            _ => panic!("unimplemented"),
+        };
+
+        let short_pattern = if short_flags.is_empty() {
+            None
+        } else {
+            Some(quote!(uutils_args::lexopt::Arg::Short(#(#short_flags)|*)))
+        };
+
+        let long_pattern = if long_flags.is_empty() {
+            None
+        } else {
+            Some(quote!(uutils_args::lexopt::Arg::Long(#(#long_flags)|*)))
+        };
+
+        let pattern = match (short_pattern, long_pattern) {
+            // No flags given, so we just ignore this variant,
+            // could be user error though, so we might want to
+            // panic
+            (None, None) => continue,
+            (Some(s), None) => s,
+            (None, Some(l)) => l,
+            (Some(s), Some(l)) => quote!(#s | #l),
+        };
+
+        match_arms.push(quote!(#pattern => { #parse_expr }))
+    }
+
+    let expanded = quote!(
+        impl #impl_generics Arguments for #name #ty_generics #where_clause {
+            fn next_arg(parser: &mut uutils_args::lexopt::Parser) -> Result<Option<Self>, uutils_args::Error> {
+                use uutils_args::FromValue;
+                let Some(arg) = parser.next()? else { return Ok(None); };
+                Ok(Some(match arg {
+                    #(#match_arms)*
+                    _ => return Err(arg.unexpected().into())
+                }))
             }
         }
     );
@@ -117,13 +180,11 @@ pub fn options(input: TokenStream) -> TokenStream {
 pub fn from_value(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
-    // Used in the quasi-quotation below as `#name`.
     let name = input.ident;
-
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
     let Enum(data) = input.data else {
-        panic!("Input should be a struct!");
+        panic!("Input should be an enum!");
     };
 
     let mut match_arms = vec![];
@@ -157,6 +218,7 @@ pub fn from_value(input: TokenStream) -> TokenStream {
     let expanded = quote!(
         impl #impl_generics FromValue for #name #ty_generics #where_clause {
             fn from_value(value: std::ffi::OsString) -> Result<Self, lexopt::Error> {
+                use uutils_args::FromValue;
                 let value = value.into_string()?;
                 Ok(match value.as_str() {
                     #(#match_arms),*,
@@ -174,16 +236,25 @@ pub fn from_value(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-fn flag_names(flags: Vec<Arg>, field_name: &str) -> Vec<Arg> {
+fn flag_names(flags: Vec<Arg>, field_name: &str) -> (Vec<char>, Vec<String>) {
+    let field_name = field_name.to_lowercase();
     if flags.is_empty() {
         let first_char = field_name.chars().next().unwrap();
         if field_name.len() > 1 {
-            vec![Arg::Short(first_char), Arg::Long(field_name.to_string())]
+            (vec![first_char], vec![field_name.to_string()])
         } else {
-            vec![Arg::Short(first_char)]
+            (vec![first_char], vec![])
         }
     } else {
-        flags
+        let mut shorts = Vec::new();
+        let mut longs = Vec::new();
+        for flag in flags {
+            match flag {
+                Arg::Short(x) => shorts.push(x),
+                Arg::Long(x) => longs.push(x),
+            };
+        }
+        (shorts, longs)
     }
 }
 
