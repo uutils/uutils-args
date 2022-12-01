@@ -1,7 +1,9 @@
+mod action;
 mod attributes;
+
+use action::{parse_action_attr, ActionAttr, ActionType};
 use attributes::{
-    parse_flag_attr, parse_map, parse_option_attr, parse_value_attr, FlagAttr, MapAttr, OptionAttr,
-    ValueAttr,
+    parse_flag_attr, parse_option_attr, parse_value_attr, FlagAttr, OptionAttr, ValueAttr,
 };
 
 use proc_macro::TokenStream;
@@ -24,7 +26,7 @@ enum DeriveAttribute {
     Option(OptionAttr),
 }
 
-#[proc_macro_derive(Options, attributes(arg_type, map))]
+#[proc_macro_derive(Options, attributes(arg_type, map, set, set_true, set_false, collect))]
 pub fn options(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -48,20 +50,54 @@ pub fn options(input: TokenStream) -> TokenStream {
 
     // The key of this map is a literal pattern and the value
     // is whatever code needs to be run when that pattern is encountered.
-    let mut if_lets = Vec::new();
+    let mut stmts = Vec::new();
 
     for field in fields.named {
         let field_ident = field.ident.as_ref().unwrap();
         for attr in field.attrs {
-            let Some(MapAttr { arms }) = parse_map(attr) else { continue; };
-            for arm in arms {
-                let pat = arm.pat;
-                let expr = arm.body;
-                if_lets.push(quote!(
-                    if let #pat = arg {
-                        self.#field_ident = #expr;
+            let Some(ActionAttr { action_type, collect }) = parse_action_attr(attr) else { continue; };
+
+            let mut match_arms = vec![];
+            match action_type {
+                ActionType::Map(arms) => {
+                    for arm in arms {
+                        let pat = arm.pat;
+                        let expr = arm.body;
+                        match_arms.push((quote!(#pat), quote!(#expr.clone())));
                     }
-                ))
+                }
+
+                ActionType::Set(pats) => {
+                    let pats: Vec<_> = pats.iter().map(|p| quote!(#p(x))).collect();
+                    let pats = quote!(#(#pats)|*);
+                    match_arms.push((pats, quote!(x.clone())))
+                }
+
+                ActionType::SetTrue(pats) => {
+                    let pats = quote!(#(#pats)|*);
+                    match_arms.push((pats, quote!(true)))
+                }
+
+                ActionType::SetFalse(pats) => {
+                    let pats = quote!(#(#pats)|*);
+                    match_arms.push((pats, quote!(false)))
+                }
+            };
+
+            for (pat, expr) in match_arms {
+                stmts.push(if collect {
+                    quote!(
+                        if let #pat = &arg {
+                            self.#field_ident.push(#expr);
+                        }
+                    )
+                } else {
+                    quote!(
+                        if let #pat = &arg {
+                            self.#field_ident = #expr;
+                        }
+                    )
+                })
             }
         }
     }
@@ -77,7 +113,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                 use uutils_args::FromValue;
                 let mut iter = #arg_type::parse(args);
                 while let Some(arg) = iter.next_arg()? {
-                    #(#if_lets)*
+                    #(#stmts)*
                 }
                 Ok(())
             }

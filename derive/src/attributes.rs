@@ -31,11 +31,6 @@ enum OptionAttrArg {
 }
 
 #[derive(Default)]
-pub(crate) struct MapAttr {
-    pub(crate) arms: Vec<syn::Arm>,
-}
-
-#[derive(Default)]
 pub(crate) struct ValueAttr {
     pub(crate) keys: Vec<String>,
     pub(crate) value: Option<Expr>,
@@ -164,18 +159,4 @@ fn parse_flag(input: ParseStream) -> syn::Result<Arg> {
         return Ok(Arg::Short(s.chars().next().unwrap()));
     }
     panic!("Arguments to flag must start with \"-\" or \"--\"");
-}
-
-pub(crate) fn parse_map(attr: Attribute) -> Option<MapAttr> {
-    if !attr.path.is_ident("map") {
-        return None;
-    }
-
-    let parsed_args = attr
-        .parse_args_with(Punctuated::<syn::Arm, syn::parse::Nothing>::parse_terminated)
-        .expect("Arguments to map must be valid match arms");
-
-    Some(MapAttr {
-        arms: parsed_args.into_iter().collect(),
-    })
 }
