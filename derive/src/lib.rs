@@ -157,6 +157,20 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             Fields::Unnamed(f) => {
                 let v: Vec<_> = f.unnamed.iter().collect();
                 assert_eq!(v.len(), 1, "Options can have only one field");
+                let field_type = v[0].ty.clone();
+                let field_is_option = {
+                    if let syn::Type::Path(field_type_path) = field_type {
+                        field_type_path
+                            .path
+                            .segments
+                            .iter()
+                            .map(|s| s.ident.to_string())
+                            .collect::<Vec<_>>()
+                            == vec!["Option"]
+                    } else {
+                        false
+                    }
+                };
                 for attr in variant.attrs {
                     let Some(attr) = parse_attr(attr) else { continue; };
                     let DeriveAttribute::Option(f) = attr else {
@@ -166,7 +180,14 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                     short_flags.append(&mut shorts);
                     long_flags.append(&mut longs);
                 }
-                quote!(Self::#variant_ident (FromValue::from_value(parser.value()?)?))
+                if field_is_option {
+                    quote!(Self::#variant_ident (match parser.optional_value() {
+                        Some(v) => Some(FromValue::from_value(v)?),
+                        None => None,
+                    }))
+                } else {
+                    quote!(Self::#variant_ident (FromValue::from_value(parser.value()?)?))
+                }
             }
             _ => panic!("unimplemented"),
         };

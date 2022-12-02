@@ -1,4 +1,4 @@
-use uutils_args::{ArgumentIter, Arguments, FromValue, Options};
+use uutils_args::{ArgumentIter, Arguments, Options};
 
 fn to_vec<T: Arguments>(mut args: ArgumentIter<T>) -> Vec<T> {
     let mut v = Vec::new();
@@ -19,7 +19,7 @@ fn one_flag() {
     #[derive(Options, Default)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::Foo => true)]
+        #[set_true(Arg::Foo)]
         foo: bool,
     }
 
@@ -43,9 +43,9 @@ fn two_flags() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::A => true)]
+        #[set_true(Arg::A)]
         a: bool,
-        #[map(Arg::B => true)]
+        #[set_true(Arg::B)]
         b: bool,
     }
 
@@ -78,7 +78,7 @@ fn long_and_short_flag() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::Foo => true)]
+        #[set_true(Arg::Foo)]
         foo: bool,
     }
 
@@ -101,7 +101,7 @@ fn short_alias() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::Foo => true)]
+        #[set_true(Arg::Foo)]
         foo: bool,
     }
 
@@ -119,7 +119,7 @@ fn long_alias() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::Foo => true)]
+        #[set_true(Arg::Foo)]
         foo: bool,
     }
 
@@ -139,9 +139,9 @@ fn short_and_long_alias() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::Foo => true)]
+        #[set_true(Arg::Foo)]
         foo: bool,
-        #[map(Arg::Bar => true)]
+        #[set_true(Arg::Bar)]
         bar: bool,
     }
 
@@ -176,11 +176,11 @@ fn xyz_map_to_abc() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::X | Arg::Z => true)]
+        #[set_true(Arg::X | Arg::Z)]
         a: bool,
-        #[map(Arg::X | Arg::Y | Arg::Z => true)]
+        #[set_true(Arg::X | Arg::Y | Arg::Z)]
         b: bool,
-        #[map(Arg::Y | Arg::Z => true)]
+        #[set_true(Arg::Y | Arg::Z)]
         c: bool,
     }
 
@@ -234,9 +234,9 @@ fn non_rust_ident() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::FooBar => true)]
+        #[set_true(Arg::FooBar)]
         a: bool,
-        #[map(Arg::Super => true)]
+        #[set_true(Arg::Super)]
         b: bool,
     }
 
@@ -256,7 +256,7 @@ fn number_flag() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::One => true)]
+        #[set_true(Arg::One)]
         one: bool,
     }
 
@@ -278,7 +278,7 @@ fn false_bool() {
     struct Settings {
         #[map(
             Arg::A => true,
-            Arg::B => false
+            Arg::B => false,
         )]
         foo: bool,
     }
@@ -294,6 +294,27 @@ fn false_bool() {
     assert_eq!(
         Settings::parse(["-b", "-a"]).unwrap(),
         Settings { foo: true }
+    );
+
+    #[derive(Default, Options, PartialEq, Eq, Debug)]
+    #[arg_type(Arg)]
+    struct Settings2 {
+        #[set_true(Arg::A)]
+        #[set_false(Arg::B)]
+        foo: bool,
+    }
+
+    assert_eq!(Settings2::parse(["-a"]).unwrap(), Settings2 { foo: true });
+    assert_eq!(Settings2::parse(["-b"]).unwrap(), Settings2 { foo: false });
+    assert_eq!(Settings2::parse(["-ab"]).unwrap(), Settings2 { foo: false });
+    assert_eq!(Settings2::parse(["-ba"]).unwrap(), Settings2 { foo: true });
+    assert_eq!(
+        Settings2::parse(["-a", "-b"]).unwrap(),
+        Settings2 { foo: false }
+    );
+    assert_eq!(
+        Settings2::parse(["-b", "-a"]).unwrap(),
+        Settings2 { foo: true }
     );
 }
 
@@ -362,220 +383,4 @@ fn count() {
     assert_eq!(Settings::parse(["-v"]).unwrap().verbosity, 1);
     assert_eq!(Settings::parse(["-vv"]).unwrap().verbosity, 2);
     assert_eq!(Settings::parse(["-vvv"]).unwrap().verbosity, 3);
-}
-
-#[test]
-fn string_option() {
-    #[derive(Arguments)]
-    enum Arg {
-        #[option]
-        Message(String),
-    }
-
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
-    struct Settings {
-        #[map(Arg::Message(s) => s)]
-        message: String,
-    }
-
-    assert_eq!(
-        Settings::parse(["--message=hello"]).unwrap().message,
-        "hello"
-    );
-}
-
-#[test]
-fn enum_option() {
-    #[derive(FromValue, Default, Debug, PartialEq, Eq, Clone)]
-    enum Format {
-        #[default]
-        #[value]
-        Foo,
-        #[value]
-        Bar,
-        #[value]
-        Baz,
-    }
-
-    #[derive(Arguments)]
-    enum Arg {
-        #[option]
-        Format(Format),
-    }
-
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
-    struct Settings {
-        #[map(Arg::Format(f) => f)]
-        format: Format,
-    }
-
-    assert_eq!(
-        Settings::parse(["--format=bar"]).unwrap().format,
-        Format::Bar
-    );
-
-    assert_eq!(
-        Settings::parse(["--format", "baz"]).unwrap().format,
-        Format::Baz
-    );
-}
-
-#[test]
-fn enum_option_with_fields() {
-    #[derive(FromValue, Default, Debug, PartialEq, Eq, Clone)]
-    enum Indent {
-        #[default]
-        Tabs,
-        #[value("thin", value = Self::Spaces(4))]
-        #[value("wide", value = Self::Spaces(8))]
-        Spaces(u8),
-    }
-
-    #[derive(Arguments)]
-    enum Arg {
-        #[option]
-        Indent(Indent),
-    }
-
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
-    struct Settings {
-        #[map(Arg::Indent(i) => i)]
-        indent: Indent,
-    }
-
-    assert_eq!(
-        Settings::parse(["-i=thin"]).unwrap().indent,
-        Indent::Spaces(4)
-    );
-    assert_eq!(
-        Settings::parse(["-i=wide"]).unwrap().indent,
-        Indent::Spaces(8)
-    );
-}
-
-#[test]
-fn enum_with_complex_from_value() {
-    #[derive(Default, Debug, PartialEq, Eq, Clone)]
-    enum Indent {
-        #[default]
-        Tabs,
-        Spaces(u8),
-    }
-
-    impl FromValue for Indent {
-        fn from_value(value: std::ffi::OsString) -> Result<Self, lexopt::Error> {
-            let value = value.into_string()?;
-            if value == "tabs" {
-                Ok(Self::Tabs)
-            } else if let Ok(n) = value.parse() {
-                Ok(Self::Spaces(n))
-            } else {
-                Err(lexopt::Error::ParsingFailed {
-                    value,
-                    error: "Failure!".into(),
-                })
-            }
-        }
-    }
-
-    #[derive(Arguments)]
-    enum Arg {
-        #[option]
-        Indent(Indent),
-    }
-
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
-    struct Settings {
-        #[map(Arg::Indent(i) => i)]
-        indent: Indent,
-    }
-
-    assert_eq!(Settings::parse(["-i=tabs"]).unwrap().indent, Indent::Tabs);
-    assert_eq!(Settings::parse(["-i=4"]).unwrap().indent, Indent::Spaces(4));
-}
-
-#[test]
-fn color() {
-    #[derive(Default, FromValue, Debug, PartialEq, Eq, Clone)]
-    enum Color {
-        #[value("yes", "always")]
-        Always,
-        #[default]
-        #[value("auto")]
-        Auto,
-        #[value("no", "never")]
-        Never,
-    }
-
-    #[derive(Arguments)]
-    enum Arg {
-        #[option]
-        Color(Color),
-    }
-
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
-    struct Settings {
-        #[map(Arg::Color(c) => c)]
-        color: Color,
-    }
-
-    assert_eq!(
-        Settings::parse(["--color=yes"]).unwrap().color,
-        Color::Always
-    );
-    assert_eq!(
-        Settings::parse(["--color=always"]).unwrap().color,
-        Color::Always
-    );
-    assert_eq!(Settings::parse(["--color=no"]).unwrap().color, Color::Never);
-    assert_eq!(
-        Settings::parse(["--color=never"]).unwrap().color,
-        Color::Never
-    );
-    assert_eq!(
-        Settings::parse(["--color=auto"]).unwrap().color,
-        Color::Auto
-    );
-}
-
-#[test]
-fn actions() {
-    #[derive(Arguments)]
-    enum Arg {
-        #[option]
-        Message(String),
-        #[flag]
-        Send,
-        #[flag]
-        Receive,
-    }
-
-    #[derive(Options, Default)]
-    #[arg_type(Arg)]
-    struct Settings {
-        #[map(Arg::Message(m) => m)]
-        message1: String,
-
-        #[set(Arg::Message)]
-        message2: String,
-
-        #[set_true(Arg::Send)]
-        #[set_false(Arg::Receive)]
-        send: bool,
-
-        // Or map, true or false inside the collect
-        #[collect(set(Arg::Message))]
-        messages: Vec<String>,
-    }
-
-    let settings = Settings::parse(["-m=Hello", "-m=World", "--send"]).unwrap();
-    assert_eq!(settings.messages, vec!["Hello", "World"]);
-    assert_eq!(settings.message1, "World");
-    assert_eq!(settings.message2, "World");
-    assert!(settings.send);
 }
