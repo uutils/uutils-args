@@ -19,6 +19,10 @@ pub enum Error {
         value: String,
         error: Box<dyn StdError + Send + Sync + 'static>,
     },
+    AmbiguousOption {
+        option: String,
+        candidates: Vec<String>,
+    },
     NonUnicodeValue(OsString),
     Custom(Box<dyn StdError + Send + Sync + 'static>),
 }

@@ -384,3 +384,32 @@ fn count() {
     assert_eq!(Settings::parse(["-vv"]).unwrap().verbosity, 2);
     assert_eq!(Settings::parse(["-vvv"]).unwrap().verbosity, 3);
 }
+
+#[test]
+fn infer_long_args() {
+    #[derive(Arguments)]
+    enum Arg {
+        #[flag("--all")]
+        All,
+        #[flag("--almost-all")]
+        AlmostAll,
+        #[flag("--author")]
+        Author
+    }
+
+    #[derive(Options, Default)]
+    #[arg_type(Arg)]
+    struct Settings {
+        #[set_true(Arg::All)]
+        all: bool,
+        #[set_true(Arg::AlmostAll)]
+        almost_all: bool,
+        #[set_true(Arg::Author)]
+        author: bool,
+    }
+
+    assert!(Settings::parse(["--all"]).unwrap().all);
+    assert!(Settings::parse(["--alm"]).unwrap().almost_all);
+    assert!(Settings::parse(["--au"]).unwrap().author);
+    assert!(Settings::parse(["--a"]).is_err());
+}

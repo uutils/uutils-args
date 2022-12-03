@@ -134,7 +134,9 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         panic!("Input should be an enum!");
     };
 
-    let mut match_arms = Vec::new();
+    let mut short_match_arms = Vec::new();
+    let mut long_match_arms = Vec::new();
+    let mut long_options = Vec::new();
 
     for variant in data.variants {
         let variant_ident = variant.ident;
@@ -192,40 +194,62 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             _ => panic!("unimplemented"),
         };
 
-        let short_pattern = if short_flags.is_empty() {
-            None
-        } else {
-            Some(quote!(uutils_args::lexopt::Arg::Short(#(#short_flags)|*)))
+        if !short_flags.is_empty() {
+            short_match_arms.push(quote!(#(#short_flags)|* => { #parse_expr }));
         };
 
-        let long_pattern = if long_flags.is_empty() {
-            None
-        } else {
-            Some(quote!(uutils_args::lexopt::Arg::Long(#(#long_flags)|*)))
+        if !long_flags.is_empty() {
+            long_match_arms.push(quote!(#(#long_flags)|* => { #parse_expr }));
+            long_options.append(&mut long_flags);
         };
-
-        let pattern = match (short_pattern, long_pattern) {
-            // No flags given, so we just ignore this variant,
-            // could be user error though, so we might want to
-            // panic
-            (None, None) => continue,
-            (Some(s), None) => s,
-            (None, Some(l)) => l,
-            (Some(s), Some(l)) => quote!(#s | #l),
-        };
-
-        match_arms.push(quote!(#pattern => { #parse_expr }))
     }
 
+    let long_opt_len = long_options.len();
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
             fn next_arg(parser: &mut uutils_args::lexopt::Parser) -> Result<Option<Self>, uutils_args::Error> {
                 use uutils_args::FromValue;
+                use uutils_args::lexopt::Arg;
+                use uutils_args::Error;
                 let Some(arg) = parser.next()? else { return Ok(None); };
-                Ok(Some(match arg {
-                    #(#match_arms)*
-                    _ => return Err(arg.unexpected().into())
-                }))
+                let long_options: [&str; #long_opt_len] = [#(#long_options),*];
+                let parsed = match arg {
+                    Arg::Short(short) => {
+                        match short {
+                            #(#short_match_arms)*
+                            _ => return Err(arg.unexpected().into())
+                        }
+                    }
+                    Arg::Long(long) => {
+                        let mut candidates = Vec::new();
+                        let mut exact_match = None;
+                        for opt in long_options {
+                            if opt == long {
+                                exact_match = Some(opt);
+                                break;
+                            } else if opt.starts_with(long) {
+                                candidates.push(opt);
+                            }
+                        }
+
+                        let opt = match (exact_match, &candidates[..]) {
+                            (Some(opt), _) => opt,
+                            (None, [opt]) => opt,
+                            (None, []) => return Err(arg.unexpected().into()),
+                            (None, opts) => return Err(Error::AmbiguousOption {
+                                option: long.to_string(),
+                                candidates: candidates.iter().map(|s| s.to_string()).collect(),
+                            })
+                        };
+
+                        match opt {
+                            #(#long_match_arms)*
+                            _ => unreachable!("Should be caught by (None, []) case above.")
+                        }
+                    }
+                    _ => { panic!("Values are ignored at the moment!" )}
+                };
+                Ok(Some(parsed))
             }
         }
     );
