@@ -63,7 +63,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                     for arm in arms {
                         let pat = arm.pat;
                         let expr = arm.body;
-                        patterns_and_expressions.push((quote!(#pat), quote!(#expr.clone())));
+                        patterns_and_expressions.push((quote!(#pat), quote!(#expr)));
                     }
                 }
 
@@ -98,7 +98,7 @@ pub fn options(input: TokenStream) -> TokenStream {
             }
 
             stmts.push(
-                quote!(match &arg {
+                quote!(match arg.clone() {
                     #(#match_arms)*
                     _ => {}
                 })
@@ -208,7 +208,40 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         };
     }
 
-    let long_opt_len = long_options.len();
+    let long_handling = if long_options.is_empty() {
+        quote!(return Err(arg.unexpected().into()))
+    } else {
+        let long_opt_len = long_options.len();
+        quote!(
+            let long_options: [&str; #long_opt_len] = [#(#long_options),*];
+            let mut candidates = Vec::new();
+            let mut exact_match = None;
+            for opt in long_options {
+                if opt == long {
+                    exact_match = Some(opt);
+                    break;
+                } else if opt.starts_with(long) {
+                    candidates.push(opt);
+                }
+            }
+
+            let opt = match (exact_match, &candidates[..]) {
+                (Some(opt), _) => opt,
+                (None, [opt]) => opt,
+                (None, []) => return Err(arg.unexpected().into()),
+                (None, opts) => return Err(Error::AmbiguousOption {
+                    option: long.to_string(),
+                    candidates: candidates.iter().map(|s| s.to_string()).collect(),
+                })
+            };
+
+            match opt {
+                #(#long_match_arms)*
+                _ => unreachable!("Should be caught by (None, []) case above.")
+            }
+        )
+    };
+
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
             fn next_arg(parser: &mut uutils_args::lexopt::Parser) -> Result<Option<Self>, uutils_args::Error> {
@@ -216,7 +249,6 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 use uutils_args::lexopt::Arg;
                 use uutils_args::Error;
                 let Some(arg) = parser.next()? else { return Ok(None); };
-                let long_options: [&str; #long_opt_len] = [#(#long_options),*];
                 let parsed = match arg {
                     Arg::Short(short) => {
                         match short {
@@ -225,31 +257,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                         }
                     }
                     Arg::Long(long) => {
-                        let mut candidates = Vec::new();
-                        let mut exact_match = None;
-                        for opt in long_options {
-                            if opt == long {
-                                exact_match = Some(opt);
-                                break;
-                            } else if opt.starts_with(long) {
-                                candidates.push(opt);
-                            }
-                        }
-
-                        let opt = match (exact_match, &candidates[..]) {
-                            (Some(opt), _) => opt,
-                            (None, [opt]) => opt,
-                            (None, []) => return Err(arg.unexpected().into()),
-                            (None, opts) => return Err(Error::AmbiguousOption {
-                                option: long.to_string(),
-                                candidates: candidates.iter().map(|s| s.to_string()).collect(),
-                            })
-                        };
-
-                        match opt {
-                            #(#long_match_arms)*
-                            _ => unreachable!("Should be caught by (None, []) case above.")
-                        }
+                        #long_handling
                     }
                     _ => { panic!("Values are ignored at the moment!" )}
                 };

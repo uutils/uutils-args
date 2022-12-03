@@ -2,6 +2,7 @@ pub use derive::*;
 pub use lexopt;
 use std::error::Error as StdError;
 
+use std::num::ParseIntError;
 use std::{ffi::OsString, marker::PhantomData};
 
 #[derive(Debug)]
@@ -43,7 +44,7 @@ impl From<lexopt::Error> for Error {
     }
 }
 
-pub trait Arguments: Sized {
+pub trait Arguments: Sized + Clone {
     fn parse<I>(args: I) -> ArgumentIter<Self>
     where
         I: IntoIterator + 'static,
@@ -109,3 +110,29 @@ impl FromValue for String {
         Ok(value.into_string()?)
     }
 }
+
+macro_rules! from_value_int {
+    ($t: ty) => {
+        impl FromValue for $t {
+            fn from_value(value: OsString) -> Result<Self, lexopt::Error> {
+                let value = value.into_string()?;
+                Ok(value.parse().map_err(|e: ParseIntError| lexopt::Error::ParsingFailed {
+                    value: value,
+                    error: e.into(),
+                })?)
+            }
+        }  
+    };
+}
+
+from_value_int!(u8);
+from_value_int!(u16);
+from_value_int!(u32);
+from_value_int!(u64);
+from_value_int!(u128);
+
+from_value_int!(i8);
+from_value_int!(i16);
+from_value_int!(i32);
+from_value_int!(i64);
+from_value_int!(i128);

@@ -10,7 +10,7 @@ fn to_vec<T: Arguments>(mut args: ArgumentIter<T>) -> Vec<T> {
 
 #[test]
 fn one_flag() {
-    #[derive(Arguments, Debug, PartialEq, Eq)]
+    #[derive(Arguments, Clone, Debug, PartialEq, Eq)]
     enum Arg {
         #[flag]
         Foo,
@@ -32,7 +32,7 @@ fn one_flag() {
 
 #[test]
 fn two_flags() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag]
         A,
@@ -69,7 +69,7 @@ fn two_flags() {
 
 #[test]
 fn long_and_short_flag() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag]
         Foo,
@@ -92,7 +92,7 @@ fn long_and_short_flag() {
 
 #[test]
 fn short_alias() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag("-b")]
         Foo,
@@ -110,7 +110,7 @@ fn short_alias() {
 
 #[test]
 fn long_alias() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag("--bar")]
         Foo,
@@ -128,7 +128,7 @@ fn long_alias() {
 
 #[test]
 fn short_and_long_alias() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag("-b", "--bar")]
         Foo,
@@ -163,7 +163,7 @@ fn short_and_long_alias() {
 
 #[test]
 fn xyz_map_to_abc() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag]
         X,
@@ -223,7 +223,7 @@ fn xyz_map_to_abc() {
 
 #[test]
 fn non_rust_ident() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag("--foo-bar")]
         FooBar,
@@ -248,7 +248,7 @@ fn non_rust_ident() {
 
 #[test]
 fn number_flag() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag("-1")]
         One,
@@ -265,7 +265,7 @@ fn number_flag() {
 
 #[test]
 fn false_bool() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag]
         A,
@@ -328,7 +328,7 @@ fn enum_flag() {
         VariantBaz,
     }
 
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag]
         Foo,
@@ -367,7 +367,7 @@ fn enum_flag() {
 
 #[test]
 fn count() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag]
         Verbosity,
@@ -387,14 +387,14 @@ fn count() {
 
 #[test]
 fn infer_long_args() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[flag("--all")]
         All,
         #[flag("--almost-all")]
         AlmostAll,
         #[flag("--author")]
-        Author
+        Author,
     }
 
     #[derive(Options, Default)]

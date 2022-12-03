@@ -2,7 +2,7 @@ use uutils_args::{Arguments, FromValue, Options};
 
 #[test]
 fn string_option() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[option]
         Message(String),
@@ -34,7 +34,7 @@ fn enum_option() {
         Baz,
     }
 
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[option]
         Format(Format),
@@ -69,7 +69,7 @@ fn enum_option_with_fields() {
         Spaces(u8),
     }
 
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[option]
         Indent(Indent),
@@ -117,7 +117,7 @@ fn enum_with_complex_from_value() {
         }
     }
 
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[option]
         Indent(Indent),
@@ -126,7 +126,7 @@ fn enum_with_complex_from_value() {
     #[derive(Default, Options)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::Indent(i) => i)]
+        #[map(Arg::Indent(i) => i.clone())]
         indent: Indent,
     }
 
@@ -147,7 +147,7 @@ fn color() {
         Never,
     }
 
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[option]
         Color(Option<Color>),
@@ -157,7 +157,7 @@ fn color() {
     #[arg_type(Arg)]
     struct Settings {
         #[map(
-            Arg::Color(Some(c)) => c,
+            Arg::Color(Some(c)) => c.clone(),
             Arg::Color(None) => Color::Always,
         )]
         color: Color,
@@ -185,7 +185,7 @@ fn color() {
 
 #[test]
 fn actions() {
-    #[derive(Arguments)]
+    #[derive(Arguments, Clone)]
     enum Arg {
         #[option]
         Message(String),
@@ -198,7 +198,7 @@ fn actions() {
     #[derive(Options, Default)]
     #[arg_type(Arg)]
     struct Settings {
-        #[map(Arg::Message(m) => m)]
+        #[map(Arg::Message(m) => m.clone())]
         message1: String,
 
         #[set(Arg::Message)]
@@ -218,4 +218,83 @@ fn actions() {
     assert_eq!(settings.message1, "World");
     assert_eq!(settings.message2, "World");
     assert!(settings.send);
+}
+
+#[test]
+fn width() {
+    #[derive(Arguments, Clone)]
+    enum Arg {
+        #[option]
+        Width(u64),
+    }
+
+    #[derive(Options, Default)]
+    #[arg_type(Arg)]
+    struct Settings {
+        #[map(
+            Arg::Width(0) => None,
+            Arg::Width(x) => Some(x),
+        )]
+        width: Option<u64>
+    }
+
+    assert_eq!(Settings::parse(["-w=0"]).unwrap().width, None);
+    assert_eq!(Settings::parse(["-w=1"]).unwrap().width, Some(1));
+}
+
+#[test]
+fn integers() {
+    #[derive(Arguments, Clone)]
+    enum Arg {
+        #[option]
+        U8(u8),
+        #[option]
+        U16(u16),
+        #[option]
+        U32(u32),
+        #[option]
+        U64(u64),
+        #[option]
+        U128(u128),
+        #[option]
+        I8(i8),
+        #[option]
+        I16(i16),
+        #[option]
+        I32(i32),
+        #[option]
+        I64(i64),
+        #[option]
+        I128(i128),
+    }
+
+    #[derive(Options, Default)]
+    #[arg_type(Arg)]
+    struct Settings {
+        #[map(
+            Arg::U8(x) => x as i128,
+            Arg::U16(x) => x as i128,
+            Arg::U32(x) => x as i128,
+            Arg::U64(x) => x as i128,
+            Arg::U128(x) => x as i128,
+            Arg::I8(x) => x as i128,
+            Arg::I16(x) => x as i128,
+            Arg::I32(x) => x as i128,
+            Arg::I64(x) => x as i128,
+            Arg::I128(x) => x as i128,
+        )]
+        n: i128,
+    }
+
+    assert_eq!(Settings::parse(["--u8=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["--u16=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["--u32=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["--u64=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["--u128=5"]).unwrap().n, 5);
+
+    assert_eq!(Settings::parse(["--i8=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["--i16=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["--i32=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["--i64=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["--i128=5"]).unwrap().n, 5);
 }
