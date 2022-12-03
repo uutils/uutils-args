@@ -57,48 +57,52 @@ pub fn options(input: TokenStream) -> TokenStream {
         for attr in field.attrs {
             let Some(ActionAttr { action_type, collect }) = parse_action_attr(attr) else { continue; };
 
-            let mut match_arms = vec![];
+            let mut patterns_and_expressions = vec![];
             match action_type {
                 ActionType::Map(arms) => {
                     for arm in arms {
                         let pat = arm.pat;
                         let expr = arm.body;
-                        match_arms.push((quote!(#pat), quote!(#expr.clone())));
+                        patterns_and_expressions.push((quote!(#pat), quote!(#expr.clone())));
                     }
                 }
 
                 ActionType::Set(pats) => {
                     let pats: Vec<_> = pats.iter().map(|p| quote!(#p(x))).collect();
                     let pats = quote!(#(#pats)|*);
-                    match_arms.push((pats, quote!(x.clone())))
+                    patterns_and_expressions.push((pats, quote!(x.clone())))
                 }
 
                 ActionType::SetTrue(pats) => {
                     let pats = quote!(#(#pats)|*);
-                    match_arms.push((pats, quote!(true)))
+                    patterns_and_expressions.push((pats, quote!(true)))
                 }
 
                 ActionType::SetFalse(pats) => {
                     let pats = quote!(#(#pats)|*);
-                    match_arms.push((pats, quote!(false)))
+                    patterns_and_expressions.push((pats, quote!(false)))
                 }
             };
 
-            for (pat, expr) in match_arms {
-                stmts.push(if collect {
+            let mut match_arms = vec![];
+            for (pat, expr) in patterns_and_expressions {
+                match_arms.push(if collect {
                     quote!(
-                        if let #pat = &arg {
-                            self.#field_ident.push(#expr);
-                        }
+                        #pat => { self.#field_ident.push(#expr) }
                     )
                 } else {
                     quote!(
-                        if let #pat = &arg {
-                            self.#field_ident = #expr;
-                        }
+                        #pat => { self.#field_ident = #expr }
                     )
-                })
+                });
             }
+
+            stmts.push(
+                quote!(match &arg {
+                    #(#match_arms)*
+                    _ => {}
+                })
+            )
         }
     }
 
