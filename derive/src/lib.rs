@@ -54,6 +54,7 @@ pub fn options(input: TokenStream) -> TokenStream {
 
     for field in fields.named {
         let field_ident = field.ident.as_ref().unwrap();
+        let mut match_arms = vec![];
         for attr in field.attrs {
             let Some(ActionAttr { action_type, collect }) = parse_action_attr(attr) else { continue; };
 
@@ -83,8 +84,6 @@ pub fn options(input: TokenStream) -> TokenStream {
                     patterns_and_expressions.push((pats, quote!(false)))
                 }
             };
-
-            let mut match_arms = vec![];
             for (pat, expr) in patterns_and_expressions {
                 match_arms.push(if collect {
                     quote!(
@@ -96,14 +95,12 @@ pub fn options(input: TokenStream) -> TokenStream {
                     )
                 });
             }
-
-            stmts.push(
-                quote!(match arg.clone() {
-                    #(#match_arms)*
-                    _ => {}
-                })
-            )
         }
+
+        stmts.push(quote!(match arg.clone() {
+            #(#match_arms)*
+            _ => {}
+        }))
     }
 
     let expanded = quote!(
