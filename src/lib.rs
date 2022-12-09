@@ -10,6 +10,7 @@ pub enum Error {
     MissingValue {
         option: Option<String>,
     },
+    MissingPositionalArguments(Vec<String>),
     UnexpectedOption(String),
     UnexpectedArgument(OsString),
     UnexpectedValue {
@@ -53,11 +54,17 @@ pub trait Arguments: Sized + Clone {
         ArgumentIter::<Self>::from_args(args)
     }
 
-    fn next_arg(parser: &mut lexopt::Parser) -> Result<Option<Self>, Error>;
+    fn next_arg(
+        parser: &mut lexopt::Parser,
+        positional_idx: &mut usize,
+    ) -> Result<Option<Self>, Error>;
+
+    fn check_missing(positional_idx: usize) -> Result<(), Error>;
 }
 
 pub struct ArgumentIter<T: Arguments> {
     parser: lexopt::Parser,
+    pub positional_idx: usize,
     t: PhantomData<T>,
 }
 
@@ -69,12 +76,13 @@ impl<T: Arguments> ArgumentIter<T> {
     {
         Self {
             parser: lexopt::Parser::from_args(args),
+            positional_idx: 0,
             t: PhantomData,
         }
     }
 
     pub fn next_arg(&mut self) -> Result<Option<T>, Error> {
-        T::next_arg(&mut self.parser)
+        T::next_arg(&mut self.parser, &mut self.positional_idx)
     }
 }
 
@@ -116,12 +124,14 @@ macro_rules! from_value_int {
         impl FromValue for $t {
             fn from_value(value: OsString) -> Result<Self, lexopt::Error> {
                 let value = value.into_string()?;
-                Ok(value.parse().map_err(|e: ParseIntError| lexopt::Error::ParsingFailed {
-                    value: value,
-                    error: e.into(),
-                })?)
+                Ok(value
+                    .parse()
+                    .map_err(|e: ParseIntError| lexopt::Error::ParsingFailed {
+                        value: value,
+                        error: e.into(),
+                    })?)
             }
-        }  
+        }
     };
 }
 

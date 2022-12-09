@@ -3,7 +3,8 @@ mod attributes;
 
 use action::{parse_action_attr, ActionAttr, ActionType};
 use attributes::{
-    parse_flag_attr, parse_option_attr, parse_value_attr, FlagAttr, OptionAttr, ValueAttr,
+    parse_flag_attr, parse_option_attr, parse_positional_attr, parse_value_attr, FlagAttr,
+    OptionAttr, PositionalAttr, ValueAttr,
 };
 
 use proc_macro::TokenStream;
@@ -24,6 +25,7 @@ enum Arg {
 enum DeriveAttribute {
     Flag(FlagAttr),
     Option(OptionAttr),
+    Positional(PositionalAttr),
 }
 
 #[proc_macro_derive(Options, attributes(arg_type, map, set, set_true, set_false, collect))]
@@ -116,6 +118,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                 while let Some(arg) = iter.next_arg()? {
                     #(#stmts)*
                 }
+                #arg_type::check_missing(iter.positional_idx)?;
                 Ok(())
             }
         }
@@ -124,7 +127,7 @@ pub fn options(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(Arguments, attributes(flag, option))]
+#[proc_macro_derive(Arguments, attributes(flag, option, positional))]
 pub fn arguments(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -138,6 +141,8 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     let mut short_match_arms = Vec::new();
     let mut long_match_arms = Vec::new();
     let mut long_options = Vec::new();
+
+    let mut positional_indices = Vec::new();
 
     for variant in data.variants {
         let variant_ident = variant.ident;
@@ -176,12 +181,21 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 };
                 for attr in variant.attrs {
                     let Some(attr) = parse_attr(attr) else { continue; };
-                    let DeriveAttribute::Option(f) = attr else {
-                        panic!("unsupported attribute");
+                    match attr {
+                        DeriveAttribute::Option(f) => {
+                            let (mut shorts, mut longs) = flag_names(f.flags, &variant_name);
+                            short_flags.append(&mut shorts);
+                            long_flags.append(&mut longs);
+                        }
+                        DeriveAttribute::Positional(p) => {
+                            positional_indices.push((
+                                p.num_args,
+                                variant_name.to_uppercase(),
+                                quote!(Self::#variant_ident (FromValue::from_value(value)?)),
+                            ));
+                        }
+                        _ => panic!("unsupported attribute"),
                     };
-                    let (mut shorts, mut longs) = flag_names(f.flags, &variant_name);
-                    short_flags.append(&mut shorts);
-                    long_flags.append(&mut longs);
                 }
                 if field_is_option {
                     quote!(Self::#variant_ident (match parser.optional_value() {
@@ -239,9 +253,29 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         )
     };
 
+    let mut positional_match_arms = Vec::new();
+    // The largest index of the previous argument, so the the argument after this should
+    // belong to the next argument.
+    let mut last_index = 0;
+
+    // The minimum number of arguments needed to not return a missing argument error.
+    let mut minimum_needed = 0;
+    let mut missing_argument_checks = vec![];
+    for (range, arg_name, expr) in positional_indices {
+        if *range.start() > 0 {
+            minimum_needed = last_index + range.start();
+            missing_argument_checks.push(quote!(if positional_idx < #minimum_needed {
+                missing.push(#arg_name);
+            }));
+        }
+        last_index += range.end();
+        positional_match_arms.push(quote!(0..=#last_index => { #expr }));
+    }
+
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
-            fn next_arg(parser: &mut uutils_args::lexopt::Parser) -> Result<Option<Self>, uutils_args::Error> {
+            #[allow(unreachable_code)]
+            fn next_arg(parser: &mut uutils_args::lexopt::Parser, positional_idx: &mut usize) -> Result<Option<Self>, uutils_args::Error> {
                 use uutils_args::FromValue;
                 use uutils_args::lexopt::Arg;
                 use uutils_args::Error;
@@ -256,9 +290,32 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                     Arg::Long(long) => {
                         #long_handling
                     }
-                    _ => { panic!("Values are ignored at the moment!" )}
+                    Arg::Value(value) => {
+                        *positional_idx += 1;
+                        match positional_idx {
+                            #(#positional_match_arms)*
+                            _ => return Err(Arg::Value(value).unexpected().into()),
+                        }
+                    }
                 };
                 Ok(Some(parsed))
+            }
+
+            fn check_missing(positional_idx: usize) -> Result<(), uutils_args::Error> {
+                // We have the minimum number of required arguments overall.
+                // So we don't need to check the others.
+                if positional_idx >= #minimum_needed {
+                    return Ok(());
+                }
+                let mut missing: Vec<&str> = vec![];
+                #(#missing_argument_checks)*
+                if !missing.is_empty() {
+                    Err(uutils_args::Error::MissingPositionalArguments(
+                        missing.iter().map(ToString::to_string).collect::<Vec<String>>()
+                    ))
+                } else {
+                    Ok(())
+                }
             }
         }
     );
@@ -353,6 +410,8 @@ fn parse_attr(attr: Attribute) -> Option<DeriveAttribute> {
         Some(DeriveAttribute::Flag(parse_flag_attr(attr)))
     } else if attr.path.is_ident("option") {
         Some(DeriveAttribute::Option(parse_option_attr(attr)))
+    } else if attr.path.is_ident("positional") {
+        Some(DeriveAttribute::Positional(parse_positional_attr(attr)))
     } else {
         None
     }
