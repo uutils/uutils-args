@@ -16,7 +16,9 @@ fn string_option() {
     }
 
     assert_eq!(
-        Settings::parse(["--message=hello"]).unwrap().message,
+        Settings::parse(["test", "--message=hello"])
+            .unwrap()
+            .message,
         "hello"
     );
 }
@@ -48,12 +50,12 @@ fn enum_option() {
     }
 
     assert_eq!(
-        Settings::parse(["--format=bar"]).unwrap().format,
+        Settings::parse(["test", "--format=bar"]).unwrap().format,
         Format::Bar
     );
 
     assert_eq!(
-        Settings::parse(["--format", "baz"]).unwrap().format,
+        Settings::parse(["test", "--format", "baz"]).unwrap().format,
         Format::Baz
     );
 }
@@ -83,11 +85,11 @@ fn enum_option_with_fields() {
     }
 
     assert_eq!(
-        Settings::parse(["-i=thin"]).unwrap().indent,
+        Settings::parse(["test", "-i=thin"]).unwrap().indent,
         Indent::Spaces(4)
     );
     assert_eq!(
-        Settings::parse(["-i=wide"]).unwrap().indent,
+        Settings::parse(["test", "-i=wide"]).unwrap().indent,
         Indent::Spaces(8)
     );
 }
@@ -130,8 +132,14 @@ fn enum_with_complex_from_value() {
         indent: Indent,
     }
 
-    assert_eq!(Settings::parse(["-i=tabs"]).unwrap().indent, Indent::Tabs);
-    assert_eq!(Settings::parse(["-i=4"]).unwrap().indent, Indent::Spaces(4));
+    assert_eq!(
+        Settings::parse(["test", "-i=tabs"]).unwrap().indent,
+        Indent::Tabs
+    );
+    assert_eq!(
+        Settings::parse(["test", "-i=4"]).unwrap().indent,
+        Indent::Spaces(4)
+    );
 }
 
 #[test]
@@ -164,23 +172,29 @@ fn color() {
     }
 
     assert_eq!(
-        Settings::parse(["--color=yes"]).unwrap().color,
+        Settings::parse(["test", "--color=yes"]).unwrap().color,
         Color::Always
     );
     assert_eq!(
-        Settings::parse(["--color=always"]).unwrap().color,
+        Settings::parse(["test", "--color=always"]).unwrap().color,
         Color::Always
     );
-    assert_eq!(Settings::parse(["--color=no"]).unwrap().color, Color::Never);
     assert_eq!(
-        Settings::parse(["--color=never"]).unwrap().color,
+        Settings::parse(["test", "--color=no"]).unwrap().color,
         Color::Never
     );
     assert_eq!(
-        Settings::parse(["--color=auto"]).unwrap().color,
+        Settings::parse(["test", "--color=never"]).unwrap().color,
+        Color::Never
+    );
+    assert_eq!(
+        Settings::parse(["test", "--color=auto"]).unwrap().color,
         Color::Auto
     );
-    assert_eq!(Settings::parse(["--color"]).unwrap().color, Color::Always)
+    assert_eq!(
+        Settings::parse(["test", "--color"]).unwrap().color,
+        Color::Always
+    )
 }
 
 #[test]
@@ -189,9 +203,9 @@ fn actions() {
     enum Arg {
         #[option]
         Message(String),
-        #[flag]
+        #[option]
         Send,
-        #[flag]
+        #[option]
         Receive,
     }
 
@@ -213,7 +227,7 @@ fn actions() {
         messages: Vec<String>,
     }
 
-    let settings = Settings::parse(["-m=Hello", "-m=World", "--send"]).unwrap();
+    let settings = Settings::parse(["test", "-m=Hello", "-m=World", "--send"]).unwrap();
     assert_eq!(settings.messages, vec!["Hello", "World"]);
     assert_eq!(settings.message1, "World");
     assert_eq!(settings.message2, "World");
@@ -235,11 +249,11 @@ fn width() {
             Arg::Width(0) => None,
             Arg::Width(x) => Some(x),
         )]
-        width: Option<u64>
+        width: Option<u64>,
     }
 
-    assert_eq!(Settings::parse(["-w=0"]).unwrap().width, None);
-    assert_eq!(Settings::parse(["-w=1"]).unwrap().width, Some(1));
+    assert_eq!(Settings::parse(["test", "-w=0"]).unwrap().width, None);
+    assert_eq!(Settings::parse(["test", "-w=1"]).unwrap().width, Some(1));
 }
 
 #[test]
@@ -286,15 +300,15 @@ fn integers() {
         n: i128,
     }
 
-    assert_eq!(Settings::parse(["--u8=5"]).unwrap().n, 5);
-    assert_eq!(Settings::parse(["--u16=5"]).unwrap().n, 5);
-    assert_eq!(Settings::parse(["--u32=5"]).unwrap().n, 5);
-    assert_eq!(Settings::parse(["--u64=5"]).unwrap().n, 5);
-    assert_eq!(Settings::parse(["--u128=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--u8=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--u16=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--u32=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--u64=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--u128=5"]).unwrap().n, 5);
 
-    assert_eq!(Settings::parse(["--i8=5"]).unwrap().n, 5);
-    assert_eq!(Settings::parse(["--i16=5"]).unwrap().n, 5);
-    assert_eq!(Settings::parse(["--i32=5"]).unwrap().n, 5);
-    assert_eq!(Settings::parse(["--i64=5"]).unwrap().n, 5);
-    assert_eq!(Settings::parse(["--i128=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--i8=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--i16=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--i32=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--i64=5"]).unwrap().n, 5);
+    assert_eq!(Settings::parse(["test", "--i128=5"]).unwrap().n, 5);
 }

@@ -1,8 +1,8 @@
-use uutils_args::{ArgumentIter, Arguments, Options};
+use uutils_args::{Argument, ArgumentIter, Arguments, Options};
 
 fn to_vec<T: Arguments>(mut args: ArgumentIter<T>) -> Vec<T> {
     let mut v = Vec::new();
-    while let Some(arg) = args.next_arg().unwrap() {
+    while let Some(Argument::Custom(arg)) = args.next_arg().unwrap() {
         v.push(arg);
     }
     v
@@ -12,7 +12,7 @@ fn to_vec<T: Arguments>(mut args: ArgumentIter<T>) -> Vec<T> {
 fn one_flag() {
     #[derive(Arguments, Clone, Debug, PartialEq, Eq)]
     enum Arg {
-        #[flag]
+        #[option]
         Foo,
     }
 
@@ -23,10 +23,10 @@ fn one_flag() {
         foo: bool,
     }
 
-    let iter = Arg::parse(["-f", "--foo"]);
+    let iter = Arg::parse(["test", "-f", "--foo"]);
     assert_eq!(to_vec(iter), vec![Arg::Foo, Arg::Foo]);
 
-    let settings = Settings::parse(["-f"]).unwrap();
+    let settings = Settings::parse(["test", "-f"]).unwrap();
     assert!(settings.foo);
 }
 
@@ -34,9 +34,9 @@ fn one_flag() {
 fn two_flags() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag]
+        #[option]
         A,
-        #[flag]
+        #[option]
         B,
     }
 
@@ -50,7 +50,7 @@ fn two_flags() {
     }
 
     assert_eq!(
-        Settings::parse(["-a"]).unwrap(),
+        Settings::parse(["test", "-a"]).unwrap(),
         Settings { a: true, b: false }
     );
     assert_eq!(
@@ -58,11 +58,11 @@ fn two_flags() {
         Settings { a: false, b: false }
     );
     assert_eq!(
-        Settings::parse(["-b"]).unwrap(),
+        Settings::parse(["test", "-b"]).unwrap(),
         Settings { a: false, b: true }
     );
     assert_eq!(
-        Settings::parse(["-a", "-b"]).unwrap(),
+        Settings::parse(["test", "-a", "-b"]).unwrap(),
         Settings { a: true, b: true }
     );
 }
@@ -71,7 +71,7 @@ fn two_flags() {
 fn long_and_short_flag() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag]
+        #[option]
         Foo,
     }
 
@@ -86,15 +86,21 @@ fn long_and_short_flag() {
         Settings::parse::<&[&std::ffi::OsStr]>(&[]).unwrap(),
         Settings { foo: false },
     );
-    assert_eq!(Settings::parse(["--foo"]).unwrap(), Settings { foo: true },);
-    assert_eq!(Settings::parse(["-f"]).unwrap(), Settings { foo: true },);
+    assert_eq!(
+        Settings::parse(["test", "--foo"]).unwrap(),
+        Settings { foo: true },
+    );
+    assert_eq!(
+        Settings::parse(["test", "-f"]).unwrap(),
+        Settings { foo: true },
+    );
 }
 
 #[test]
 fn short_alias() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag("-b")]
+        #[option("-b")]
         Foo,
     }
 
@@ -105,14 +111,17 @@ fn short_alias() {
         foo: bool,
     }
 
-    assert_eq!(Settings::parse(["-b"]).unwrap(), Settings { foo: true },);
+    assert_eq!(
+        Settings::parse(["test", "-b"]).unwrap(),
+        Settings { foo: true },
+    );
 }
 
 #[test]
 fn long_alias() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag("--bar")]
+        #[option("--bar")]
         Foo,
     }
 
@@ -123,16 +132,19 @@ fn long_alias() {
         foo: bool,
     }
 
-    assert_eq!(Settings::parse(["--bar"]).unwrap(), Settings { foo: true },);
+    assert_eq!(
+        Settings::parse(["test", "--bar"]).unwrap(),
+        Settings { foo: true },
+    );
 }
 
 #[test]
 fn short_and_long_alias() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag("-b", "--bar")]
+        #[option("-b", "--bar")]
         Foo,
-        #[flag("-f", "--foo")]
+        #[option("-f", "--foo")]
         Bar,
     }
 
@@ -155,21 +167,21 @@ fn short_and_long_alias() {
         bar: true,
     };
 
-    assert_eq!(Settings::parse(["--bar"]).unwrap(), foo_true);
-    assert_eq!(Settings::parse(["-b"]).unwrap(), foo_true);
-    assert_eq!(Settings::parse(["--foo"]).unwrap(), bar_true);
-    assert_eq!(Settings::parse(["-f"]).unwrap(), bar_true);
+    assert_eq!(Settings::parse(["test", "--bar"]).unwrap(), foo_true);
+    assert_eq!(Settings::parse(["test", "-b"]).unwrap(), foo_true);
+    assert_eq!(Settings::parse(["test", "--foo"]).unwrap(), bar_true);
+    assert_eq!(Settings::parse(["test", "-f"]).unwrap(), bar_true);
 }
 
 #[test]
 fn xyz_map_to_abc() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag]
+        #[option]
         X,
-        #[flag]
+        #[option]
         Y,
-        #[flag]
+        #[option]
         Z,
     }
 
@@ -185,7 +197,7 @@ fn xyz_map_to_abc() {
     }
 
     assert_eq!(
-        Settings::parse(["-x"]).unwrap(),
+        Settings::parse(["test", "-x"]).unwrap(),
         Settings {
             a: true,
             b: true,
@@ -194,7 +206,7 @@ fn xyz_map_to_abc() {
     );
 
     assert_eq!(
-        Settings::parse(["-y"]).unwrap(),
+        Settings::parse(["test", "-y"]).unwrap(),
         Settings {
             a: false,
             b: true,
@@ -203,7 +215,7 @@ fn xyz_map_to_abc() {
     );
 
     assert_eq!(
-        Settings::parse(["-xy"]).unwrap(),
+        Settings::parse(["test", "-xy"]).unwrap(),
         Settings {
             a: true,
             b: true,
@@ -212,7 +224,7 @@ fn xyz_map_to_abc() {
     );
 
     assert_eq!(
-        Settings::parse(["-z"]).unwrap(),
+        Settings::parse(["test", "-z"]).unwrap(),
         Settings {
             a: true,
             b: true,
@@ -225,9 +237,9 @@ fn xyz_map_to_abc() {
 fn non_rust_ident() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag("--foo-bar")]
+        #[option("--foo-bar")]
         FooBar,
-        #[flag("--super")]
+        #[option("--super")]
         Super,
     }
 
@@ -241,7 +253,7 @@ fn non_rust_ident() {
     }
 
     assert_eq!(
-        Settings::parse(["--foo-bar", "--super"]).unwrap(),
+        Settings::parse(["test", "--foo-bar", "--super"]).unwrap(),
         Settings { a: true, b: true }
     )
 }
@@ -250,7 +262,7 @@ fn non_rust_ident() {
 fn number_flag() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag("-1")]
+        #[option("-1")]
         One,
     }
     #[derive(Default, Options, PartialEq, Eq, Debug)]
@@ -260,16 +272,19 @@ fn number_flag() {
         one: bool,
     }
 
-    assert_eq!(Settings::parse(["-1"]).unwrap(), Settings { one: true })
+    assert_eq!(
+        Settings::parse(["test", "-1"]).unwrap(),
+        Settings { one: true }
+    )
 }
 
 #[test]
 fn false_bool() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag]
+        #[option]
         A,
-        #[flag]
+        #[option]
         B,
     }
 
@@ -283,16 +298,28 @@ fn false_bool() {
         foo: bool,
     }
 
-    assert_eq!(Settings::parse(["-a"]).unwrap(), Settings { foo: true });
-    assert_eq!(Settings::parse(["-b"]).unwrap(), Settings { foo: false });
-    assert_eq!(Settings::parse(["-ab"]).unwrap(), Settings { foo: false });
-    assert_eq!(Settings::parse(["-ba"]).unwrap(), Settings { foo: true });
     assert_eq!(
-        Settings::parse(["-a", "-b"]).unwrap(),
+        Settings::parse(["test", "-a"]).unwrap(),
+        Settings { foo: true }
+    );
+    assert_eq!(
+        Settings::parse(["test", "-b"]).unwrap(),
         Settings { foo: false }
     );
     assert_eq!(
-        Settings::parse(["-b", "-a"]).unwrap(),
+        Settings::parse(["test", "-ab"]).unwrap(),
+        Settings { foo: false }
+    );
+    assert_eq!(
+        Settings::parse(["test", "-ba"]).unwrap(),
+        Settings { foo: true }
+    );
+    assert_eq!(
+        Settings::parse(["test", "-a", "-b"]).unwrap(),
+        Settings { foo: false }
+    );
+    assert_eq!(
+        Settings::parse(["test", "-b", "-a"]).unwrap(),
         Settings { foo: true }
     );
 
@@ -304,16 +331,28 @@ fn false_bool() {
         foo: bool,
     }
 
-    assert_eq!(Settings2::parse(["-a"]).unwrap(), Settings2 { foo: true });
-    assert_eq!(Settings2::parse(["-b"]).unwrap(), Settings2 { foo: false });
-    assert_eq!(Settings2::parse(["-ab"]).unwrap(), Settings2 { foo: false });
-    assert_eq!(Settings2::parse(["-ba"]).unwrap(), Settings2 { foo: true });
     assert_eq!(
-        Settings2::parse(["-a", "-b"]).unwrap(),
+        Settings2::parse(["test", "-a"]).unwrap(),
+        Settings2 { foo: true }
+    );
+    assert_eq!(
+        Settings2::parse(["test", "-b"]).unwrap(),
         Settings2 { foo: false }
     );
     assert_eq!(
-        Settings2::parse(["-b", "-a"]).unwrap(),
+        Settings2::parse(["test", "-ab"]).unwrap(),
+        Settings2 { foo: false }
+    );
+    assert_eq!(
+        Settings2::parse(["test", "-ba"]).unwrap(),
+        Settings2 { foo: true }
+    );
+    assert_eq!(
+        Settings2::parse(["test", "-a", "-b"]).unwrap(),
+        Settings2 { foo: false }
+    );
+    assert_eq!(
+        Settings2::parse(["test", "-b", "-a"]).unwrap(),
         Settings2 { foo: true }
     );
 }
@@ -330,11 +369,11 @@ fn enum_flag() {
 
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag]
+        #[option]
         Foo,
-        #[flag]
+        #[option]
         Bar,
-        #[flag]
+        #[option]
         Baz,
     }
 
@@ -355,12 +394,12 @@ fn enum_flag() {
     );
 
     assert_eq!(
-        Settings::parse(["--bar"]).unwrap().foo,
+        Settings::parse(["test", "--bar"]).unwrap().foo,
         SomeEnum::VariantBar
     );
 
     assert_eq!(
-        Settings::parse(["--baz"]).unwrap().foo,
+        Settings::parse(["test", "--baz"]).unwrap().foo,
         SomeEnum::VariantBaz,
     );
 }
@@ -369,7 +408,7 @@ fn enum_flag() {
 fn count() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag]
+        #[option]
         Verbosity,
     }
 
@@ -380,20 +419,20 @@ fn count() {
         verbosity: u8,
     }
 
-    assert_eq!(Settings::parse(["-v"]).unwrap().verbosity, 1);
-    assert_eq!(Settings::parse(["-vv"]).unwrap().verbosity, 2);
-    assert_eq!(Settings::parse(["-vvv"]).unwrap().verbosity, 3);
+    assert_eq!(Settings::parse(["test", "-v"]).unwrap().verbosity, 1);
+    assert_eq!(Settings::parse(["test", "-vv"]).unwrap().verbosity, 2);
+    assert_eq!(Settings::parse(["test", "-vvv"]).unwrap().verbosity, 3);
 }
 
 #[test]
 fn infer_long_args() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[flag("--all")]
+        #[option("--all")]
         All,
-        #[flag("--almost-all")]
+        #[option("--almost-all")]
         AlmostAll,
-        #[flag("--author")]
+        #[option("--author")]
         Author,
     }
 
@@ -408,8 +447,8 @@ fn infer_long_args() {
         author: bool,
     }
 
-    assert!(Settings::parse(["--all"]).unwrap().all);
-    assert!(Settings::parse(["--alm"]).unwrap().almost_all);
-    assert!(Settings::parse(["--au"]).unwrap().author);
-    assert!(Settings::parse(["--a"]).is_err());
+    assert!(Settings::parse(["test", "--all"]).unwrap().all);
+    assert!(Settings::parse(["test", "--alm"]).unwrap().almost_all);
+    assert!(Settings::parse(["test", "--au"]).unwrap().author);
+    assert!(Settings::parse(["test", "--a"]).is_err());
 }

@@ -3,20 +3,24 @@ use std::ops::RangeInclusive;
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    Attribute, ExprLit, ExprRange, Ident, Lit, LitInt, LitStr, RangeLimits, Token,
+    Attribute, Expr, ExprLit, ExprRange, Ident, Lit, LitInt, LitStr, RangeLimits, Token,
 };
 
-use crate::{Arg, Expr};
+use crate::Arg;
 
-#[derive(Default)]
-pub(crate) struct FlagAttr {
-    pub(crate) flags: Vec<Arg>,
-    pub(crate) value: Option<syn::Expr>,
+pub(crate) enum ArgAttr {
+    Option(OptionAttr),
+    Positional(PositionalAttr),
 }
 
-enum FlagAttrArg {
-    Arg(Arg),
-    Value(Expr),
+pub(crate) fn parse_argument_attribute(attr: &Attribute) -> ArgAttr {
+    if attr.path.is_ident("option") {
+        ArgAttr::Option(parse_option_attr(attr))
+    } else if attr.path.is_ident("positional") {
+        ArgAttr::Positional(parse_positional_attr(attr))
+    } else {
+        panic!("Internal error: invalid argument attribute");
+    }
 }
 
 #[derive(Default)]
@@ -57,41 +61,7 @@ enum PositionalAttrArg {
     NumArgs(RangeInclusive<usize>),
 }
 
-pub(crate) fn parse_flag_attr(attr: Attribute) -> FlagAttr {
-    let mut flag_attr = FlagAttr::default();
-    let Ok(parsed_args) = attr
-        .parse_args_with(Punctuated::<FlagAttrArg, Token![,]>::parse_terminated)
-    else {
-        return flag_attr;
-    };
-    for arg in parsed_args {
-        match arg {
-            FlagAttrArg::Arg(a) => flag_attr.flags.push(a),
-            FlagAttrArg::Value(e) => flag_attr.value = Some(e),
-        };
-    }
-    flag_attr
-}
-
-impl Parse for FlagAttrArg {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        if input.peek(LitStr) {
-            return parse_flag(input).map(Self::Arg);
-        }
-
-        if input.peek(Ident) {
-            let name = input.parse::<Ident>()?.to_string();
-            input.parse::<Token![=]>()?;
-            match name.as_str() {
-                "value" => return Ok(Self::Value(input.parse::<Expr>()?)),
-                _ => panic!("Unrecognized argument {} for flag attribute", name),
-            };
-        }
-        panic!("Arguments to flag attribute must be string literals");
-    }
-}
-
-pub(crate) fn parse_option_attr(attr: Attribute) -> OptionAttr {
+pub(crate) fn parse_option_attr(attr: &Attribute) -> OptionAttr {
     let mut option_attr = OptionAttr::default();
     let Ok(parsed_args) = attr
         .parse_args_with(Punctuated::<OptionAttrArg, Token![,]>::parse_terminated)
@@ -177,7 +147,7 @@ fn parse_flag(input: ParseStream) -> syn::Result<Arg> {
     panic!("Arguments to flag must start with \"-\" or \"--\"");
 }
 
-pub(crate) fn parse_positional_attr(attr: Attribute) -> PositionalAttr {
+pub(crate) fn parse_positional_attr(attr: &Attribute) -> PositionalAttr {
     let mut positional_attr = PositionalAttr::default();
     let Ok(parsed_args) = attr
         .parse_args_with(Punctuated::<PositionalAttrArg, Token![,]>::parse_terminated)

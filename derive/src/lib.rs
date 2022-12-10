@@ -1,31 +1,27 @@
 mod action;
+mod argument;
 mod attributes;
 
 use action::{parse_action_attr, ActionAttr, ActionType};
-use attributes::{
-    parse_flag_attr, parse_option_attr, parse_positional_attr, parse_value_attr, FlagAttr,
-    OptionAttr, PositionalAttr, ValueAttr,
+use argument::{
+    help_handling, long_handling, parse_argument, parse_help_flags, positional_handling,
+    short_handling,
 };
+use attributes::{parse_value_attr, ValueAttr};
 
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::Parse,
-    parse_macro_input, Attribute,
+    parse_macro_input,
     Data::{Enum, Struct},
-    DeriveInput, Expr, Fields,
+    DeriveInput, Fields,
 };
 
 #[derive(Eq, Hash, PartialEq, Debug, Clone)]
 enum Arg {
     Short(char),
     Long(String),
-}
-
-enum DeriveAttribute {
-    Flag(FlagAttr),
-    Option(OptionAttr),
-    Positional(PositionalAttr),
 }
 
 #[proc_macro_derive(Options, attributes(arg_type, map, set, set_true, set_false, collect))]
@@ -112,11 +108,18 @@ pub fn options(input: TokenStream) -> TokenStream {
                 I: IntoIterator + 'static,
                 I::Item: Into<std::ffi::OsString>,
             {
-                use uutils_args::lexopt;
-                use uutils_args::FromValue;
+                use uutils_args::{lexopt, FromValue, Argument};
                 let mut iter = #arg_type::parse(args);
                 while let Some(arg) = iter.next_arg()? {
-                    #(#stmts)*
+                    match arg {
+                        Argument::Help => {
+                            println!("{}", #arg_type::help());
+                            std::process::exit(0);
+                        },
+                        Argument::Custom(arg) => {
+                            #(#stmts)*
+                        }
+                    }
                 }
                 #arg_type::check_missing(iter.positional_idx)?;
                 Ok(())
@@ -138,184 +141,42 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         panic!("Input should be an enum!");
     };
 
-    let mut short_match_arms = Vec::new();
-    let mut long_match_arms = Vec::new();
-    let mut long_options = Vec::new();
+    let (short_help_flags, long_help_flags) = parse_help_flags(&input.attrs);
+    let arguments: Vec<_> = data.variants.into_iter().flat_map(parse_argument).collect();
 
-    let mut positional_indices = Vec::new();
-
-    for variant in data.variants {
-        let variant_ident = variant.ident;
-        let variant_name = variant_ident.to_string();
-        let mut short_flags = Vec::new();
-        let mut long_flags = Vec::new();
-        let parse_expr = match variant.fields {
-            Fields::Unit => {
-                for attr in variant.attrs {
-                    let Some(attr) = parse_attr(attr) else { continue; };
-                    let DeriveAttribute::Flag(f) = attr else {
-                        panic!("unsupported attribute");
-                    };
-                    let (mut shorts, mut longs) = flag_names(f.flags, &variant_name);
-                    short_flags.append(&mut shorts);
-                    long_flags.append(&mut longs);
-                }
-                quote!(Self::#variant_ident)
-            }
-            Fields::Unnamed(f) => {
-                let v: Vec<_> = f.unnamed.iter().collect();
-                assert_eq!(v.len(), 1, "Options can have only one field");
-                let field_type = v[0].ty.clone();
-                let field_is_option = {
-                    if let syn::Type::Path(field_type_path) = field_type {
-                        field_type_path
-                            .path
-                            .segments
-                            .iter()
-                            .map(|s| s.ident.to_string())
-                            .collect::<Vec<_>>()
-                            == vec!["Option"]
-                    } else {
-                        false
-                    }
-                };
-                for attr in variant.attrs {
-                    let Some(attr) = parse_attr(attr) else { continue; };
-                    match attr {
-                        DeriveAttribute::Option(f) => {
-                            let (mut shorts, mut longs) = flag_names(f.flags, &variant_name);
-                            short_flags.append(&mut shorts);
-                            long_flags.append(&mut longs);
-                        }
-                        DeriveAttribute::Positional(p) => {
-                            positional_indices.push((
-                                p.num_args,
-                                variant_name.to_uppercase(),
-                                quote!(Self::#variant_ident (FromValue::from_value(value)?)),
-                            ));
-                        }
-                        _ => panic!("unsupported attribute"),
-                    };
-                }
-                if field_is_option {
-                    quote!(Self::#variant_ident (match parser.optional_value() {
-                        Some(v) => Some(FromValue::from_value(v)?),
-                        None => None,
-                    }))
-                } else {
-                    quote!(Self::#variant_ident (FromValue::from_value(parser.value()?)?))
-                }
-            }
-            _ => panic!("unimplemented"),
-        };
-
-        if !short_flags.is_empty() {
-            short_match_arms.push(quote!(#(#short_flags)|* => { #parse_expr }));
-        };
-
-        if !long_flags.is_empty() {
-            long_match_arms.push(quote!(#(#long_flags)|* => { #parse_expr }));
-            long_options.append(&mut long_flags);
-        };
-    }
-
-    let long_handling = if long_options.is_empty() {
-        quote!(return Err(arg.unexpected().into()))
-    } else {
-        let long_opt_len = long_options.len();
-        quote!(
-            let long_options: [&str; #long_opt_len] = [#(#long_options),*];
-            let mut candidates = Vec::new();
-            let mut exact_match = None;
-            for opt in long_options {
-                if opt == long {
-                    exact_match = Some(opt);
-                    break;
-                } else if opt.starts_with(long) {
-                    candidates.push(opt);
-                }
-            }
-
-            let opt = match (exact_match, &candidates[..]) {
-                (Some(opt), _) => opt,
-                (None, [opt]) => opt,
-                (None, []) => return Err(arg.unexpected().into()),
-                (None, opts) => return Err(Error::AmbiguousOption {
-                    option: long.to_string(),
-                    candidates: candidates.iter().map(|s| s.to_string()).collect(),
-                })
-            };
-
-            match opt {
-                #(#long_match_arms)*
-                _ => unreachable!("Should be caught by (None, []) case above.")
-            }
-        )
-    };
-
-    let mut positional_match_arms = Vec::new();
-    // The largest index of the previous argument, so the the argument after this should
-    // belong to the next argument.
-    let mut last_index = 0;
-
-    // The minimum number of arguments needed to not return a missing argument error.
-    let mut minimum_needed = 0;
-    let mut missing_argument_checks = vec![];
-    for (range, arg_name, expr) in positional_indices {
-        if *range.start() > 0 {
-            minimum_needed = last_index + range.start();
-            missing_argument_checks.push(quote!(if positional_idx < #minimum_needed {
-                missing.push(#arg_name);
-            }));
-        }
-        last_index += range.end();
-        positional_match_arms.push(quote!(0..=#last_index => { #expr }));
-    }
+    let short = short_handling(&arguments);
+    let long = long_handling(&arguments);
+    let (positional, missing_argument_checks) = positional_handling(&arguments);
+    let help = help_handling(&arguments, &short_help_flags, &long_help_flags);
 
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
             #[allow(unreachable_code)]
-            fn next_arg(parser: &mut uutils_args::lexopt::Parser, positional_idx: &mut usize) -> Result<Option<Self>, uutils_args::Error> {
-                use uutils_args::FromValue;
-                use uutils_args::lexopt::Arg;
-                use uutils_args::Error;
+            fn next_arg(
+                parser: &mut uutils_args::lexopt::Parser, positional_idx: &mut usize
+            ) -> Result<Option<uutils_args::Argument<Self>>, uutils_args::Error> {
+                use uutils_args::{FromValue, lexopt, Error, Argument};
+
                 let Some(arg) = parser.next()? else { return Ok(None); };
+
+                if let lexopt::Arg::Short('h') | lexopt::Arg::Long("help") = arg {
+                    return Ok(Some(Argument::Help));
+                }
+
                 let parsed = match arg {
-                    Arg::Short(short) => {
-                        match short {
-                            #(#short_match_arms)*
-                            _ => return Err(arg.unexpected().into())
-                        }
-                    }
-                    Arg::Long(long) => {
-                        #long_handling
-                    }
-                    Arg::Value(value) => {
-                        *positional_idx += 1;
-                        match positional_idx {
-                            #(#positional_match_arms)*
-                            _ => return Err(Arg::Value(value).unexpected().into()),
-                        }
-                    }
+                    lexopt::Arg::Short(short) => { #short }
+                    lexopt::Arg::Long(long) => { #long }
+                    lexopt::Arg::Value(value) => { #positional }
                 };
-                Ok(Some(parsed))
+                Ok(Some(Argument::Custom(parsed)))
             }
 
             fn check_missing(positional_idx: usize) -> Result<(), uutils_args::Error> {
-                // We have the minimum number of required arguments overall.
-                // So we don't need to check the others.
-                if positional_idx >= #minimum_needed {
-                    return Ok(());
-                }
-                let mut missing: Vec<&str> = vec![];
-                #(#missing_argument_checks)*
-                if !missing.is_empty() {
-                    Err(uutils_args::Error::MissingPositionalArguments(
-                        missing.iter().map(ToString::to_string).collect::<Vec<String>>()
-                    ))
-                } else {
-                    Ok(())
-                }
+                #missing_argument_checks
+            }
+
+            fn help() -> &'static str {
+                #help
             }
         }
     );
@@ -381,38 +242,4 @@ pub fn from_value(input: TokenStream) -> TokenStream {
     );
 
     TokenStream::from(expanded)
-}
-
-fn flag_names(flags: Vec<Arg>, field_name: &str) -> (Vec<char>, Vec<String>) {
-    let field_name = field_name.to_lowercase();
-    if flags.is_empty() {
-        let first_char = field_name.chars().next().unwrap();
-        if field_name.len() > 1 {
-            (vec![first_char], vec![field_name.to_string()])
-        } else {
-            (vec![first_char], vec![])
-        }
-    } else {
-        let mut shorts = Vec::new();
-        let mut longs = Vec::new();
-        for flag in flags {
-            match flag {
-                Arg::Short(x) => shorts.push(x),
-                Arg::Long(x) => longs.push(x),
-            };
-        }
-        (shorts, longs)
-    }
-}
-
-fn parse_attr(attr: Attribute) -> Option<DeriveAttribute> {
-    if attr.path.is_ident("flag") {
-        Some(DeriveAttribute::Flag(parse_flag_attr(attr)))
-    } else if attr.path.is_ident("option") {
-        Some(DeriveAttribute::Option(parse_option_attr(attr)))
-    } else if attr.path.is_ident("positional") {
-        Some(DeriveAttribute::Positional(parse_positional_attr(attr)))
-    } else {
-        None
-    }
 }

@@ -45,6 +45,12 @@ impl From<lexopt::Error> for Error {
     }
 }
 
+#[derive(Clone)]
+pub enum Argument<T: Arguments> {
+    Help,
+    Custom(T),
+}
+
 pub trait Arguments: Sized + Clone {
     fn parse<I>(args: I) -> ArgumentIter<Self>
     where
@@ -57,9 +63,11 @@ pub trait Arguments: Sized + Clone {
     fn next_arg(
         parser: &mut lexopt::Parser,
         positional_idx: &mut usize,
-    ) -> Result<Option<Self>, Error>;
+    ) -> Result<Option<Argument<Self>>, Error>;
 
     fn check_missing(positional_idx: usize) -> Result<(), Error>;
+
+    fn help() -> &'static str;
 }
 
 pub struct ArgumentIter<T: Arguments> {
@@ -75,13 +83,13 @@ impl<T: Arguments> ArgumentIter<T> {
         I::Item: Into<OsString>,
     {
         Self {
-            parser: lexopt::Parser::from_args(args),
+            parser: lexopt::Parser::from_iter(args),
             positional_idx: 0,
             t: PhantomData,
         }
     }
 
-    pub fn next_arg(&mut self) -> Result<Option<T>, Error> {
+    pub fn next_arg(&mut self) -> Result<Option<Argument<T>>, Error> {
         T::next_arg(&mut self.parser, &mut self.positional_idx)
     }
 }
