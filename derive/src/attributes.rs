@@ -6,7 +6,7 @@ use syn::{
     Attribute, Expr, ExprLit, ExprRange, Ident, Lit, LitInt, LitStr, RangeLimits, Token,
 };
 
-use crate::Arg;
+use crate::{flags::Flags, Arg};
 
 pub(crate) enum ArgAttr {
     Option(OptionAttr),
@@ -25,7 +25,7 @@ pub(crate) fn parse_argument_attribute(attr: &Attribute) -> ArgAttr {
 
 #[derive(Default)]
 pub(crate) struct OptionAttr {
-    pub(crate) flags: Vec<Arg>,
+    pub(crate) flags: Flags,
     // This should probably not accept any expr to give better errors.
     // Closures should be allowed though.
     pub(crate) parser: Option<Expr>,
@@ -71,7 +71,8 @@ pub(crate) fn parse_option_attr(attr: &Attribute) -> OptionAttr {
 
     for arg in parsed_args {
         match arg {
-            OptionAttrArg::Arg(a) => option_attr.flags.push(a),
+            OptionAttrArg::Arg(Arg::Short(a)) => option_attr.flags.short.push(a),
+            OptionAttrArg::Arg(Arg::Long(a)) => option_attr.flags.long.push(a),
             OptionAttrArg::Parser(e) => option_attr.parser = Some(e),
         };
     }
@@ -217,6 +218,6 @@ impl Parse for PositionalAttrArg {
         //         _ => panic!("Unrecognized argument {} for option attribute", name),
         //     };
         // }
-        panic!("unpexpected argument to positional");
+        panic!("unexpected argument to positional");
     }
 }

@@ -48,6 +48,7 @@ impl From<lexopt::Error> for Error {
 #[derive(Clone)]
 pub enum Argument<T: Arguments> {
     Help,
+    Version,
     Custom(T),
 }
 
@@ -68,6 +69,8 @@ pub trait Arguments: Sized + Clone {
     fn check_missing(positional_idx: usize) -> Result<(), Error>;
 
     fn help(bin_name: &str) -> String;
+
+    fn version() -> String;
 }
 
 pub struct ArgumentIter<T: Arguments> {
@@ -95,6 +98,10 @@ impl<T: Arguments> ArgumentIter<T> {
 
     pub fn help(&self) -> String {
         T::help(self.parser.bin_name().unwrap())
+    }
+
+    pub fn version(&self) -> String {
+        T::version()
     }
 }
 

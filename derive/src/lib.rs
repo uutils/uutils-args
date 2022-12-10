@@ -1,11 +1,12 @@
 mod action;
 mod argument;
 mod attributes;
+mod flags;
 
 use action::{parse_action_attr, ActionAttr, ActionType};
 use argument::{
     help_handling, help_string, long_handling, parse_argument, parse_help_flags,
-    positional_handling, short_handling,
+    parse_version_flags, positional_handling, short_handling, version_handling,
 };
 use attributes::{parse_value_attr, ValueAttr};
 
@@ -116,6 +117,9 @@ pub fn options(input: TokenStream) -> TokenStream {
                             println!("{}", iter.help());
                             std::process::exit(0);
                         },
+                        Argument::Version => {
+                            println!("{}", iter.version());
+                        },
                         Argument::Custom(arg) => {
                             #(#stmts)*
                         }
@@ -141,14 +145,21 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         panic!("Input should be an enum!");
     };
 
-    let (short_help_flags, long_help_flags) = parse_help_flags(&input.attrs);
+    let help_flags = parse_help_flags(&input.attrs);
+    let version_flags = parse_version_flags(&input.attrs);
     let arguments: Vec<_> = data.variants.into_iter().flat_map(parse_argument).collect();
 
     let short = short_handling(&arguments);
-    let long = long_handling(&arguments, &long_help_flags);
+    let long = long_handling(&arguments, &help_flags);
     let (positional, missing_argument_checks) = positional_handling(&arguments);
-    let help_string = help_string(&arguments, &short_help_flags, &long_help_flags);
-    let help = help_handling(&short_help_flags, &long_help_flags);
+    let help_string = help_string(&arguments, &help_flags, &version_flags);
+    let help = help_handling(&help_flags);
+    let version = version_handling(&version_flags);
+    let version_string = quote!(format!(
+        "{} {}",
+        option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_PKG_NAME")),
+        env!("CARGO_PKG_VERSION"),
+    ));
 
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
@@ -161,6 +172,8 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 let Some(arg) = parser.next()? else { return Ok(None); };
 
                 #help
+
+                #version
 
                 let parsed = match arg {
                     lexopt::Arg::Short(short) => { #short }
@@ -176,6 +189,10 @@ pub fn arguments(input: TokenStream) -> TokenStream {
 
             fn help(bin_name: &str) -> String {
                 #help_string
+            }
+
+            fn version() -> String {
+                #version_string
             }
         }
     );
