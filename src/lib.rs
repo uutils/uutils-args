@@ -136,12 +136,12 @@ macro_rules! from_value_int {
         impl FromValue for $t {
             fn from_value(value: OsString) -> Result<Self, lexopt::Error> {
                 let value = value.into_string()?;
-                Ok(value
+                value
                     .parse()
                     .map_err(|e: ParseIntError| lexopt::Error::ParsingFailed {
-                        value: value,
+                        value,
                         error: e.into(),
-                    })?)
+                    })
             }
         }
     };
