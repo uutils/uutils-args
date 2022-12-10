@@ -190,10 +190,12 @@ pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
     )
 }
 
-pub(crate) fn long_handling(args: &[Argument]) -> TokenStream {
+pub(crate) fn long_handling(args: &[Argument], long_help_flags: &[String]) -> TokenStream {
     let mut match_arms = Vec::new();
     let mut options = Vec::new();
 
+    options.extend(long_help_flags);
+    
     for arg in args {
         let ArgType::Option { ref long_flags, .. } = arg.arg_type else { 
             continue; 
@@ -211,6 +213,14 @@ pub(crate) fn long_handling(args: &[Argument]) -> TokenStream {
     if options.is_empty() {
         return quote!(return Err(arg.unexpected().into()));
     }
+    
+    let help_check = if !long_help_flags.is_empty() {
+        quote!(if let #(#long_help_flags)|* = opt {
+            return Ok(Some(Argument::Help));
+        })
+    } else {
+        quote!()
+    };
     
     let num_opts = options.len();
 
@@ -236,6 +246,8 @@ pub(crate) fn long_handling(args: &[Argument]) -> TokenStream {
                 candidates: candidates.iter().map(|s| s.to_string()).collect(),
             })
         };
+        
+        #help_check
 
         match opt {
             #(#match_arms)*

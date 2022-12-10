@@ -145,7 +145,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     let arguments: Vec<_> = data.variants.into_iter().flat_map(parse_argument).collect();
 
     let short = short_handling(&arguments);
-    let long = long_handling(&arguments);
+    let long = long_handling(&arguments, &long_help_flags);
     let (positional, missing_argument_checks) = positional_handling(&arguments);
     let help_string = help_string(&arguments, &short_help_flags, &long_help_flags);
     let help = help_handling(&short_help_flags, &long_help_flags);
