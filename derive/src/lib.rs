@@ -113,7 +113,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                 while let Some(arg) = iter.next_arg()? {
                     match arg {
                         Argument::Help => {
-                            println!("{}", #arg_type::help());
+                            println!("{}", iter.help());
                             std::process::exit(0);
                         },
                         Argument::Custom(arg) => {
@@ -174,7 +174,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 #missing_argument_checks
             }
 
-            fn help() -> &'static str {
+            fn help(bin_name: &str) -> String {
                 #help_string
             }
         }

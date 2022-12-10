@@ -67,7 +67,7 @@ pub trait Arguments: Sized + Clone {
 
     fn check_missing(positional_idx: usize) -> Result<(), Error>;
 
-    fn help() -> &'static str;
+    fn help(bin_name: &str) -> String;
 }
 
 pub struct ArgumentIter<T: Arguments> {
@@ -91,6 +91,10 @@ impl<T: Arguments> ArgumentIter<T> {
 
     pub fn next_arg(&mut self) -> Result<Option<Argument<T>>, Error> {
         T::next_arg(&mut self.parser, &mut self.positional_idx)
+    }
+
+    pub fn help(&self) -> String {
+        T::help(self.parser.bin_name().unwrap())
     }
 }
 

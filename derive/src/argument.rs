@@ -349,7 +349,7 @@ pub(crate) fn help_handling(short_help_flags: &[char], long_help_flags: &[String
     )
 }
 
-pub(crate) fn help_string(args: &[Argument], short_help_flags: &[char], long_help_flags: &[String]) -> String {
+pub(crate) fn help_string(args: &[Argument], short_help_flags: &[char], long_help_flags: &[String]) -> TokenStream {
     let mut options = Vec::new();
     
     let width = 16;
@@ -370,9 +370,13 @@ pub(crate) fn help_string(args: &[Argument], short_help_flags: &[char], long_hel
         options.push(format_help_line(indent, width, &help_flags, "Display this help message"));       
     }
 
-    format!(
+    let options = format!(
         "Options:\n{}",
         options.join("\n"),
+    );
+    
+    quote!(
+        format!("{} [OPTIONS] [ARGS]\n\n{}", bin_name, #options)
     )
 }
 
