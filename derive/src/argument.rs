@@ -322,7 +322,22 @@ fn argument_expression(arg: &Argument) -> TokenStream {
     }
 }
 
-pub(crate) fn help_handling(args: &[Argument], short_help_flags: &[char], long_help_flags: &[String]) -> String {
+pub(crate) fn help_handling(short_help_flags: &[char], long_help_flags: &[String]) -> TokenStream {
+    let pat = match (short_help_flags, long_help_flags) {
+        ([], []) => return quote!(),
+        (short, []) => quote!(lexopt::Arg::Short(#(#short)|*)),
+        ([], long) => quote!(lexopt::Arg::Long(#(#long)|*)),
+        (short, long) => quote!(lexopt::Arg::Short(#(#short)|*) | lexopt::Arg::Long(#(#long)|*))
+    };
+    
+    quote!(
+        if let #pat = arg {
+            return Ok(Some(Argument::Help));
+        }
+    )
+}
+
+pub(crate) fn help_string(args: &[Argument], short_help_flags: &[char], long_help_flags: &[String]) -> String {
     let mut options = Vec::new();
     
     let width = 16;

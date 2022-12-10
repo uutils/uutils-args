@@ -4,8 +4,8 @@ mod attributes;
 
 use action::{parse_action_attr, ActionAttr, ActionType};
 use argument::{
-    help_handling, long_handling, parse_argument, parse_help_flags, positional_handling,
-    short_handling,
+    help_handling, help_string, long_handling, parse_argument, parse_help_flags,
+    positional_handling, short_handling,
 };
 use attributes::{parse_value_attr, ValueAttr};
 
@@ -130,7 +130,7 @@ pub fn options(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(Arguments, attributes(flag, option, positional))]
+#[proc_macro_derive(Arguments, attributes(flag, option, positional, help))]
 pub fn arguments(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -147,7 +147,8 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     let short = short_handling(&arguments);
     let long = long_handling(&arguments);
     let (positional, missing_argument_checks) = positional_handling(&arguments);
-    let help = help_handling(&arguments, &short_help_flags, &long_help_flags);
+    let help_string = help_string(&arguments, &short_help_flags, &long_help_flags);
+    let help = help_handling(&short_help_flags, &long_help_flags);
 
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
@@ -159,9 +160,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
 
                 let Some(arg) = parser.next()? else { return Ok(None); };
 
-                if let lexopt::Arg::Short('h') | lexopt::Arg::Long("help") = arg {
-                    return Ok(Some(Argument::Help));
-                }
+                #help
 
                 let parsed = match arg {
                     lexopt::Arg::Short(short) => { #short }
@@ -176,7 +175,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             }
 
             fn help() -> &'static str {
-                #help
+                #help_string
             }
         }
     );
