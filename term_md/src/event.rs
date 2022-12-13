@@ -53,7 +53,7 @@ pub enum Event {
     // FootnoteReference(CowStr(<'a>)),
     SoftBreak,
     HardBreak,
-    // Rule,
+    Rule,
     // TaskListMarker(bool),
 }
 
@@ -100,7 +100,7 @@ impl<'a> From<pulldown_cmark::Event<'a>> for Event {
             pulldown_cmark::Event::FootnoteReference(_) => todo!(),
             pulldown_cmark::Event::SoftBreak => Event::SoftBreak,
             pulldown_cmark::Event::HardBreak => Event::HardBreak,
-            pulldown_cmark::Event::Rule => todo!(),
+            pulldown_cmark::Event::Rule => Event::Rule,
             pulldown_cmark::Event::TaskListMarker(_) => todo!(),
 
             // We're never going to be able to support the events below

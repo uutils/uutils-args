@@ -40,6 +40,13 @@ impl<T: Iterator<Item = Event>> Renderer<T> {
                         unreachable!("Can't be the opening tag")
                     }
                 },
+                Event::Rule => {
+                    if self.current_column > 0 {
+                        self.newline();
+                    }
+                    self.output.push_str(&"─".repeat(self.width));
+                    self.newline();
+                }
                 _ => {
                     panic!(
                         "Internal error: we assume that the markdown always \
@@ -97,6 +104,11 @@ impl<T: Iterator<Item = Event>> Renderer<T> {
                     }
                 }
                 Event::HardBreak => {
+                    self.newline();
+                }
+                Event::Rule => {
+                    self.newline();
+                    self.output.push_str(&"─".repeat(self.width));
                     self.newline();
                 }
                 Event::Start(tag @ (Tag::Emphasis | Tag::Strong | Tag::Strikethrough)) => {
@@ -286,7 +298,6 @@ mod tests {
     fn soft_break() {
         let text = "This is text\nwith a soft break.";
         let events: Vec<Event> = Parser::new(text).map(Into::into).collect();
-        dbg!(&events);
         let output = Renderer::new(40, events.into_iter()).render();
         println!("{}", output);
 
@@ -302,5 +313,20 @@ mod tests {
         println!("{}", output);
 
         assert_eq!(output, "This is text\nwith a hard break.\n");
+    }
+
+    #[test]
+    fn rule() {
+        let text = "This text has\n\n---\n\na rule!.";
+
+        let events: Vec<Event> = Parser::new(text).map(Into::into).collect();
+        dbg!(&events);
+        let output = Renderer::new(40, events.into_iter()).render();
+        println!("{}", output);
+
+        assert_eq!(
+            output,
+            "This text has\n────────────────────────────────────────\na rule!.\n"
+        );
     }
 }
