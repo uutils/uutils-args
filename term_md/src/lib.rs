@@ -88,6 +88,17 @@ impl<T: Iterator<Item = Event>> Renderer<T> {
                     self.output
                         .push_str(&code_style.infix(style.clone()).to_string());
                 }
+                Event::SoftBreak => {
+                    if self.current_column >= self.width {
+                        self.newline();
+                    } else {
+                        self.current_column += 1;
+                        self.output.push(' ');
+                    }
+                }
+                Event::HardBreak => {
+                    self.newline();
+                }
                 Event::Start(tag @ (Tag::Emphasis | Tag::Strong | Tag::Strikethrough)) => {
                     self.change_style(&mut style, tag, true);
                 }
@@ -266,8 +277,30 @@ mod tests {
             wrapped,\n\
             so we\n\
             better do\n\
-            that \u{1b}[1mright\u{1b}[0m\n!\n\
+            that \u{1b}[1mright\u{1b}[0m\n\
             !\n"
         )
+    }
+
+    #[test]
+    fn soft_break() {
+        let text = "This is text\nwith a soft break.";
+        let events: Vec<Event> = Parser::new(text).map(Into::into).collect();
+        dbg!(&events);
+        let output = Renderer::new(40, events.into_iter()).render();
+        println!("{}", output);
+
+        assert_eq!(output, "This is text with a soft break.\n");
+    }
+
+    #[test]
+    fn hard_break() {
+        let text = "This is text\\\nwith a hard break.";
+        let events: Vec<Event> = Parser::new(text).map(Into::into).collect();
+        dbg!(&events);
+        let output = Renderer::new(40, events.into_iter()).render();
+        println!("{}", output);
+
+        assert_eq!(output, "This is text\nwith a hard break.\n");
     }
 }

@@ -51,8 +51,8 @@ pub enum Event {
     Text(String),
     Code(String),
     // FootnoteReference(CowStr(<'a>)),
-    // SoftBreak,
-    // HardBreak,
+    SoftBreak,
+    HardBreak,
     // Rule,
     // TaskListMarker(bool),
 }
@@ -98,8 +98,8 @@ impl<'a> From<pulldown_cmark::Event<'a>> for Event {
             pulldown_cmark::Event::Text(text) => Event::Text(text.to_string()),
             pulldown_cmark::Event::Code(text) => Event::Code(text.to_string()),
             pulldown_cmark::Event::FootnoteReference(_) => todo!(),
-            pulldown_cmark::Event::SoftBreak => todo!(),
-            pulldown_cmark::Event::HardBreak => todo!(),
+            pulldown_cmark::Event::SoftBreak => Event::SoftBreak,
+            pulldown_cmark::Event::HardBreak => Event::HardBreak,
             pulldown_cmark::Event::Rule => todo!(),
             pulldown_cmark::Event::TaskListMarker(_) => todo!(),
 
