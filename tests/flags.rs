@@ -1,12 +1,4 @@
-use uutils_args::{Argument, ArgumentIter, Arguments, Options};
-
-fn to_vec<T: Arguments>(mut args: ArgumentIter<T>) -> Vec<T> {
-    let mut v = Vec::new();
-    while let Some(Argument::Custom(arg)) = args.next_arg().unwrap() {
-        v.push(arg);
-    }
-    v
-}
+use uutils_args::{Arguments, Options};
 
 #[test]
 fn one_flag() {
@@ -19,12 +11,9 @@ fn one_flag() {
     #[derive(Options, Default)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::Foo)]
+        #[map(Arg::Foo => true)]
         foo: bool,
     }
-
-    let iter = Arg::parse(["test", "-f", "--foo"]);
-    assert_eq!(to_vec(iter), vec![Arg::Foo, Arg::Foo]);
 
     let settings = Settings::parse(["test", "-f"]).unwrap();
     assert!(settings.foo);
@@ -43,9 +32,9 @@ fn two_flags() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::A)]
+        #[map(Arg::A => true)]
         a: bool,
-        #[set_true(Arg::B)]
+        #[map(Arg::B => true)]
         b: bool,
     }
 
@@ -78,7 +67,7 @@ fn long_and_short_flag() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::Foo)]
+        #[map(Arg::Foo => true)]
         foo: bool,
     }
 
@@ -107,7 +96,7 @@ fn short_alias() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::Foo)]
+        #[map(Arg::Foo => true)]
         foo: bool,
     }
 
@@ -128,7 +117,7 @@ fn long_alias() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::Foo)]
+        #[map(Arg::Foo => true)]
         foo: bool,
     }
 
@@ -151,9 +140,9 @@ fn short_and_long_alias() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::Foo)]
+        #[map(Arg::Foo => true)]
         foo: bool,
-        #[set_true(Arg::Bar)]
+        #[map(Arg::Bar => true)]
         bar: bool,
     }
 
@@ -188,11 +177,11 @@ fn xyz_map_to_abc() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::X | Arg::Z)]
+        #[map(Arg::X | Arg::Z => true)]
         a: bool,
-        #[set_true(Arg::X | Arg::Y | Arg::Z)]
+        #[map(Arg::X | Arg::Y | Arg::Z => true)]
         b: bool,
-        #[set_true(Arg::Y | Arg::Z)]
+        #[map(Arg::Y | Arg::Z => true)]
         c: bool,
     }
 
@@ -246,9 +235,9 @@ fn non_rust_ident() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::FooBar)]
+        #[map(Arg::FooBar => true)]
         a: bool,
-        #[set_true(Arg::Super)]
+        #[map(Arg::Super => true)]
         b: bool,
     }
 
@@ -268,7 +257,7 @@ fn number_flag() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::One)]
+        #[map(Arg::One => true)]
         one: bool,
     }
 
@@ -326,8 +315,10 @@ fn false_bool() {
     #[derive(Default, Options, PartialEq, Eq, Debug)]
     #[arg_type(Arg)]
     struct Settings2 {
-        #[set_true(Arg::A)]
-        #[set_false(Arg::B)]
+        #[map(
+            Arg::A => true,
+            Arg::B => false,
+        )]
         foo: bool,
     }
 
@@ -439,11 +430,13 @@ fn infer_long_args() {
     #[derive(Options, Default)]
     #[arg_type(Arg)]
     struct Settings {
-        #[set_true(Arg::All)]
+        #[map(Arg::All => true)]
         all: bool,
-        #[set_true(Arg::AlmostAll)]
+
+        #[map(Arg::AlmostAll => true)]
         almost_all: bool,
-        #[set_true(Arg::Author)]
+
+        #[map(Arg::Author => true)]
         author: bool,
     }
 

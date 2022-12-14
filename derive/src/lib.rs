@@ -67,16 +67,6 @@ pub fn options(input: TokenStream) -> TokenStream {
                     let pats = quote!(#(#pats)|*);
                     patterns_and_expressions.push((pats, quote!(x.clone())))
                 }
-
-                ActionType::SetTrue(pats) => {
-                    let pats = quote!(#(#pats)|*);
-                    patterns_and_expressions.push((pats, quote!(true)))
-                }
-
-                ActionType::SetFalse(pats) => {
-                    let pats = quote!(#(#pats)|*);
-                    patterns_and_expressions.push((pats, quote!(false)))
-                }
             };
             for (pat, expr) in patterns_and_expressions {
                 match_arms.push(if collect {

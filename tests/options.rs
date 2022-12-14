@@ -218,8 +218,10 @@ fn actions() {
         #[set(Arg::Message)]
         message2: String,
 
-        #[set_true(Arg::Send)]
-        #[set_false(Arg::Receive)]
+        #[map(
+            Arg::Send => true,
+            Arg::Receive => false,
+        )]
         send: bool,
 
         // Or map, true or false inside the collect

@@ -12,8 +12,6 @@ pub(crate) struct ActionAttr {
 
 pub(crate) enum ActionType {
     Set(Vec<syn::Path>),
-    SetTrue(Vec<syn::Path>),
-    SetFalse(Vec<syn::Path>),
     Map(Vec<syn::Arm>),
 }
 
@@ -46,16 +44,6 @@ pub(crate) fn parse_action_attr(attr: Attribute) -> Option<ActionAttr> {
             action_type: ActionType::Set(parse_paths(attr)),
             collect: false,
         })
-    } else if attr.path.is_ident("set_true") {
-        Some(ActionAttr {
-            action_type: ActionType::SetTrue(parse_paths(attr)),
-            collect: false,
-        })
-    } else if attr.path.is_ident("set_false") {
-        Some(ActionAttr {
-            action_type: ActionType::SetFalse(parse_paths(attr)),
-            collect: false,
-        })
     } else {
         None
     }
@@ -75,8 +63,6 @@ impl Parse for ActionType {
             let pat = pat.into_iter().collect();
             match &action[..] {
                 "set" => Ok(ActionType::Set(pat)),
-                "set_true" => Ok(ActionType::SetTrue(pat)),
-                "set_false" => Ok(ActionType::SetFalse(pat)),
                 _ => panic!("Unexpected action type in collect {}", action),
             }
         }
