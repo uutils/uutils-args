@@ -1,5 +1,5 @@
 mod event;
-use event::*;
+pub use event::*;
 
 use nu_ansi_term::{Color, Style};
 use unicode_width::UnicodeWidthStr;
