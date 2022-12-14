@@ -4,7 +4,7 @@ use uutils_args::{Arguments, FromValue, Options};
 fn string_option() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("--message=MSG")]
         Message(String),
     }
 
@@ -38,7 +38,7 @@ fn enum_option() {
 
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("--format=FORMAT")]
         Format(Format),
     }
 
@@ -73,7 +73,7 @@ fn enum_option_with_fields() {
 
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("-i INDENT")]
         Indent(Indent),
     }
 
@@ -121,7 +121,7 @@ fn enum_with_complex_from_value() {
 
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("-i INDENT")]
         Indent(Indent),
     }
 
@@ -157,7 +157,7 @@ fn color() {
 
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("--color[=WHEN]")]
         Color(Option<Color>),
     }
 
@@ -201,11 +201,11 @@ fn color() {
 fn actions() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("-m MESSAGE")]
         Message(String),
-        #[option]
+        #[option("--send")]
         Send,
-        #[option]
+        #[option("--receive")]
         Receive,
     }
 
@@ -238,7 +238,7 @@ fn actions() {
 fn width() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("-w WIDTH")]
         Width(u64),
     }
 
@@ -260,25 +260,25 @@ fn width() {
 fn integers() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("--u8=N")]
         U8(u8),
-        #[option]
+        #[option("--u16=N")]
         U16(u16),
-        #[option]
+        #[option("--u32=N")]
         U32(u32),
-        #[option]
+        #[option("--u64=N")]
         U64(u64),
-        #[option]
+        #[option("--u128=N")]
         U128(u128),
-        #[option]
+        #[option("--i8=N")]
         I8(i8),
-        #[option]
+        #[option("--i16=N")]
         I16(i16),
-        #[option]
+        #[option("--i32=N")]
         I32(i32),
-        #[option]
+        #[option("--i64=N")]
         I64(i64),
-        #[option]
+        #[option("--i128=N")]
         I128(i128),
     }
 
@@ -311,4 +311,81 @@ fn integers() {
     assert_eq!(Settings::parse(["test", "--i32=5"]).unwrap().n, 5);
     assert_eq!(Settings::parse(["test", "--i64=5"]).unwrap().n, 5);
     assert_eq!(Settings::parse(["test", "--i128=5"]).unwrap().n, 5);
+}
+
+#[test]
+fn ls_classify() {
+    #[derive(FromValue, Default, Clone, PartialEq, Eq, Debug)]
+    enum When {
+        #[value]
+        Never,
+        #[default]
+        #[value]
+        Auto,
+        #[value]
+        Always,
+    }
+
+    #[derive(Clone, Arguments)]
+    enum Arg {
+        #[option(
+            "-F", "--classify[=WHEN]",
+            default = When::Always,
+        )]
+        Classify(When),
+    }
+
+    #[derive(Options, Default)]
+    #[arg_type(Arg)]
+    struct Settings {
+        #[set(Arg::Classify)]
+        classify: When,
+    }
+
+    assert_eq!(Settings::parse(["test"]).unwrap().classify, When::Auto);
+    assert_eq!(
+        Settings::parse(["test", "--classify=never"])
+            .unwrap()
+            .classify,
+        When::Never,
+    );
+    assert_eq!(
+        Settings::parse(["test", "--classify"]).unwrap().classify,
+        When::Always,
+    );
+    assert_eq!(
+        Settings::parse(["test", "-F"]).unwrap().classify,
+        When::Always,
+    );
+    assert!(Settings::parse(["test", "-Falways"]).is_err());
+}
+
+#[test]
+fn mktemp_tmpdir() {
+    #[derive(Clone, Arguments)]
+    enum Arg {
+        #[option(
+            "-p DIR", "--tmpdir[=DIR]",
+            default = String::from("/tmp"),
+        )]
+        TmpDir(String),
+    }
+
+    #[derive(Default, Options)]
+    #[arg_type(Arg)]
+    struct Settings {
+        #[map(Arg::TmpDir(dir) => Some(dir))]
+        tmpdir: Option<String>,
+    }
+
+    let settings = Settings::parse(["test", "-p", "X"]).unwrap();
+    assert_eq!(settings.tmpdir.unwrap(), "X");
+
+    let settings = Settings::parse(["test", "--tmpdir=X"]).unwrap();
+    assert_eq!(settings.tmpdir.unwrap(), "X");
+
+    let settings = Settings::parse(["test", "--tmpdir"]).unwrap();
+    assert_eq!(settings.tmpdir.unwrap(), "/tmp");
+
+    assert!(Settings::parse(["test", "-p"]).is_err());
 }

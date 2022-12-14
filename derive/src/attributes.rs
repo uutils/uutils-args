@@ -6,7 +6,7 @@ use syn::{
     Attribute, Expr, ExprLit, ExprRange, Ident, Lit, LitInt, LitStr, RangeLimits, Token,
 };
 
-use crate::{flags::Flags, Arg};
+use crate::flags::Flags;
 
 pub(crate) enum ArgAttr {
     Option(OptionAttr),
@@ -29,11 +29,13 @@ pub(crate) struct OptionAttr {
     // This should probably not accept any expr to give better errors.
     // Closures should be allowed though.
     pub(crate) parser: Option<Expr>,
+    pub(crate) default: Option<Expr>,
 }
 
 enum OptionAttrArg {
-    Arg(Arg),
+    Arg(String),
     Parser(Expr),
+    Default(Expr),
 }
 
 #[derive(Default)]
@@ -63,19 +65,21 @@ enum PositionalAttrArg {
 
 pub(crate) fn parse_option_attr(attr: &Attribute) -> OptionAttr {
     let mut option_attr = OptionAttr::default();
-    let Ok(parsed_args) = attr
+    let parsed_args = attr
         .parse_args_with(Punctuated::<OptionAttrArg, Token![,]>::parse_terminated)
-    else {
-        return option_attr;
-    };
+        .unwrap_or_default();
 
     for arg in parsed_args {
         match arg {
-            OptionAttrArg::Arg(Arg::Short(a)) => option_attr.flags.short.push(a),
-            OptionAttrArg::Arg(Arg::Long(a)) => option_attr.flags.long.push(a),
+            OptionAttrArg::Arg(a) => option_attr.flags.add(&a),
             OptionAttrArg::Parser(e) => option_attr.parser = Some(e),
+            OptionAttrArg::Default(e) => option_attr.default = Some(e),
         };
     }
+    assert!(
+        !option_attr.flags.is_empty(),
+        "must give a flag in an option attribute"
+    );
     option_attr
 }
 
@@ -90,6 +94,7 @@ impl Parse for OptionAttrArg {
             input.parse::<Token![=]>()?;
             match name.as_str() {
                 "parser" => return Ok(Self::Parser(input.parse::<Expr>()?)),
+                "default" => return Ok(Self::Default(input.parse::<Expr>()?)),
                 _ => panic!("Unrecognized argument {} for option attribute", name),
             };
         }
@@ -133,19 +138,8 @@ impl Parse for ValueAttrArg {
     }
 }
 
-fn parse_flag(input: ParseStream) -> syn::Result<Arg> {
-    let str = input.parse::<LitStr>().unwrap().value();
-    if let Some(s) = str.strip_prefix("--") {
-        return Ok(Arg::Long(s.to_owned()));
-    } else if let Some(s) = str.strip_prefix('-') {
-        assert_eq!(
-            s.len(),
-            1,
-            "Exactly one character must follow '-' in a flag attribute"
-        );
-        return Ok(Arg::Short(s.chars().next().unwrap()));
-    }
-    panic!("Arguments to flag must start with \"-\" or \"--\"");
+fn parse_flag(input: ParseStream) -> syn::Result<String> {
+    Ok(input.parse::<LitStr>().unwrap().value())
 }
 
 pub(crate) fn parse_positional_attr(attr: &Attribute) -> PositionalAttr {

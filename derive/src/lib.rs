@@ -2,6 +2,7 @@ mod action;
 mod argument;
 mod attributes;
 mod flags;
+mod markdown;
 
 use action::{parse_action_attr, ActionAttr, ActionType};
 use argument::{
@@ -18,12 +19,6 @@ use syn::{
     Data::{Enum, Struct},
     DeriveInput, Fields,
 };
-
-#[derive(Eq, Hash, PartialEq, Debug, Clone)]
-enum Arg {
-    Short(char),
-    Long(String),
-}
 
 #[proc_macro_derive(Options, attributes(arg_type, map, set, set_true, set_false, collect))]
 pub fn options(input: TokenStream) -> TokenStream {

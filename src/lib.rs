@@ -1,7 +1,8 @@
 pub use derive::*;
 pub use lexopt;
-use std::error::Error as StdError;
+pub use term_md;
 
+use std::error::Error as StdError;
 use std::num::ParseIntError;
 use std::{ffi::OsString, marker::PhantomData};
 
@@ -135,6 +136,15 @@ impl FromValue for OsString {
 impl FromValue for String {
     fn from_value(value: OsString) -> Result<Self, lexopt::Error> {
         Ok(value.into_string()?)
+    }
+}
+
+impl<T> FromValue for Option<T>
+where
+    T: FromValue,
+{
+    fn from_value(value: OsString) -> Result<Self, lexopt::Error> {
+        Ok(Some(T::from_value(value)?))
     }
 }
 

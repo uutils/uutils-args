@@ -12,7 +12,7 @@ fn to_vec<T: Arguments>(mut args: ArgumentIter<T>) -> Vec<T> {
 fn one_flag() {
     #[derive(Arguments, Clone, Debug, PartialEq, Eq)]
     enum Arg {
-        #[option]
+        #[option("-f", "--foo")]
         Foo,
     }
 
@@ -34,9 +34,9 @@ fn one_flag() {
 fn two_flags() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("-a")]
         A,
-        #[option]
+        #[option("-b")]
         B,
     }
 
@@ -71,7 +71,7 @@ fn two_flags() {
 fn long_and_short_flag() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("-f", "--foo")]
         Foo,
     }
 
@@ -177,11 +177,11 @@ fn short_and_long_alias() {
 fn xyz_map_to_abc() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("-x")]
         X,
-        #[option]
+        #[option("-y")]
         Y,
-        #[option]
+        #[option("-z")]
         Z,
     }
 
@@ -282,9 +282,9 @@ fn number_flag() {
 fn false_bool() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("-a")]
         A,
-        #[option]
+        #[option("-b")]
         B,
     }
 
@@ -369,11 +369,11 @@ fn enum_flag() {
 
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("--foo")]
         Foo,
-        #[option]
+        #[option("--bar")]
         Bar,
-        #[option]
+        #[option("--baz")]
         Baz,
     }
 
@@ -408,7 +408,7 @@ fn enum_flag() {
 fn count() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option]
+        #[option("-v")]
         Verbosity,
     }
 

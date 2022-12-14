@@ -6,7 +6,7 @@ use syn::{Attribute, Fields, FieldsUnnamed, Lit, Meta, Variant, Ident, punctuate
 
 use crate::{
     attributes::{parse_argument_attribute, ArgAttr},
-    flags::Flags,
+    flags::{Flags, Value}, markdown::str_to_renderer,
 };
 
 pub(crate) struct Argument {
@@ -16,16 +16,11 @@ pub(crate) struct Argument {
     help: String,
 }
 
-pub(crate) enum TakesValue {
-    Yes,
-    Optional,
-    No,
-}
-
 pub(crate) enum ArgType {
     Option {
         flags: Flags,
-        takes_value: TakesValue,
+        takes_value: bool,
+        default: TokenStream,
     },
     Positional {
         num_args: RangeInclusive<usize>,
@@ -83,15 +78,14 @@ pub(crate) fn parse_argument(v: Variant) -> Option<Argument> {
 
     let arg_type = match attribute {
         ArgAttr::Option(opt) => {
-            let flags = opt.flags.or_from_name(&name);
-            let takes_value = match field {
-                None => TakesValue::No,
-                Some(x) if type_is_option(&x) => TakesValue::Optional,
-                Some(_) => TakesValue::Yes,
+            let default_expr = match opt.default {
+                Some(expr) => quote!(#expr),
+                None => quote!(Default::default()),
             };
             ArgType::Option {
-                flags,
-                takes_value,
+                flags: opt.flags,
+                takes_value: field.is_some(),
+                default: default_expr,
             }
         }
         ArgAttr::Positional(pos) => {
@@ -121,7 +115,7 @@ fn collect_help(attrs: &[Attribute]) -> String {
         let Lit::Str(litstr) = name_value.lit else { continue; };
         help.push(litstr.value().trim().to_string())
     }
-    help.join(" ")
+    help.join("\n")
 }
 
 fn get_arg_attribute(attrs: &[Attribute]) -> Option<ArgAttr> {
@@ -136,25 +130,11 @@ fn get_arg_attribute(attrs: &[Attribute]) -> Option<ArgAttr> {
     }
 }
 
-fn type_is_option(syn_type: &syn::Type) -> bool {
-    if let syn::Type::Path(field_type_path) = syn_type {
-        field_type_path
-            .path
-            .segments
-            .iter()
-            .map(|s| s.ident.to_string())
-            .collect::<Vec<_>>()
-            == vec!["Option"]
-    } else {
-        false
-    }
-}
-
 pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
     let mut match_arms = Vec::new();
 
     for arg in args {
-        let ArgType::Option { ref flags, .. } = arg.arg_type else { 
+        let ArgType::Option { ref flags, takes_value, ref default } = arg.arg_type else { 
             continue; 
         };
         
@@ -162,9 +142,17 @@ pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
             continue;
         }
         
-        let pat = flags.short_pat();
-        let expr = argument_expression(arg);
-        match_arms.push(quote!(#pat => { #expr }))
+        for flag in &flags.short {
+            let pat = flag.flag;
+            let expr = match (&flag.value, takes_value) {
+                (Value::No, false) => no_value_expression(&arg.ident),
+                (_, false) => panic!("Option cannot take a value if the variant doesn't have a field"),
+                (Value::No, true) => default_value_expression(&arg.ident, default),
+                (Value::Optional(_), true) => optional_value_expression(&arg.ident, default),
+                (Value::Required(_), true) => required_value_expression(&arg.ident),
+            };
+            match_arms.push(quote!(#pat => { #expr }))
+        }
     }
 
     quote!(
@@ -179,10 +167,10 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
     let mut match_arms = Vec::new();
     let mut options = Vec::new();
 
-    options.extend(help_flags.long.clone());
+    options.extend(help_flags.long.iter().map(|f| f.flag.clone()));
     
     for arg in args {
-        let ArgType::Option { ref flags, .. } = arg.arg_type else { 
+        let ArgType::Option { flags, takes_value, default } = &arg.arg_type else { 
             continue; 
         };
 
@@ -190,19 +178,28 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
             continue;
         }
 
-        let pat = flags.long_pat();
-        let expr = argument_expression(arg);
-        match_arms.push(quote!(#pat => { #expr }));
-        options.extend(flags.long.clone());
+        for flag in &flags.long {
+            let pat = &flag.flag;
+            let expr = match (&flag.value, takes_value) {
+                (Value::No, false) => no_value_expression(&arg.ident),
+                (_, false) => panic!("Option cannot take a value if the variant doesn't have a field"),
+                (Value::No, true) => default_value_expression(&arg.ident, default),
+                (Value::Optional(_), true) => optional_value_expression(&arg.ident, default),
+                (Value::Required(_), true) => required_value_expression(&arg.ident),
+            };
+            match_arms.push(quote!(#pat => { #expr }));
+            options.push(flag.flag.clone());
+        }
     }
 
     if options.is_empty() {
         return quote!(return Err(arg.unexpected().into()));
     }
     
+    // TODO: Add version check
     let help_check = if !help_flags.long.is_empty() {
-        let pat = help_flags.long_pat();
-        quote!(if let #pat = opt {
+        let long_help_flags = help_flags.long.iter().map(|f| &f.flag);
+        quote!(if let #(#long_help_flags)|* = opt {
             return Ok(Some(Argument::Help));
         })
     } else {
@@ -300,24 +297,32 @@ pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStrea
     (value_handling, missing_argument_checks)
 }
 
+fn no_value_expression(ident: &Ident) -> TokenStream {
+    quote!(Self::#ident)
+}
+
+fn default_value_expression(ident: &Ident, default_expr: &TokenStream) -> TokenStream {
+    quote!(Self::#ident(#default_expr))
+}
+
+fn optional_value_expression(ident: &Ident, default_expr: &TokenStream) -> TokenStream {
+    quote!(match parser.optional_value() {
+        Some(value) => Self::#ident(FromValue::from_value(value)?),
+        None => Self::#ident(#default_expr),
+    })
+}
+
+fn required_value_expression(ident: &Ident) -> TokenStream {
+    quote!(Self::#ident(FromValue::from_value(parser.value()?)?))
+}
+
 fn argument_expression(arg: &Argument) -> TokenStream {
     let Argument { ident, arg_type, .. } = arg;
     match arg_type {
-        ArgType::Option { takes_value, .. } => match takes_value {
-            TakesValue::No => quote!(Self::#ident),
-            TakesValue::Optional => quote!(
-                Self::#ident(match parser.optional_value() {
-                    Some(x) => Some(FromValue::from_value(x)?),
-                    None => None,
-                })
-            ),
-            TakesValue::Yes => quote!(
-                Self::#ident(FromValue::from_value(parser.value()?)?)
-            ),
-        }
         ArgType::Positional { .. } => quote!(
             Self::#ident(FromValue::from_value(value)?)
         ),
+        _ => panic!("WWWOWOWOWOW")
     }
 }
 
@@ -352,48 +357,63 @@ pub(crate) fn version_handling(version_flags: &Flags) -> TokenStream {
 pub(crate) fn help_string(args: &[Argument], help_flags: &Flags, version_flags: &Flags) -> TokenStream {
     let mut options = Vec::new();
     
-    let width = 16;
-    let indent = 2;
+    let width: usize = 16;
+    let indent: usize = 2;
 
     for Argument { arg_type, help, ..} in args {
         match arg_type {
             ArgType::Option { flags, ..} => {
                 let flags = flags.format();
-                options.push(format_help_line(indent, width, &flags, help));
+                let renderer = str_to_renderer(help);
+                options.push(quote!((#flags, #renderer)));
             }
             ArgType::Positional { .. } => {}
         }
     }
     
     if !help_flags.is_empty() {
-        let help_flags = help_flags.format();
-        options.push(format_help_line(indent, width, &help_flags, "Display this help message"));       
+        let flags = help_flags.format();
+        let renderer = str_to_renderer("Display this help message");
+        options.push(quote!((#flags, #renderer)));
     }
 
     if !version_flags.is_empty() {
-        let version_flags = version_flags.format();
-        options.push(format_help_line(indent, width, &version_flags, "Display version information"));       
+        let flags = version_flags.format();
+        let renderer = str_to_renderer("Display version information");
+        options.push(quote!((#flags, #renderer)));
     }
 
-    let options = format!(
-        "Options:\n{}",
-        options.join("\n"),
-    );
+    let options = quote!([#(#options),*]);
     
     quote!(
-        format!("{} [OPTIONS] [ARGS]\n\n{}", bin_name, #options)
-    )
-}
+        let mut s = format!("{} [OPTIONS] [ARGS]\n\nOptions:\n", bin_name);
+        for (flags, renderer) in #options {
+            let indent = " ".repeat(#indent);
+            
+            let help_string = renderer.render();
+            let mut help_lines = help_string.lines();
+            s.push_str(&indent);
+            s.push_str(&flags);
+            
+            if flags.len() <= #width {
+                let Some(line) = help_lines.next() else {
+                    return s;
+                };
+                let help_indent = " ".repeat(#width-flags.len());
+                s.push_str(&help_indent);
+                s.push_str(line);
+                s.push('\n');
+            } else {
+                s.push('\n');
+            }
 
-fn format_help_line(indent: usize, width: usize, flags: &str, help: &str) -> String {
-    let indent = " ".repeat(indent);
-    if help == "" {
-        format!("{indent}{flags}")
-    } else if flags.len() >= width {
-        let help_indent = " ".repeat(width);
-        format!("{indent}{flags}\n{indent}{help_indent}{help}")
-    } else {
-        let help_indent = " ".repeat(width-flags.len());
-        format!("{indent}{flags}{help_indent}{help}")
-    }
+            let help_indent = " ".repeat(#width+#indent);
+            for line in help_lines {
+                s.push_str(&help_indent);
+                s.push_str(line);
+                s.push('\n');
+            }
+        }
+        s
+    )
 }
