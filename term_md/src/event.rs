@@ -1,5 +1,3 @@
-use pulldown_cmark;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeadingLevel {
     H1,

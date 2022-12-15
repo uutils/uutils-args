@@ -78,7 +78,7 @@ impl<T: Iterator<Item = Event>> Renderer<T> {
     }
 
     fn render_inline(&mut self, until: &Tag, base_style: Style) {
-        let mut style = base_style.clone();
+        let mut style = base_style;
         while let Some(ev) = self.events.next() {
             match ev {
                 Event::Text(x) => self.wrap_words(&x),
@@ -89,11 +89,9 @@ impl<T: Iterator<Item = Event>> Renderer<T> {
                     code_style.foreground = Some(Color::Fixed(250));
 
                     // Change to the code style, push the string and change back.
-                    self.output
-                        .push_str(&style.clone().infix(code_style.clone()).to_string());
+                    self.output.push_str(&style.infix(code_style).to_string());
                     self.wrap_words(&x);
-                    self.output
-                        .push_str(&code_style.infix(style.clone()).to_string());
+                    self.output.push_str(&code_style.infix(style).to_string());
                 }
                 Event::SoftBreak => {
                     if self.current_column >= self.width {
@@ -135,7 +133,10 @@ impl<T: Iterator<Item = Event>> Renderer<T> {
         // The first word needs special treatment, because we only want to
         // print a space in front of it if the string actually starts with a
         // space.
-        let Some(word) = first else { return };
+        let word = match first {
+            Some(word) => word,
+            None => return,
+        };
 
         let width = word.width();
 
@@ -176,7 +177,8 @@ impl<T: Iterator<Item = Event>> Renderer<T> {
     }
 
     fn change_style(&mut self, style: &mut Style, tag: Tag, enable: bool) {
-        let old_style = style.clone();
+        // Important for understanding this function: Style implements Copy
+        let old_style = *style;
 
         let setting = match tag {
             Tag::Emphasis => &mut style.is_italic,
@@ -189,24 +191,20 @@ impl<T: Iterator<Item = Event>> Renderer<T> {
         *setting = enable;
 
         // Add the ansi code to mode between the styles to the output
-        self.output
-            .push_str(&old_style.infix(style.clone()).to_string());
+        self.output.push_str(&old_style.infix(*style).to_string());
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::event::Event;
     use super::Renderer;
     use pulldown_cmark::{Options, Parser};
 
     #[test]
     fn it_works() {
-        let events: Vec<Event> = Parser::new("This is *some* markdown **paragraph**!")
-            .map(|e| e.into())
-            .collect();
+        let events = Parser::new("This is *some* markdown **paragraph**!").map(|e| e.into());
 
-        let output = Renderer::new(40, events.into_iter()).render();
+        let output = Renderer::new(40, events).render();
 
         assert_eq!(
             output,
@@ -252,8 +250,7 @@ mod tests {
             Some more text\
         ";
         let events = Parser::new(text).map(Into::into);
-        let events: Vec<Event> = events.collect();
-        let output = Renderer::new(40, events.into_iter()).render();
+        let output = Renderer::new(40, events).render();
         println!("{}", output);
         assert_eq!(
             output,
@@ -268,7 +265,7 @@ mod tests {
     fn wrapping() {
         let text = "This is some very long text that will definitely need to get wrapped, so we better do that **right**!";
         let events = Parser::new(text).map(Into::into);
-        let output = Renderer::new(10, events.into_iter()).render();
+        let output = Renderer::new(10, events).render();
         println!("{}", output);
 
         // The lone `!` at the end is technically a bug, because words across
@@ -297,8 +294,8 @@ mod tests {
     #[test]
     fn soft_break() {
         let text = "This is text\nwith a soft break.";
-        let events: Vec<Event> = Parser::new(text).map(Into::into).collect();
-        let output = Renderer::new(40, events.into_iter()).render();
+        let events = Parser::new(text).map(Into::into);
+        let output = Renderer::new(40, events).render();
         println!("{}", output);
 
         assert_eq!(output, "This is text with a soft break.\n");
@@ -307,9 +304,8 @@ mod tests {
     #[test]
     fn hard_break() {
         let text = "This is text\\\nwith a hard break.";
-        let events: Vec<Event> = Parser::new(text).map(Into::into).collect();
-        dbg!(&events);
-        let output = Renderer::new(40, events.into_iter()).render();
+        let events = Parser::new(text).map(Into::into);
+        let output = Renderer::new(40, events).render();
         println!("{}", output);
 
         assert_eq!(output, "This is text\nwith a hard break.\n");
@@ -319,9 +315,8 @@ mod tests {
     fn rule() {
         let text = "This text has\n\n---\n\na rule!.";
 
-        let events: Vec<Event> = Parser::new(text).map(Into::into).collect();
-        dbg!(&events);
-        let output = Renderer::new(40, events.into_iter()).render();
+        let events = Parser::new(text).map(Into::into);
+        let output = Renderer::new(40, events).render();
         println!("{}", output);
 
         assert_eq!(

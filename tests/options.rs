@@ -297,7 +297,7 @@ fn integers() {
             Arg::I16(x) => x as i128,
             Arg::I32(x) => x as i128,
             Arg::I64(x) => x as i128,
-            Arg::I128(x) => x as i128,
+            Arg::I128(x) => x,
         )]
         n: i128,
     }

@@ -2,11 +2,15 @@ use std::ops::RangeInclusive;
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Attribute, Fields, FieldsUnnamed, Lit, Meta, Variant, Ident, punctuated::Punctuated, LitStr, Token};
+use syn::{
+    punctuated::Punctuated, Attribute, Fields, FieldsUnnamed, Ident, Lit, LitStr, Meta, Token,
+    Variant,
+};
 
 use crate::{
     attributes::{parse_argument_attribute, ArgAttr},
-    flags::{Flags, Value}, markdown::str_to_renderer,
+    flags::{Flags, Value},
+    markdown::str_to_renderer,
 };
 
 pub(crate) struct Argument {
@@ -31,28 +35,34 @@ pub(crate) fn parse_help_flags(attrs: &[Attribute]) -> Flags {
     for attr in attrs {
         if attr.path.is_ident("help") {
             let mut flags = Flags::new();
-            for s in attr.parse_args_with(Punctuated::<LitStr, Token![,]>::parse_terminated).unwrap() {
+            for s in attr
+                .parse_args_with(Punctuated::<LitStr, Token![,]>::parse_terminated)
+                .unwrap()
+            {
                 let s = s.value().to_string();
                 flags.add(&s);
             }
             return flags;
         }
     }
-    return Flags::default_help();       
+    Flags::default_help()
 }
 
 pub(crate) fn parse_version_flags(attrs: &[Attribute]) -> Flags {
     for attr in attrs {
         if attr.path.is_ident("version") {
             let mut flags = Flags::new();
-            for s in attr.parse_args_with(Punctuated::<LitStr, Token![,]>::parse_terminated).unwrap() {
+            for s in attr
+                .parse_args_with(Punctuated::<LitStr, Token![,]>::parse_terminated)
+                .unwrap()
+            {
                 let s = s.value().to_string();
                 flags.add(&s);
             }
             return flags;
         }
     }
-    return Flags::default_version();
+    Flags::default_version()
 }
 
 pub(crate) fn parse_argument(v: Variant) -> Option<Argument> {
@@ -134,19 +144,26 @@ pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
     let mut match_arms = Vec::new();
 
     for arg in args {
-        let ArgType::Option { ref flags, takes_value, ref default } = arg.arg_type else { 
-            continue; 
+        let (flags, takes_value, default) = match arg.arg_type {
+            ArgType::Option {
+                ref flags,
+                takes_value,
+                ref default,
+            } => (flags, takes_value, default),
+            ArgType::Positional { .. } => continue,
         };
-        
+
         if flags.short.is_empty() {
             continue;
         }
-        
+
         for flag in &flags.short {
             let pat = flag.flag;
             let expr = match (&flag.value, takes_value) {
                 (Value::No, false) => no_value_expression(&arg.ident),
-                (_, false) => panic!("Option cannot take a value if the variant doesn't have a field"),
+                (_, false) => {
+                    panic!("Option cannot take a value if the variant doesn't have a field")
+                }
                 (Value::No, true) => default_value_expression(&arg.ident, default),
                 (Value::Optional(_), true) => optional_value_expression(&arg.ident, default),
                 (Value::Required(_), true) => required_value_expression(&arg.ident),
@@ -168,10 +185,15 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
     let mut options = Vec::new();
 
     options.extend(help_flags.long.iter().map(|f| f.flag.clone()));
-    
+
     for arg in args {
-        let ArgType::Option { flags, takes_value, default } = &arg.arg_type else { 
-            continue; 
+        let (flags, takes_value, default) = match &arg.arg_type {
+            ArgType::Option {
+                flags,
+                takes_value,
+                ref default,
+            } => (flags, takes_value, default),
+            ArgType::Positional { .. } => continue,
         };
 
         if flags.long.is_empty() {
@@ -182,7 +204,9 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
             let pat = &flag.flag;
             let expr = match (&flag.value, takes_value) {
                 (Value::No, false) => no_value_expression(&arg.ident),
-                (_, false) => panic!("Option cannot take a value if the variant doesn't have a field"),
+                (_, false) => {
+                    panic!("Option cannot take a value if the variant doesn't have a field")
+                }
                 (Value::No, true) => default_value_expression(&arg.ident, default),
                 (Value::Optional(_), true) => optional_value_expression(&arg.ident, default),
                 (Value::Required(_), true) => required_value_expression(&arg.ident),
@@ -195,7 +219,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
     if options.is_empty() {
         return quote!(return Err(arg.unexpected().into()));
     }
-    
+
     // TODO: Add version check
     let help_check = if !help_flags.long.is_empty() {
         let long_help_flags = help_flags.long.iter().map(|f| &f.flag);
@@ -205,7 +229,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
     } else {
         quote!()
     };
-    
+
     let num_opts = options.len();
 
     quote!(
@@ -230,7 +254,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
                 candidates: candidates.iter().map(|s| s.to_string()).collect(),
             })
         };
-        
+
         #help_check
 
         match opt {
@@ -249,10 +273,11 @@ pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStrea
     // The minimum number of arguments needed to not return a missing argument error.
     let mut minimum_needed = 0;
     let mut missing_argument_checks = vec![];
-    
+
     for arg @ Argument { name, arg_type, .. } in args {
-        let ArgType::Positional{ ref num_args } = arg_type else { 
-            continue; 
+        let num_args = match arg_type {
+            ArgType::Positional { num_args } => num_args,
+            ArgType::Option { .. } => continue,
         };
 
         if *num_args.start() > 0 {
@@ -263,11 +288,11 @@ pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStrea
         }
 
         last_index += num_args.end();
-        
+
         let expr = argument_expression(arg);
         match_arms.push(quote!(0..=#last_index => { #expr }));
     }
-    
+
     let value_handling = quote!(
         *positional_idx += 1;
         match positional_idx {
@@ -317,12 +342,14 @@ fn required_value_expression(ident: &Ident) -> TokenStream {
 }
 
 fn argument_expression(arg: &Argument) -> TokenStream {
-    let Argument { ident, arg_type, .. } = arg;
+    let Argument {
+        ident, arg_type, ..
+    } = arg;
     match arg_type {
         ArgType::Positional { .. } => quote!(
             Self::#ident(FromValue::from_value(value)?)
         ),
-        _ => panic!("WWWOWOWOWOW")
+        _ => panic!("WWWOWOWOWOW"),
     }
 }
 
@@ -330,9 +357,9 @@ pub(crate) fn help_handling(help_flags: &Flags) -> TokenStream {
     if help_flags.is_empty() {
         return quote!();
     }
-    
+
     let pat = help_flags.pat();
-    
+
     quote!(
         if let #pat = arg {
             return Ok(Some(Argument::Help));
@@ -344,9 +371,9 @@ pub(crate) fn version_handling(version_flags: &Flags) -> TokenStream {
     if version_flags.is_empty() {
         return quote!();
     }
-    
+
     let pat = version_flags.pat();
-    
+
     quote!(
         if let #pat = arg {
             return Ok(Some(Argument::Version));
@@ -354,15 +381,19 @@ pub(crate) fn version_handling(version_flags: &Flags) -> TokenStream {
     )
 }
 
-pub(crate) fn help_string(args: &[Argument], help_flags: &Flags, version_flags: &Flags) -> TokenStream {
+pub(crate) fn help_string(
+    args: &[Argument],
+    help_flags: &Flags,
+    version_flags: &Flags,
+) -> TokenStream {
     let mut options = Vec::new();
-    
+
     let width: usize = 16;
     let indent: usize = 2;
 
-    for Argument { arg_type, help, ..} in args {
+    for Argument { arg_type, help, .. } in args {
         match arg_type {
-            ArgType::Option { flags, ..} => {
+            ArgType::Option { flags, .. } => {
                 let flags = flags.format();
                 let renderer = str_to_renderer(help);
                 options.push(quote!((#flags, #renderer)));
@@ -370,7 +401,7 @@ pub(crate) fn help_string(args: &[Argument], help_flags: &Flags, version_flags: 
             ArgType::Positional { .. } => {}
         }
     }
-    
+
     if !help_flags.is_empty() {
         let flags = help_flags.format();
         let renderer = str_to_renderer("Display this help message");
@@ -384,20 +415,21 @@ pub(crate) fn help_string(args: &[Argument], help_flags: &Flags, version_flags: 
     }
 
     let options = quote!([#(#options),*]);
-    
+
     quote!(
         let mut s = format!("{} [OPTIONS] [ARGS]\n\nOptions:\n", bin_name);
         for (flags, renderer) in #options {
             let indent = " ".repeat(#indent);
-            
+
             let help_string = renderer.render();
             let mut help_lines = help_string.lines();
             s.push_str(&indent);
             s.push_str(&flags);
-            
+
             if flags.len() <= #width {
-                let Some(line) = help_lines.next() else {
-                    return s;
+                let line = match help_lines.next() {
+                    Some(line) => line,
+                    None => return s,
                 };
                 let help_indent = " ".repeat(#width-flags.len());
                 s.push_str(&help_indent);

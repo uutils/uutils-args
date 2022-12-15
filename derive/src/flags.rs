@@ -52,7 +52,7 @@ impl Flags {
                 Value::No
             } else if sep == '=' {
                 assert!(val.chars().all(|c: char| c.is_alphanumeric() || c == '-'));
-                Value::Required(val.into())
+                Value::Required(val)
             } else if sep == '[' {
                 let optional = val
                     .strip_prefix('=')
@@ -67,8 +67,8 @@ impl Flags {
             };
 
             self.long.push(Flag { flag: f, value });
-        } else if let Some(s) = flag.strip_prefix("-") {
-            assert!(s.len() >= 1);
+        } else if let Some(s) = flag.strip_prefix('-') {
+            assert!(!s.is_empty());
 
             // There are three possible patterns:
             //   -f

@@ -353,9 +353,9 @@ fn enum_flag() {
     #[derive(Default, PartialEq, Eq, Debug, Clone)]
     enum SomeEnum {
         #[default]
-        VariantFoo,
-        VariantBar,
-        VariantBaz,
+        Foo,
+        Bar,
+        Baz,
     }
 
     #[derive(Arguments, Clone)]
@@ -372,26 +372,23 @@ fn enum_flag() {
     #[arg_type(Arg)]
     struct Settings {
         #[map(
-            Arg::Foo => SomeEnum::VariantFoo,
-            Arg::Bar => SomeEnum::VariantBar,
-            Arg::Baz => SomeEnum::VariantBaz,
+            Arg::Foo => SomeEnum::Foo,
+            Arg::Bar => SomeEnum::Bar,
+            Arg::Baz => SomeEnum::Baz,
         )]
         foo: SomeEnum,
     }
 
-    assert_eq!(
-        Settings::parse(&[] as &[&str]).unwrap().foo,
-        SomeEnum::VariantFoo
-    );
+    assert_eq!(Settings::parse(&[] as &[&str]).unwrap().foo, SomeEnum::Foo);
 
     assert_eq!(
         Settings::parse(["test", "--bar"]).unwrap().foo,
-        SomeEnum::VariantBar
+        SomeEnum::Bar
     );
 
     assert_eq!(
         Settings::parse(["test", "--baz"]).unwrap().foo,
-        SomeEnum::VariantBaz,
+        SomeEnum::Baz,
     );
 }
 

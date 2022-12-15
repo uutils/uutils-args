@@ -197,7 +197,7 @@ impl Parse for PositionalAttrArg {
             let int = input.parse::<LitInt>()?;
             let suffix = int.suffix();
             assert!(
-                suffix == "" || suffix == "usize",
+                suffix.is_empty() || suffix == "usize",
                 "The position index must be usize"
             );
             let n = int.base10_parse::<usize>().unwrap();
