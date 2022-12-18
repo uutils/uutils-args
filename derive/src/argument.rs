@@ -2,22 +2,18 @@ use std::ops::RangeInclusive;
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{
-    punctuated::Punctuated, Attribute, Fields, FieldsUnnamed, Ident, Lit, LitStr, Meta, Token,
-    Variant,
-};
+use syn::{Attribute, Fields, FieldsUnnamed, Ident, Lit, Meta, Variant};
 
 use crate::{
     attributes::{parse_argument_attribute, ArgAttr},
     flags::{Flags, Value},
-    markdown::str_to_renderer,
 };
 
 pub(crate) struct Argument {
-    ident: Ident,
-    name: String,
-    arg_type: ArgType,
-    help: String,
+    pub(crate) ident: Ident,
+    pub(crate) name: String,
+    pub(crate) arg_type: ArgType,
+    pub(crate) help: String,
 }
 
 pub(crate) enum ArgType {
@@ -29,40 +25,6 @@ pub(crate) enum ArgType {
     Positional {
         num_args: RangeInclusive<usize>,
     },
-}
-
-pub(crate) fn parse_help_flags(attrs: &[Attribute]) -> Flags {
-    for attr in attrs {
-        if attr.path.is_ident("help") {
-            let mut flags = Flags::new();
-            for s in attr
-                .parse_args_with(Punctuated::<LitStr, Token![,]>::parse_terminated)
-                .unwrap()
-            {
-                let s = s.value().to_string();
-                flags.add(&s);
-            }
-            return flags;
-        }
-    }
-    Flags::default_help()
-}
-
-pub(crate) fn parse_version_flags(attrs: &[Attribute]) -> Flags {
-    for attr in attrs {
-        if attr.path.is_ident("version") {
-            let mut flags = Flags::new();
-            for s in attr
-                .parse_args_with(Punctuated::<LitStr, Token![,]>::parse_terminated)
-                .unwrap()
-            {
-                let s = s.value().to_string();
-                flags.add(&s);
-            }
-            return flags;
-        }
-    }
-    Flags::default_version()
 }
 
 pub(crate) fn parse_argument(v: Variant) -> Option<Argument> {
@@ -353,20 +315,6 @@ fn argument_expression(arg: &Argument) -> TokenStream {
     }
 }
 
-pub(crate) fn help_handling(help_flags: &Flags) -> TokenStream {
-    if help_flags.is_empty() {
-        return quote!();
-    }
-
-    let pat = help_flags.pat();
-
-    quote!(
-        if let #pat = arg {
-            return Ok(Some(Argument::Help));
-        }
-    )
-}
-
 pub(crate) fn version_handling(version_flags: &Flags) -> TokenStream {
     if version_flags.is_empty() {
         return quote!();
@@ -378,74 +326,5 @@ pub(crate) fn version_handling(version_flags: &Flags) -> TokenStream {
         if let #pat = arg {
             return Ok(Some(Argument::Version));
         }
-    )
-}
-
-pub(crate) fn help_string(
-    args: &[Argument],
-    help_flags: &Flags,
-    version_flags: &Flags,
-) -> TokenStream {
-    let mut options = Vec::new();
-
-    let width: usize = 16;
-    let indent: usize = 2;
-
-    for Argument { arg_type, help, .. } in args {
-        match arg_type {
-            ArgType::Option { flags, .. } => {
-                let flags = flags.format();
-                let renderer = str_to_renderer(help);
-                options.push(quote!((#flags, #renderer)));
-            }
-            ArgType::Positional { .. } => {}
-        }
-    }
-
-    if !help_flags.is_empty() {
-        let flags = help_flags.format();
-        let renderer = str_to_renderer("Display this help message");
-        options.push(quote!((#flags, #renderer)));
-    }
-
-    if !version_flags.is_empty() {
-        let flags = version_flags.format();
-        let renderer = str_to_renderer("Display version information");
-        options.push(quote!((#flags, #renderer)));
-    }
-
-    let options = quote!([#(#options),*]);
-
-    quote!(
-        let mut s = format!("{} [OPTIONS] [ARGS]\n\nOptions:\n", bin_name);
-        for (flags, renderer) in #options {
-            let indent = " ".repeat(#indent);
-
-            let help_string = renderer.render();
-            let mut help_lines = help_string.lines();
-            s.push_str(&indent);
-            s.push_str(&flags);
-
-            if flags.len() <= #width {
-                let line = match help_lines.next() {
-                    Some(line) => line,
-                    None => return s,
-                };
-                let help_indent = " ".repeat(#width-flags.len());
-                s.push_str(&help_indent);
-                s.push_str(line);
-                s.push('\n');
-            } else {
-                s.push('\n');
-            }
-
-            let help_indent = " ".repeat(#width+#indent);
-            for line in help_lines {
-                s.push_str(&help_indent);
-                s.push_str(line);
-                s.push('\n');
-            }
-        }
-        s
     )
 }

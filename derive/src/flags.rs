@@ -21,13 +21,6 @@ pub(crate) struct Flag<T> {
 }
 
 impl Flags {
-    pub(crate) fn new() -> Self {
-        Self {
-            short: Vec::new(),
-            long: Vec::new(),
-        }
-    }
-
     pub(crate) fn add(&mut self, flag: &str) {
         assert!(flag.starts_with('-'), "Flags must start with a '-'");
         if let Some(s) = flag.strip_prefix("--") {
@@ -114,26 +107,6 @@ impl Flags {
             (short, long) => {
                 quote!(lexopt::Arg::Short(#(#short)|*) | lexopt::Arg::Long(#(#long)|*))
             }
-        }
-    }
-
-    pub(crate) fn default_help() -> Self {
-        Self {
-            short: Vec::new(),
-            long: vec![Flag {
-                flag: "help".into(),
-                value: Value::No,
-            }],
-        }
-    }
-
-    pub(crate) fn default_version() -> Self {
-        Self {
-            short: Vec::new(),
-            long: vec![Flag {
-                flag: "version".into(),
-                value: Value::No,
-            }],
         }
     }
 

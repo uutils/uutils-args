@@ -15,27 +15,58 @@ pub(crate) enum ArgAttr {
 
 pub(crate) fn parse_argument_attribute(attr: &Attribute) -> ArgAttr {
     if attr.path.is_ident("option") {
-        ArgAttr::Option(parse_option_attr(attr))
+        ArgAttr::Option(OptionAttr::parse(attr))
     } else if attr.path.is_ident("positional") {
-        ArgAttr::Positional(parse_positional_attr(attr))
+        ArgAttr::Positional(PositionalAttr::parse(attr))
     } else {
         panic!("Internal error: invalid argument attribute");
+    }
+}
+
+enum AttributeArguments {
+    String(String),
+    Parser(Expr),
+    Default(Expr),
+    Value(Expr),
+    NumArgs(RangeInclusive<usize>),
+    File(String),
+}
+
+impl AttributeArguments {
+    fn parse_all(attr: &Attribute) -> Vec<Self> {
+        attr.parse_args_with(Punctuated::<AttributeArguments, Token![,]>::parse_terminated)
+            .map(|iter| iter.into_iter().collect::<Vec<_>>())
+            .unwrap_or_default()
     }
 }
 
 #[derive(Default)]
 pub(crate) struct OptionAttr {
     pub(crate) flags: Flags,
-    // This should probably not accept any expr to give better errors.
-    // Closures should be allowed though.
     pub(crate) parser: Option<Expr>,
     pub(crate) default: Option<Expr>,
 }
 
-enum OptionAttrArg {
-    Arg(String),
-    Parser(Expr),
-    Default(Expr),
+impl OptionAttr {
+    pub(crate) fn parse(attr: &Attribute) -> Self {
+        let mut option_attr = OptionAttr::default();
+
+        for arg in AttributeArguments::parse_all(attr) {
+            match arg {
+                AttributeArguments::String(a) => option_attr.flags.add(&a),
+                AttributeArguments::Parser(e) => option_attr.parser = Some(e),
+                AttributeArguments::Default(e) => option_attr.default = Some(e),
+                _ => panic!("Invalid argument"),
+            };
+        }
+
+        assert!(
+            !option_attr.flags.is_empty(),
+            "must give a flag in an option attribute"
+        );
+
+        option_attr
+    }
 }
 
 #[derive(Default)]
@@ -44,9 +75,20 @@ pub(crate) struct ValueAttr {
     pub(crate) value: Option<Expr>,
 }
 
-enum ValueAttrArg {
-    Key(String),
-    Value(Expr),
+impl ValueAttr {
+    pub(crate) fn parse(attr: &Attribute) -> Self {
+        let mut value_attr = Self::default();
+
+        for arg in AttributeArguments::parse_all(attr) {
+            match arg {
+                AttributeArguments::String(k) => value_attr.keys.push(k),
+                AttributeArguments::Value(e) => value_attr.value = Some(e),
+                _ => panic!(),
+            };
+        }
+
+        value_attr
+    }
 }
 
 pub(crate) struct PositionalAttr {
@@ -59,108 +101,67 @@ impl Default for PositionalAttr {
     }
 }
 
-enum PositionalAttrArg {
-    NumArgs(RangeInclusive<usize>),
-}
+impl PositionalAttr {
+    pub(crate) fn parse(attr: &Attribute) -> Self {
+        let mut positional_attr = Self::default();
 
-pub(crate) fn parse_option_attr(attr: &Attribute) -> OptionAttr {
-    let mut option_attr = OptionAttr::default();
-    let parsed_args = attr
-        .parse_args_with(Punctuated::<OptionAttrArg, Token![,]>::parse_terminated)
-        .unwrap_or_default();
-
-    for arg in parsed_args {
-        match arg {
-            OptionAttrArg::Arg(a) => option_attr.flags.add(&a),
-            OptionAttrArg::Parser(e) => option_attr.parser = Some(e),
-            OptionAttrArg::Default(e) => option_attr.default = Some(e),
-        };
-    }
-    assert!(
-        !option_attr.flags.is_empty(),
-        "must give a flag in an option attribute"
-    );
-    option_attr
-}
-
-impl Parse for OptionAttrArg {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        if input.peek(LitStr) {
-            return parse_flag(input).map(Self::Arg);
-        }
-
-        if input.peek(Ident) {
-            let name = input.parse::<Ident>()?.to_string();
-            input.parse::<Token![=]>()?;
-            match name.as_str() {
-                "parser" => return Ok(Self::Parser(input.parse::<Expr>()?)),
-                "default" => return Ok(Self::Default(input.parse::<Expr>()?)),
-                _ => panic!("Unrecognized argument {} for option attribute", name),
+        for arg in AttributeArguments::parse_all(attr) {
+            match arg {
+                AttributeArguments::NumArgs(k) => positional_attr.num_args = k,
+                _ => panic!(),
             };
         }
-        panic!("Arguments to option attribute must be string literals");
+
+        positional_attr
     }
 }
 
-pub(crate) fn parse_value_attr(attr: Attribute) -> ValueAttr {
-    let mut value_attr = ValueAttr::default();
-    let Ok(parsed_args) = attr
-        .parse_args_with(Punctuated::<ValueAttrArg, Token![,]>::parse_terminated)
-    else {
-        return value_attr;
-    };
-
-    for arg in parsed_args {
-        match arg {
-            ValueAttrArg::Key(k) => value_attr.keys.push(k),
-            ValueAttrArg::Value(e) => value_attr.value = Some(e),
-        };
-    }
-
-    value_attr
+#[derive(Default)]
+pub(crate) struct HelpAttr {
+    pub(crate) flags: Flags,
+    pub(crate) file: Option<String>,
 }
 
-impl Parse for ValueAttrArg {
+impl HelpAttr {
+    pub(crate) fn parse(attr: &Attribute) -> Self {
+        let mut help = Self::default();
+        for arg in AttributeArguments::parse_all(attr) {
+            match arg {
+                AttributeArguments::String(s) => help.flags.add(&s),
+                AttributeArguments::File(filename) => help.file = Some(filename),
+                _ => panic!(),
+            }
+        }
+
+        help
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct VersionAttr {
+    pub(crate) flags: Flags,
+}
+
+impl VersionAttr {
+    pub(crate) fn parse(attr: &Attribute) -> Self {
+        let mut help = Self::default();
+        for arg in AttributeArguments::parse_all(attr) {
+            match arg {
+                AttributeArguments::String(s) => help.flags.add(&s),
+                _ => panic!(),
+            }
+        }
+
+        help
+    }
+}
+
+impl Parse for AttributeArguments {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(LitStr) {
-            return Ok(Self::Key(input.parse::<LitStr>()?.value()));
+            return Ok(Self::String(input.parse::<LitStr>().unwrap().value()));
         }
 
-        if input.peek(Ident) {
-            let name = input.parse::<Ident>()?.to_string();
-            input.parse::<Token![=]>()?;
-            match name.as_str() {
-                "value" => return Ok(Self::Value(input.parse::<Expr>()?)),
-                _ => panic!("Unrecognized argument {} for option attribute", name),
-            };
-        }
-        panic!("Arguments to option attribute must be string literals");
-    }
-}
-
-fn parse_flag(input: ParseStream) -> syn::Result<String> {
-    Ok(input.parse::<LitStr>().unwrap().value())
-}
-
-pub(crate) fn parse_positional_attr(attr: &Attribute) -> PositionalAttr {
-    let mut positional_attr = PositionalAttr::default();
-    let Ok(parsed_args) = attr
-        .parse_args_with(Punctuated::<PositionalAttrArg, Token![,]>::parse_terminated)
-    else {
-        return positional_attr;
-    };
-
-    for arg in parsed_args {
-        match arg {
-            PositionalAttrArg::NumArgs(k) => positional_attr.num_args = k,
-        };
-    }
-
-    positional_attr
-}
-
-impl Parse for PositionalAttrArg {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
         if (input.peek(LitInt) && input.peek2(Token![..])) || input.peek(Token![..]) {
             // We're dealing with a range
             let range = input.parse::<ExprRange>()?;
@@ -204,14 +205,17 @@ impl Parse for PositionalAttrArg {
             return Ok(Self::NumArgs(n..=n));
         }
 
-        // if input.peek(Ident) {
-        //     let name = input.parse::<Ident>()?.to_string();
-        //     input.parse::<Token![=]>()?;
-        //     match name.as_str() {
-        //         "value" => return Ok(Self::Value(input.parse::<Expr>()?)),
-        //         _ => panic!("Unrecognized argument {} for option attribute", name),
-        //     };
-        // }
-        panic!("unexpected argument to positional");
+        if input.peek(Ident) {
+            let name = input.parse::<Ident>()?.to_string();
+            input.parse::<Token![=]>()?;
+            match name.as_str() {
+                "parser" => return Ok(Self::Parser(input.parse::<Expr>()?)),
+                "default" => return Ok(Self::Default(input.parse::<Expr>()?)),
+                "value" => return Ok(Self::Value(input.parse::<Expr>()?)),
+                "file" => return Ok(Self::File(input.parse::<LitStr>()?.value())),
+                _ => panic!("Unrecognized argument {} for option attribute", name),
+            };
+        }
+        panic!("Arguments to option attribute must be string literals");
     }
 }

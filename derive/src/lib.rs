@@ -2,14 +2,15 @@ mod action;
 mod argument;
 mod attributes;
 mod flags;
+mod help;
 mod markdown;
 
 use action::{parse_action_attr, ActionAttr, ActionType};
 use argument::{
-    help_handling, help_string, long_handling, parse_argument, parse_help_flags,
-    parse_version_flags, positional_handling, short_handling, version_handling,
+    long_handling, parse_argument, positional_handling, short_handling, version_handling,
 };
-use attributes::{parse_value_attr, ValueAttr};
+use attributes::ValueAttr;
+use help::{help_handling, help_string, parse_help_attr, parse_version_attr};
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -119,7 +120,7 @@ pub fn options(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(Arguments, attributes(flag, option, positional, help))]
+#[proc_macro_derive(Arguments, attributes(flag, option, positional, help, version))]
 pub fn arguments(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -130,16 +131,16 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         panic!("Input should be an enum!");
     };
 
-    let help_flags = parse_help_flags(&input.attrs);
-    let version_flags = parse_version_flags(&input.attrs);
+    let help_attr = parse_help_attr(&input.attrs);
+    let version_attr = parse_version_attr(&input.attrs);
     let arguments: Vec<_> = data.variants.into_iter().flat_map(parse_argument).collect();
 
     let short = short_handling(&arguments);
-    let long = long_handling(&arguments, &help_flags);
+    let long = long_handling(&arguments, &help_attr.flags);
     let (positional, missing_argument_checks) = positional_handling(&arguments);
-    let help_string = help_string(&arguments, &help_flags, &version_flags);
-    let help = help_handling(&help_flags);
-    let version = version_handling(&version_flags);
+    let help_string = help_string(&arguments, &help_attr, &version_attr.flags);
+    let help = help_handling(&help_attr.flags);
+    let version = version_handling(&version_attr.flags);
     let version_string = quote!(format!(
         "{} {}",
         option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_PKG_NAME")),
@@ -205,7 +206,7 @@ pub fn from_value(input: TokenStream) -> TokenStream {
                 continue;
             }
 
-            let ValueAttr { keys, value } = parse_value_attr(attr);
+            let ValueAttr { keys, value } = ValueAttr::parse(&attr);
 
             let keys = if keys.is_empty() {
                 vec![variant_name.to_lowercase()]
