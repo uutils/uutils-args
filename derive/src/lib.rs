@@ -100,7 +100,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                 while let Some(arg) = iter.next_arg()? {
                     match arg {
                         Argument::Help => {
-                            println!("{}", iter.help());
+                            print!("{}", iter.help());
                             std::process::exit(0);
                         },
                         Argument::Version => {

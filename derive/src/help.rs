@@ -7,7 +7,7 @@ use crate::{
     argument::{ArgType, Argument},
     attributes::{HelpAttr, VersionAttr},
     flags::Flags,
-    markdown::{get_h2, str_to_renderer},
+    markdown::{get_after_event, get_h2, str_to_renderer},
 };
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -66,11 +66,17 @@ pub(crate) fn help_string(
         }
     }
 
-    let summary = if let Some(file) = &help_attr.file {
-        let renderer = read_help_file(file);
-        quote!(s.push_str(&#renderer.render());)
+    let (summary, after_options) = if let Some(file) = &help_attr.file {
+        let (summary, after_options) = read_help_file(file);
+        (
+            quote!(s.push_str(&#summary.render());),
+            quote!(
+                s.push('\n');
+                s.push_str(&#after_options.render());
+            ),
+        )
     } else {
-        quote!()
+        (quote!(), quote!())
     };
 
     if !help_attr.flags.is_empty() {
@@ -136,11 +142,13 @@ pub(crate) fn help_string(
 
         #options
 
+        #after_options
+
         s
     )
 }
 
-fn read_help_file(file: &str) -> TokenStream {
+fn read_help_file(file: &str) -> (TokenStream, TokenStream) {
     let path = Path::new(file);
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let mut location = PathBuf::from(manifest_dir);
@@ -149,5 +157,8 @@ fn read_help_file(file: &str) -> TokenStream {
     let mut f = std::fs::File::open(location).unwrap();
     f.read_to_string(&mut contents).unwrap();
 
-    get_h2("summary", &contents)
+    (
+        get_h2("summary", &contents),
+        get_after_event(pulldown_cmark::Event::Rule, &contents),
+    )
 }

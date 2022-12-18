@@ -62,7 +62,11 @@ pub(crate) fn get_h2(heading_name: &str, s: &str) -> TokenStream {
                             })
                             .skip(1)
                             .take_while(|e| {
-                                !matches!(e, Event::Start(Tag::Heading(HeadingLevel::H2, _, _)))
+                                !matches!(
+                                    e,
+                                    Event::Start(Tag::Heading(HeadingLevel::H2, _, _))
+                                        | Event::Rule
+                                )
                             }),
                     )
                 }
@@ -71,6 +75,16 @@ pub(crate) fn get_h2(heading_name: &str, s: &str) -> TokenStream {
     }
 
     let parsed_events = selected_events.into_iter().map(md_to_quote);
+    prefix(quote!(Renderer::new(
+        80,
+        vec![#(#parsed_events),*].into_iter()
+    )))
+}
+
+pub(crate) fn get_after_event(event: Event, s: &str) -> TokenStream {
+    let events = Parser::new(s);
+
+    let parsed_events = events.skip_while(|e| e != &event).skip(1).map(md_to_quote);
     prefix(quote!(Renderer::new(
         80,
         vec![#(#parsed_events),*].into_iter()
