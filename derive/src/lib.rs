@@ -6,11 +6,9 @@ mod help;
 mod markdown;
 
 use action::{parse_action_attr, ActionAttr, ActionType};
-use argument::{
-    long_handling, parse_argument, positional_handling, short_handling, version_handling,
-};
+use argument::{long_handling, parse_argument, positional_handling, short_handling};
 use attributes::ValueAttr;
-use help::{help_handling, help_string, parse_help_attr, parse_version_attr};
+use help::{help_handling, help_string, parse_help_attr, parse_version_attr, version_handling};
 
 use proc_macro::TokenStream;
 use quote::quote;

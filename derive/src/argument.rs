@@ -314,17 +314,3 @@ fn argument_expression(arg: &Argument) -> TokenStream {
         _ => panic!("WWWOWOWOWOW"),
     }
 }
-
-pub(crate) fn version_handling(version_flags: &Flags) -> TokenStream {
-    if version_flags.is_empty() {
-        return quote!();
-    }
-
-    let pat = version_flags.pat();
-
-    quote!(
-        if let #pat = arg {
-            return Ok(Some(Argument::Version));
-        }
-    )
-}

@@ -162,3 +162,17 @@ fn read_help_file(file: &str) -> (TokenStream, TokenStream) {
         get_after_event(pulldown_cmark::Event::Rule, &contents),
     )
 }
+
+pub(crate) fn version_handling(version_flags: &Flags) -> TokenStream {
+    if version_flags.is_empty() {
+        return quote!();
+    }
+
+    let pat = version_flags.pat();
+
+    quote!(
+        if let #pat = arg {
+            return Ok(Some(Argument::Version));
+        }
+    )
+}
