@@ -24,6 +24,7 @@ pub(crate) enum ArgType {
     },
     Positional {
         num_args: RangeInclusive<usize>,
+        last: bool,
     },
 }
 
@@ -64,6 +65,7 @@ pub(crate) fn parse_argument(v: Variant) -> Option<Argument> {
             assert!(field.is_some(), "Positional arguments must have a field");
             ArgType::Positional {
                 num_args: pos.num_args,
+                last: pos.last,
             }
         }
     };
@@ -237,8 +239,8 @@ pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStrea
     let mut missing_argument_checks = vec![];
 
     for arg @ Argument { name, arg_type, .. } in args {
-        let num_args = match arg_type {
-            ArgType::Positional { num_args } => num_args,
+        let (num_args, last) = match arg_type {
+            ArgType::Positional { num_args, last } => (num_args, last),
             ArgType::Option { .. } => continue,
         };
 
@@ -251,7 +253,11 @@ pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStrea
 
         last_index += num_args.end();
 
-        let expr = argument_expression(arg);
+        let expr = if *last {
+            last_positional_expression(&arg.ident)
+        } else {
+            positional_expression(&arg.ident)
+        };
         match_arms.push(quote!(0..=#last_index => { #expr }));
     }
 
@@ -303,14 +309,19 @@ fn required_value_expression(ident: &Ident) -> TokenStream {
     quote!(Self::#ident(FromValue::from_value(parser.value()?)?))
 }
 
-fn argument_expression(arg: &Argument) -> TokenStream {
-    let Argument {
-        ident, arg_type, ..
-    } = arg;
-    match arg_type {
-        ArgType::Positional { .. } => quote!(
-            Self::#ident(FromValue::from_value(value)?)
-        ),
-        _ => panic!("WWWOWOWOWOW"),
-    }
+fn positional_expression(ident: &Ident) -> TokenStream {
+    quote!(
+        Self::#ident(FromValue::from_value(value)?)
+    )
+}
+
+fn last_positional_expression(ident: &Ident) -> TokenStream {
+    quote!({
+        let raw_args = parser.raw_args()?;
+        let collection = std::iter::once(value)
+            .chain(raw_args)
+            .map(FromValue::from_value)
+            .collect::<Result<_,_>>()?;
+        Self::#ident(collection)
+    })
 }

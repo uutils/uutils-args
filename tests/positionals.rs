@@ -1,7 +1,4 @@
-use std::ffi::OsString;
 use uutils_args::{Arguments, Options};
-
-const EMPTY: [OsString; 0] = [];
 
 #[test]
 fn one_positional() {
@@ -21,7 +18,7 @@ fn one_positional() {
     let settings = Settings::parse(["test", "foo"]).unwrap();
     assert_eq!(settings.file1, "foo");
 
-    assert!(Settings::parse(EMPTY).is_err());
+    assert!(Settings::parse(["test"]).is_err());
 }
 
 #[test]
@@ -47,7 +44,7 @@ fn two_positionals() {
     assert_eq!(settings.foo, "a");
     assert_eq!(settings.bar, "b");
 
-    assert!(Settings::parse(EMPTY).is_err());
+    assert!(Settings::parse(["test"]).is_err());
 }
 
 #[test]
@@ -65,7 +62,7 @@ fn optional_positional() {
         foo: Option<String>,
     }
 
-    let settings = Settings::parse(EMPTY).unwrap();
+    let settings = Settings::parse(["test"]).unwrap();
     assert_eq!(settings.foo, None);
     let settings = Settings::parse(["test", "bar"]).unwrap();
     assert_eq!(settings.foo.unwrap(), "bar");
@@ -88,6 +85,50 @@ fn collect_positional() {
 
     let settings = Settings::parse(["test", "a", "b", "c"]).unwrap();
     assert_eq!(settings.foo, vec!["a", "b", "c"]);
-    let settings = Settings::parse(EMPTY).unwrap();
+    let settings = Settings::parse(["test"]).unwrap();
     assert_eq!(settings.foo, Vec::<String>::new());
+}
+
+#[test]
+fn last1() {
+    #[derive(Arguments, Clone)]
+    enum Arg {
+        #[positional(last, ..)]
+        Foo(Vec<String>),
+    }
+
+    #[derive(Default, Options)]
+    #[arg_type(Arg)]
+    struct Settings {
+        #[set(Arg::Foo)]
+        foo: Vec<String>,
+    }
+
+    let settings = Settings::parse(["test", "a", "-b", "c"]).unwrap();
+    assert_eq!(settings.foo, vec!["a", "-b", "c"]);
+}
+
+#[test]
+fn last2() {
+    #[derive(Arguments, Clone)]
+    enum Arg {
+        #[option("-a")]
+        A,
+
+        #[positional(last, ..)]
+        Foo(Vec<String>),
+    }
+
+    #[derive(Default, Options)]
+    #[arg_type(Arg)]
+    struct Settings {
+        #[set(Arg::Foo)]
+        foo: Vec<String>,
+    }
+
+    let settings = Settings::parse(["test", "-a"]).unwrap();
+    assert_eq!(settings.foo, Vec::<String>::new());
+
+    let settings = Settings::parse(["test", "--", "-a"]).unwrap();
+    assert_eq!(settings.foo, vec!["-a"]);
 }

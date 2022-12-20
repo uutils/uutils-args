@@ -30,6 +30,7 @@ enum AttributeArguments {
     Value(Expr),
     NumArgs(RangeInclusive<usize>),
     File(String),
+    Last,
 }
 
 impl AttributeArguments {
@@ -93,11 +94,15 @@ impl ValueAttr {
 
 pub(crate) struct PositionalAttr {
     pub(crate) num_args: RangeInclusive<usize>,
+    pub(crate) last: bool,
 }
 
 impl Default for PositionalAttr {
     fn default() -> Self {
-        Self { num_args: 1..=1 }
+        Self {
+            num_args: 1..=1,
+            last: false,
+        }
     }
 }
 
@@ -108,6 +113,7 @@ impl PositionalAttr {
         for arg in AttributeArguments::parse_all(attr) {
             match arg {
                 AttributeArguments::NumArgs(k) => positional_attr.num_args = k,
+                AttributeArguments::Last => positional_attr.last = true,
                 _ => panic!(),
             };
         }
@@ -207,7 +213,16 @@ impl Parse for AttributeArguments {
 
         if input.peek(Ident) {
             let name = input.parse::<Ident>()?.to_string();
+
+            // Arguments that do not take values
+            match name.as_str() {
+                "last" => return Ok(Self::Last),
+                _ => {}
+            }
+
             input.parse::<Token![=]>()?;
+
+            // Arguments that do take values
             match name.as_str() {
                 "parser" => return Ok(Self::Parser(input.parse::<Expr>()?)),
                 "default" => return Ok(Self::Default(input.parse::<Expr>()?)),
