@@ -195,6 +195,8 @@ pub fn from_value(input: TokenStream) -> TokenStream {
         panic!("Input should be an enum!");
     };
 
+    let mut options = Vec::new();
+
     let mut match_arms = vec![];
     for variant in data.variants {
         let variant_name = variant.ident.to_string();
@@ -212,6 +214,8 @@ pub fn from_value(input: TokenStream) -> TokenStream {
                 keys
             };
 
+            options.extend_from_slice(&keys);
+
             let stmt = if let Some(v) = value {
                 quote!(#(| #keys)* => #v)
             } else {
@@ -223,19 +227,42 @@ pub fn from_value(input: TokenStream) -> TokenStream {
         }
     }
 
+    let num_opts = options.len();
     let expanded = quote!(
         impl #impl_generics FromValue for #name #ty_generics #where_clause {
-            fn from_value(value: std::ffi::OsString) -> Result<Self, lexopt::Error> {
-                use uutils_args::FromValue;
-                let value = value.into_string()?;
-                Ok(match value.as_str() {
-                    #(#match_arms),*,
-                    _ => {
-                        return Err(lexopt::Error::ParsingFailed {
-                            value,
-                            error: "Invalid value".into(),
-                        });
+            fn from_value(option: &str, value: std::ffi::OsString) -> Result<Self, uutils_args::Error> {
+                let value = String::from_value(option, value)?;
+                let options: [&str; #num_opts] = [#(#options),*];
+                let mut candidates = Vec::new();
+                let mut exact_match = None;
+
+                for opt in options {
+                    if opt == value {
+                        exact_match = Some(opt);
+                        break;
+                    } else if opt.starts_with(&value) {
+                        candidates.push(opt);
                     }
+                }
+
+                let opt = match (exact_match, &candidates[..]) {
+                    (Some(opt), _) => opt,
+                    (None, [opt]) => opt,
+                    (None, []) => return Err(uutils_args::Error::ParsingFailed {
+                        option: option.to_string(),
+                        value,
+                        error: "Invalid value".into(),
+                    }),
+                    (None, opts) => return Err(uutils_args::Error::AmbiguousValue {
+                        option: option.to_string(),
+                        value,
+                        candidates: candidates.iter().map(|s| s.to_string()).collect(),
+                    })
+                };
+
+                Ok(match opt {
+                    #(#match_arms),*,
+                    _ => unreachable!("Should be caught by (None, []) case above.")
                 })
             }
         }

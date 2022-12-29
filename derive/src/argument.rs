@@ -137,6 +137,7 @@ pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
     }
 
     quote!(
+        let option = format!("-{}", short);
         match short {
             #(#match_arms)*
             _ => return Err(arg.unexpected().into()),
@@ -187,7 +188,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
     // TODO: Add version check
     let help_check = if !help_flags.long.is_empty() {
         let long_help_flags = help_flags.long.iter().map(|f| &f.flag);
-        quote!(if let #(#long_help_flags)|* = opt {
+        quote!(if let #(#long_help_flags)|* = long {
             return Ok(Some(Argument::Help));
         })
     } else {
@@ -209,7 +210,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
             }
         }
 
-        let opt = match (exact_match, &candidates[..]) {
+        let long = match (exact_match, &candidates[..]) {
             (Some(opt), _) => opt,
             (None, [opt]) => opt,
             (None, []) => return Err(arg.unexpected().into()),
@@ -221,7 +222,8 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
 
         #help_check
 
-        match opt {
+        let option = format!("--{}", long);
+        match long {
             #(#match_arms)*
             _ => unreachable!("Should be caught by (None, []) case above.")
         }
@@ -300,27 +302,29 @@ fn default_value_expression(ident: &Ident, default_expr: &TokenStream) -> TokenS
 
 fn optional_value_expression(ident: &Ident, default_expr: &TokenStream) -> TokenStream {
     quote!(match parser.optional_value() {
-        Some(value) => Self::#ident(FromValue::from_value(value)?),
+        Some(value) => Self::#ident(FromValue::from_value(&option, value)?),
         None => Self::#ident(#default_expr),
     })
 }
 
 fn required_value_expression(ident: &Ident) -> TokenStream {
-    quote!(Self::#ident(FromValue::from_value(parser.value()?)?))
+    quote!(Self::#ident(FromValue::from_value(&option, parser.value()?)?))
 }
 
 fn positional_expression(ident: &Ident) -> TokenStream {
+    // TODO: Add option name in this from_value call
     quote!(
-        Self::#ident(FromValue::from_value(value)?)
+        Self::#ident(FromValue::from_value("", value)?)
     )
 }
 
 fn last_positional_expression(ident: &Ident) -> TokenStream {
+    // TODO: Add option name in this from_value call
     quote!({
         let raw_args = parser.raw_args()?;
         let collection = std::iter::once(value)
             .chain(raw_args)
-            .map(FromValue::from_value)
+            .map(|v| FromValue::from_value("", v))
             .collect::<Result<_,_>>()?;
         Self::#ident(collection)
     })

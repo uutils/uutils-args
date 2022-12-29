@@ -1,3 +1,5 @@
+use std::ffi::OsString;
+
 use uutils_args::{Arguments, FromValue, Options};
 
 #[test]
@@ -104,14 +106,15 @@ fn enum_with_complex_from_value() {
     }
 
     impl FromValue for Indent {
-        fn from_value(value: std::ffi::OsString) -> Result<Self, lexopt::Error> {
-            let value = value.into_string()?;
+        fn from_value(option: &str, value: std::ffi::OsString) -> Result<Self, uutils_args::Error> {
+            let value = String::from_value(option, value)?;
             if value == "tabs" {
                 Ok(Self::Tabs)
             } else if let Ok(n) = value.parse() {
                 Ok(Self::Spaces(n))
             } else {
-                Err(lexopt::Error::ParsingFailed {
+                Err(uutils_args::Error::ParsingFailed {
+                    option: option.to_string(),
                     value,
                     error: "Failure!".into(),
                 })
@@ -390,4 +393,31 @@ fn mktemp_tmpdir() {
     assert_eq!(settings.tmpdir.unwrap(), "/tmp");
 
     assert!(Settings::parse(["test", "-p"]).is_err());
+}
+
+#[test]
+fn infer_value() {
+    #[derive(FromValue, PartialEq, Eq, Debug)]
+    enum Foo {
+        #[value("long")]
+        Long,
+        #[value("link")]
+        Link,
+        #[value("deck")]
+        Deck,
+        #[value("desk")]
+        Desk,
+    }
+
+    assert_eq!(
+        Foo::from_value("--foo", OsString::from("lo")).unwrap(),
+        Foo::Long
+    );
+    assert_eq!(
+        Foo::from_value("--foo", OsString::from("dec")).unwrap(),
+        Foo::Deck
+    );
+
+    Foo::from_value("--foo", OsString::from("l")).unwrap_err();
+    Foo::from_value("--foo", OsString::from("de")).unwrap_err();
 }
