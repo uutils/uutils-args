@@ -1,4 +1,4 @@
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 use uutils_args::{Arguments, Options};
 
@@ -138,9 +138,7 @@ fn check_output() {
 #[test]
 fn files() {
     assert_eq!(
-        Settings::parse(["b2sum", "foo", "bar"])
-            .unwrap()
-            .files,
+        Settings::parse(["b2sum", "foo", "bar"]).unwrap().files,
         vec![Path::new("foo"), Path::new("bar")]
     );
 }

@@ -53,6 +53,12 @@ impl Default for Settings {
 fn wrap() {
     assert_eq!(Settings::parse(["base32"]).unwrap().wrap, Some(76));
     assert_eq!(Settings::parse(["base32", "-w0"]).unwrap().wrap, None);
-    assert_eq!(Settings::parse(["base32", "-w100"]).unwrap().wrap, Some(100));
-    assert_eq!(Settings::parse(["base32", "--wrap=100"]).unwrap().wrap, Some(100));
+    assert_eq!(
+        Settings::parse(["base32", "-w100"]).unwrap().wrap,
+        Some(100)
+    );
+    assert_eq!(
+        Settings::parse(["base32", "--wrap=100"]).unwrap().wrap,
+        Some(100)
+    );
 }

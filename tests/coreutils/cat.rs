@@ -95,10 +95,10 @@ fn show() {
 
     let s = Settings::parse(["cat", "-A"]).unwrap();
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
-    
+
     let s = Settings::parse(["cat", "-te"]).unwrap();
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
-    
+
     let s = Settings::parse(["cat", "-vET"]).unwrap();
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 }

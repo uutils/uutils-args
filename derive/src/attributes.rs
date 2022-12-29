@@ -215,9 +215,8 @@ impl Parse for AttributeArguments {
             let name = input.parse::<Ident>()?.to_string();
 
             // Arguments that do not take values
-            match name.as_str() {
-                "last" => return Ok(Self::Last),
-                _ => {}
+            if name.as_str() == "last" {
+                return Ok(Self::Last);
             }
 
             input.parse::<Token![=]>()?;
