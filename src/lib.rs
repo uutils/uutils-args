@@ -119,10 +119,12 @@ pub trait Options: Sized + Default {
         I: IntoIterator + 'static,
         I::Item: Into<OsString>,
     {
-        let mut _self = Self::default();
+        let mut _self = Self::initial()?;
         _self.apply_args(args)?;
         Ok(_self)
     }
+
+    fn initial() -> Result<Self, Error>;
 
     fn apply_args<I>(&mut self, args: I) -> Result<(), Error>
     where

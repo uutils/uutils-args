@@ -15,14 +15,14 @@ pub(crate) enum ActionType {
     Map(Vec<syn::Arm>),
 }
 
-fn parse_paths(attr: Attribute) -> Vec<syn::Path> {
+fn parse_paths(attr: &Attribute) -> Vec<syn::Path> {
     attr.parse_args_with(Punctuated::<syn::Path, Token![|]>::parse_terminated)
         .into_iter()
         .flatten()
         .collect()
 }
 
-pub(crate) fn parse_action_attr(attr: Attribute) -> Option<ActionAttr> {
+pub(crate) fn parse_action_attr(attr: &Attribute) -> Option<ActionAttr> {
     if attr.path.is_ident("collect") {
         let inner: ActionType = attr.parse_args().unwrap();
         Some(ActionAttr {

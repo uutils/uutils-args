@@ -1,13 +1,14 @@
 mod action;
 mod argument;
 mod attributes;
+mod field;
 mod flags;
 mod help;
 mod markdown;
 
-use action::{parse_action_attr, ActionAttr, ActionType};
 use argument::{long_handling, parse_argument, positional_handling, short_handling};
 use attributes::ValueAttr;
+use field::{parse_field, FieldData};
 use help::{help_handling, help_string, parse_help_attr, parse_version_attr, version_handling};
 
 use proc_macro::TokenStream;
@@ -19,7 +20,7 @@ use syn::{
     DeriveInput, Fields,
 };
 
-#[proc_macro_derive(Options, attributes(arg_type, map, set, set_true, set_false, collect))]
+#[proc_macro_derive(Options, attributes(arg_type, map, set, field, collect))]
 pub fn options(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -44,50 +45,26 @@ pub fn options(input: TokenStream) -> TokenStream {
     // The key of this map is a literal pattern and the value
     // is whatever code needs to be run when that pattern is encountered.
     let mut stmts = Vec::new();
-
+    let mut defaults = Vec::new();
     for field in fields.named {
-        let field_ident = field.ident.as_ref().unwrap();
-        let mut match_arms = vec![];
-        for attr in field.attrs {
-            let Some(ActionAttr { action_type, collect }) = parse_action_attr(attr) else { continue; };
+        let FieldData {
+            ident,
+            default_value,
+            match_stmt,
+        } = parse_field(&field);
 
-            let mut patterns_and_expressions = vec![];
-            match action_type {
-                ActionType::Map(arms) => {
-                    for arm in arms {
-                        let pat = arm.pat;
-                        let expr = arm.body;
-                        patterns_and_expressions.push((quote!(#pat), quote!(#expr)));
-                    }
-                }
-
-                ActionType::Set(pats) => {
-                    let pats: Vec<_> = pats.iter().map(|p| quote!(#p(x))).collect();
-                    let pats = quote!(#(#pats)|*);
-                    patterns_and_expressions.push((pats, quote!(x.clone())))
-                }
-            };
-            for (pat, expr) in patterns_and_expressions {
-                match_arms.push(if collect {
-                    quote!(
-                        #pat => { self.#field_ident.push(#expr) }
-                    )
-                } else {
-                    quote!(
-                        #pat => { self.#field_ident = #expr }
-                    )
-                });
-            }
-        }
-
-        stmts.push(quote!(match arg.clone() {
-            #(#match_arms)*
-            _ => {}
-        }))
+        defaults.push(quote!(#ident: #default_value));
+        stmts.push(match_stmt);
     }
 
     let expanded = quote!(
         impl #impl_generics Options for #name #ty_generics #where_clause {
+            fn initial() -> Result<Self, uutils_args::Error> {
+                Ok(Self {
+                    #(#defaults),*
+                })
+            }
+
             fn apply_args<I>(&mut self, args: I) -> Result<(), uutils_args::Error>
             where
                 I: IntoIterator + 'static,

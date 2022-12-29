@@ -19,7 +19,7 @@ enum Arg {
     File(PathBuf),
 }
 
-#[derive(Options)]
+#[derive(Options, Default)]
 #[arg_type(Arg)]
 struct Settings {
     #[map(Arg::Decode => true)]
@@ -32,21 +32,11 @@ struct Settings {
         Arg::Wrap(0) => None,
         Arg::Wrap(n) => Some(n),
     )]
+    #[field(default = Some(76))]
     wrap: Option<usize>,
 
     #[map(Arg::File(f) => Some(f))]
     file: Option<PathBuf>,
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            decode: false,
-            ignore_garbage: false,
-            wrap: Some(76),
-            file: None,
-        }
-    }
 }
 
 #[test]
