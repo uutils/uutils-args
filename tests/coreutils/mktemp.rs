@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 use uutils_args::{Arguments, Options};
 
 #[derive(Clone, Arguments)]
@@ -13,14 +15,14 @@ enum Arg {
     #[option("-q", "--quiet")]
     Quiet,
 
-    #[option("--suffix")]
+    #[option("--suffix=SUFFIX")]
     Suffix(String),
 
     #[option("-t")]
     TreatAsTemplate,
 
-    #[option("-p", "--tmpdir")]
-    TmpDir(Option<String>),
+    #[option("-p DIR", "--tmpdir[=DIR]", default = ".".into())]
+    TmpDir(PathBuf),
 
     #[positional(0..=1)]
     Template(String),
@@ -38,6 +40,9 @@ struct Settings {
     #[map(Arg::Quiet => true)]
     quiet: bool,
 
+    #[map(Arg::TmpDir(p) => Some(p))]
+    tmp_dir: Option<PathBuf>,
+
     #[map(Arg::Suffix(s) => Some(s))]
     suffix: Option<String>,
 
@@ -49,6 +54,36 @@ struct Settings {
 }
 
 #[test]
-fn test() {
-    assert!(true);
+fn suffix() {
+    let s = Settings::parse(["mktemp", "--suffix=hello"]).unwrap();
+    assert_eq!(s.suffix.unwrap(), "hello");
+
+    let s = Settings::parse(["mktemp", "--suffix="]).unwrap();
+    assert_eq!(s.suffix.unwrap(), "");
+
+    let s = Settings::parse(["mktemp", "--suffix="]).unwrap();
+    assert_eq!(s.suffix.unwrap(), "");
+
+    let s = Settings::parse(["mktemp"]).unwrap();
+    assert_eq!(s.suffix, None);
+}
+
+#[test]
+fn tmpdir() {
+    let s = Settings::parse(["mktemp", "--tmpdir"]).unwrap();
+    assert_eq!(s.tmp_dir.unwrap(), Path::new("."));
+
+    let s = Settings::parse(["mktemp", "--tmpdir="]).unwrap();
+    assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
+
+    let s = Settings::parse(["mktemp", "-p", "foo"]).unwrap();
+    assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
+
+    let s = Settings::parse(["mktemp", "-pfoo"]).unwrap();
+    assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
+
+    let s = Settings::parse(["mktemp", "-p", ""]).unwrap();
+    assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
+
+    assert!(Settings::parse(["mktemp", "-p"]).is_err());
 }
