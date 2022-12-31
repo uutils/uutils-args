@@ -16,8 +16,8 @@ fn true_default() {
         foo: bool,
     }
 
-    assert!(Settings::parse(["test"]).unwrap().foo);
-    assert!(!Settings::parse(["test", "--foo"]).unwrap().foo);
+    assert!(Settings::parse(["test"]).foo);
+    assert!(!Settings::parse(["test", "--foo"]).foo);
 }
 
 #[test]
@@ -37,11 +37,11 @@ fn env_var_string() {
     }
 
     std::env::set_var("FOO", "one");
-    assert_eq!(Settings::parse(["test"]).unwrap().foo, "one");
+    assert_eq!(Settings::parse(["test"]).foo, "one");
 
     std::env::set_var("FOO", "two");
-    assert_eq!(Settings::parse(["test"]).unwrap().foo, "two");
+    assert_eq!(Settings::parse(["test"]).foo, "two");
 
     std::env::remove_var("FOO");
-    assert_eq!(Settings::parse(["test"]).unwrap().foo, "");
+    assert_eq!(Settings::parse(["test"]).foo, "");
 }

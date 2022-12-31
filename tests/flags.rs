@@ -15,7 +15,7 @@ fn one_flag() {
         foo: bool,
     }
 
-    let settings = Settings::parse(["test", "-f"]).unwrap();
+    let settings = Settings::parse(["test", "-f"]);
     assert!(settings.foo);
 }
 
@@ -39,19 +39,16 @@ fn two_flags() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "-a"]).unwrap(),
+        Settings::parse(["test", "-a"]),
         Settings { a: true, b: false }
     );
+    assert_eq!(Settings::parse(["test"]), Settings { a: false, b: false });
     assert_eq!(
-        Settings::parse::<&[&std::ffi::OsStr]>(&[]).unwrap(),
-        Settings { a: false, b: false }
-    );
-    assert_eq!(
-        Settings::parse(["test", "-b"]).unwrap(),
+        Settings::parse(["test", "-b"]),
         Settings { a: false, b: true }
     );
     assert_eq!(
-        Settings::parse(["test", "-a", "-b"]).unwrap(),
+        Settings::parse(["test", "-a", "-b"]),
         Settings { a: true, b: true }
     );
 }
@@ -71,18 +68,9 @@ fn long_and_short_flag() {
         foo: bool,
     }
 
-    assert_eq!(
-        Settings::parse::<&[&std::ffi::OsStr]>(&[]).unwrap(),
-        Settings { foo: false },
-    );
-    assert_eq!(
-        Settings::parse(["test", "--foo"]).unwrap(),
-        Settings { foo: true },
-    );
-    assert_eq!(
-        Settings::parse(["test", "-f"]).unwrap(),
-        Settings { foo: true },
-    );
+    assert_eq!(Settings::parse(["test"]), Settings { foo: false },);
+    assert_eq!(Settings::parse(["test", "--foo"]), Settings { foo: true },);
+    assert_eq!(Settings::parse(["test", "-f"]), Settings { foo: true },);
 }
 
 #[test]
@@ -100,10 +88,7 @@ fn short_alias() {
         foo: bool,
     }
 
-    assert_eq!(
-        Settings::parse(["test", "-b"]).unwrap(),
-        Settings { foo: true },
-    );
+    assert_eq!(Settings::parse(["test", "-b"]), Settings { foo: true },);
 }
 
 #[test]
@@ -121,10 +106,7 @@ fn long_alias() {
         foo: bool,
     }
 
-    assert_eq!(
-        Settings::parse(["test", "--bar"]).unwrap(),
-        Settings { foo: true },
-    );
+    assert_eq!(Settings::parse(["test", "--bar"]), Settings { foo: true },);
 }
 
 #[test]
@@ -156,10 +138,10 @@ fn short_and_long_alias() {
         bar: true,
     };
 
-    assert_eq!(Settings::parse(["test", "--bar"]).unwrap(), foo_true);
-    assert_eq!(Settings::parse(["test", "-b"]).unwrap(), foo_true);
-    assert_eq!(Settings::parse(["test", "--foo"]).unwrap(), bar_true);
-    assert_eq!(Settings::parse(["test", "-f"]).unwrap(), bar_true);
+    assert_eq!(Settings::parse(["test", "--bar"]), foo_true);
+    assert_eq!(Settings::parse(["test", "-b"]), foo_true);
+    assert_eq!(Settings::parse(["test", "--foo"]), bar_true);
+    assert_eq!(Settings::parse(["test", "-f"]), bar_true);
 }
 
 #[test]
@@ -186,7 +168,7 @@ fn xyz_map_to_abc() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "-x"]).unwrap(),
+        Settings::parse(["test", "-x"]),
         Settings {
             a: true,
             b: true,
@@ -195,7 +177,7 @@ fn xyz_map_to_abc() {
     );
 
     assert_eq!(
-        Settings::parse(["test", "-y"]).unwrap(),
+        Settings::parse(["test", "-y"]),
         Settings {
             a: false,
             b: true,
@@ -204,7 +186,7 @@ fn xyz_map_to_abc() {
     );
 
     assert_eq!(
-        Settings::parse(["test", "-xy"]).unwrap(),
+        Settings::parse(["test", "-xy"]),
         Settings {
             a: true,
             b: true,
@@ -213,7 +195,7 @@ fn xyz_map_to_abc() {
     );
 
     assert_eq!(
-        Settings::parse(["test", "-z"]).unwrap(),
+        Settings::parse(["test", "-z"]),
         Settings {
             a: true,
             b: true,
@@ -242,7 +224,7 @@ fn non_rust_ident() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "--foo-bar", "--super"]).unwrap(),
+        Settings::parse(["test", "--foo-bar", "--super"]),
         Settings { a: true, b: true }
     )
 }
@@ -261,10 +243,7 @@ fn number_flag() {
         one: bool,
     }
 
-    assert_eq!(
-        Settings::parse(["test", "-1"]).unwrap(),
-        Settings { one: true }
-    )
+    assert_eq!(Settings::parse(["test", "-1"]), Settings { one: true })
 }
 
 #[test]
@@ -287,28 +266,16 @@ fn false_bool() {
         foo: bool,
     }
 
+    assert_eq!(Settings::parse(["test", "-a"]), Settings { foo: true });
+    assert_eq!(Settings::parse(["test", "-b"]), Settings { foo: false });
+    assert_eq!(Settings::parse(["test", "-ab"]), Settings { foo: false });
+    assert_eq!(Settings::parse(["test", "-ba"]), Settings { foo: true });
     assert_eq!(
-        Settings::parse(["test", "-a"]).unwrap(),
-        Settings { foo: true }
-    );
-    assert_eq!(
-        Settings::parse(["test", "-b"]).unwrap(),
+        Settings::parse(["test", "-a", "-b"]),
         Settings { foo: false }
     );
     assert_eq!(
-        Settings::parse(["test", "-ab"]).unwrap(),
-        Settings { foo: false }
-    );
-    assert_eq!(
-        Settings::parse(["test", "-ba"]).unwrap(),
-        Settings { foo: true }
-    );
-    assert_eq!(
-        Settings::parse(["test", "-a", "-b"]).unwrap(),
-        Settings { foo: false }
-    );
-    assert_eq!(
-        Settings::parse(["test", "-b", "-a"]).unwrap(),
+        Settings::parse(["test", "-b", "-a"]),
         Settings { foo: true }
     );
 
@@ -322,28 +289,16 @@ fn false_bool() {
         foo: bool,
     }
 
+    assert_eq!(Settings2::parse(["test", "-a"]), Settings2 { foo: true });
+    assert_eq!(Settings2::parse(["test", "-b"]), Settings2 { foo: false });
+    assert_eq!(Settings2::parse(["test", "-ab"]), Settings2 { foo: false });
+    assert_eq!(Settings2::parse(["test", "-ba"]), Settings2 { foo: true });
     assert_eq!(
-        Settings2::parse(["test", "-a"]).unwrap(),
-        Settings2 { foo: true }
-    );
-    assert_eq!(
-        Settings2::parse(["test", "-b"]).unwrap(),
+        Settings2::parse(["test", "-a", "-b"]),
         Settings2 { foo: false }
     );
     assert_eq!(
-        Settings2::parse(["test", "-ab"]).unwrap(),
-        Settings2 { foo: false }
-    );
-    assert_eq!(
-        Settings2::parse(["test", "-ba"]).unwrap(),
-        Settings2 { foo: true }
-    );
-    assert_eq!(
-        Settings2::parse(["test", "-a", "-b"]).unwrap(),
-        Settings2 { foo: false }
-    );
-    assert_eq!(
-        Settings2::parse(["test", "-b", "-a"]).unwrap(),
+        Settings2::parse(["test", "-b", "-a"]),
         Settings2 { foo: true }
     );
 }
@@ -379,17 +334,11 @@ fn enum_flag() {
         foo: SomeEnum,
     }
 
-    assert_eq!(Settings::parse(&[] as &[&str]).unwrap().foo, SomeEnum::Foo);
+    assert_eq!(Settings::parse(&[] as &[&str]).foo, SomeEnum::Foo);
 
-    assert_eq!(
-        Settings::parse(["test", "--bar"]).unwrap().foo,
-        SomeEnum::Bar
-    );
+    assert_eq!(Settings::parse(["test", "--bar"]).foo, SomeEnum::Bar);
 
-    assert_eq!(
-        Settings::parse(["test", "--baz"]).unwrap().foo,
-        SomeEnum::Baz,
-    );
+    assert_eq!(Settings::parse(["test", "--baz"]).foo, SomeEnum::Baz,);
 }
 
 #[test]
@@ -407,9 +356,9 @@ fn count() {
         verbosity: u8,
     }
 
-    assert_eq!(Settings::parse(["test", "-v"]).unwrap().verbosity, 1);
-    assert_eq!(Settings::parse(["test", "-vv"]).unwrap().verbosity, 2);
-    assert_eq!(Settings::parse(["test", "-vvv"]).unwrap().verbosity, 3);
+    assert_eq!(Settings::parse(["test", "-v"]).verbosity, 1);
+    assert_eq!(Settings::parse(["test", "-vv"]).verbosity, 2);
+    assert_eq!(Settings::parse(["test", "-vvv"]).verbosity, 3);
 }
 
 #[test]
@@ -437,8 +386,8 @@ fn infer_long_args() {
         author: bool,
     }
 
-    assert!(Settings::parse(["test", "--all"]).unwrap().all);
-    assert!(Settings::parse(["test", "--alm"]).unwrap().almost_all);
-    assert!(Settings::parse(["test", "--au"]).unwrap().author);
-    assert!(Settings::parse(["test", "--a"]).is_err());
+    assert!(Settings::parse(["test", "--all"]).all);
+    assert!(Settings::parse(["test", "--alm"]).almost_all);
+    assert!(Settings::parse(["test", "--au"]).author);
+    assert!(Settings::try_parse(["test", "--a"]).is_err());
 }

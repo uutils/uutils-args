@@ -41,14 +41,8 @@ struct Settings {
 
 #[test]
 fn wrap() {
-    assert_eq!(Settings::parse(["base32"]).unwrap().wrap, Some(76));
-    assert_eq!(Settings::parse(["base32", "-w0"]).unwrap().wrap, None);
-    assert_eq!(
-        Settings::parse(["base32", "-w100"]).unwrap().wrap,
-        Some(100)
-    );
-    assert_eq!(
-        Settings::parse(["base32", "--wrap=100"]).unwrap().wrap,
-        Some(100)
-    );
+    assert_eq!(Settings::parse(["base32"]).wrap, Some(76));
+    assert_eq!(Settings::parse(["base32", "-w0"]).wrap, None);
+    assert_eq!(Settings::parse(["base32", "-w100"]).wrap, Some(100));
+    assert_eq!(Settings::parse(["base32", "--wrap=100"]).wrap, Some(100));
 }

@@ -1,57 +1,12 @@
+mod error;
 pub use derive::*;
 pub use lexopt;
 pub use term_md;
 
-use std::error::Error as StdError;
+pub use error::Error;
 use std::num::ParseIntError;
 use std::path::PathBuf;
 use std::{ffi::OsString, marker::PhantomData};
-
-#[derive(Debug)]
-pub enum Error {
-    MissingValue {
-        option: Option<String>,
-    },
-    MissingPositionalArguments(Vec<String>),
-    UnexpectedOption(String),
-    UnexpectedArgument(OsString),
-    UnexpectedValue {
-        option: String,
-        value: OsString,
-    },
-    ParsingFailed {
-        option: String,
-        value: String,
-        error: Box<dyn StdError + Send + Sync + 'static>,
-    },
-    AmbiguousOption {
-        option: String,
-        candidates: Vec<String>,
-    },
-    AmbiguousValue {
-        option: String,
-        value: String,
-        candidates: Vec<String>,
-    },
-    NonUnicodeValue(OsString),
-    Custom(Box<dyn StdError + Send + Sync + 'static>),
-}
-
-impl From<lexopt::Error> for Error {
-    fn from(other: lexopt::Error) -> Error {
-        match other {
-            lexopt::Error::MissingValue { option } => Self::MissingValue { option },
-            lexopt::Error::UnexpectedOption(s) => Self::UnexpectedOption(s),
-            lexopt::Error::UnexpectedArgument(s) => Self::UnexpectedArgument(s),
-            lexopt::Error::UnexpectedValue { option, value } => {
-                Self::UnexpectedValue { option, value }
-            }
-            lexopt::Error::ParsingFailed { .. } => panic!("Conversion not supported"),
-            lexopt::Error::NonUnicodeValue(s) => Self::NonUnicodeValue(s),
-            lexopt::Error::Custom(e) => Self::Custom(e),
-        }
-    }
-}
 
 #[derive(Clone)]
 pub enum Argument<T: Arguments> {
@@ -114,7 +69,21 @@ impl<T: Arguments> ArgumentIter<T> {
 }
 
 pub trait Options: Sized + Default {
-    fn parse<I>(args: I) -> Result<Self, Error>
+    fn parse<I>(args: I) -> Self
+    where
+        I: IntoIterator + 'static,
+        I::Item: Into<OsString>,
+    {
+        match Self::try_parse(args) {
+            Ok(v) => v,
+            Err(err) => {
+                eprintln!("{err}");
+                std::process::exit(0);
+            }
+        }
+    }
+
+    fn try_parse<I>(args: I) -> Result<Self, Error>
     where
         I: IntoIterator + 'static,
         I::Item: Into<OsString>,

@@ -15,10 +15,10 @@ fn one_positional() {
         file1: String,
     }
 
-    let settings = Settings::parse(["test", "foo"]).unwrap();
+    let settings = Settings::parse(["test", "foo"]);
     assert_eq!(settings.file1, "foo");
 
-    assert!(Settings::parse(["test"]).is_err());
+    assert!(Settings::try_parse(["test"]).is_err());
 }
 
 #[test]
@@ -40,11 +40,11 @@ fn two_positionals() {
         bar: String,
     }
 
-    let settings = Settings::parse(["test", "a", "b"]).unwrap();
+    let settings = Settings::parse(["test", "a", "b"]);
     assert_eq!(settings.foo, "a");
     assert_eq!(settings.bar, "b");
 
-    assert!(Settings::parse(["test"]).is_err());
+    assert!(Settings::try_parse(["test"]).is_err());
 }
 
 #[test]
@@ -62,9 +62,9 @@ fn optional_positional() {
         foo: Option<String>,
     }
 
-    let settings = Settings::parse(["test"]).unwrap();
+    let settings = Settings::parse(["test"]);
     assert_eq!(settings.foo, None);
-    let settings = Settings::parse(["test", "bar"]).unwrap();
+    let settings = Settings::parse(["test", "bar"]);
     assert_eq!(settings.foo.unwrap(), "bar");
 }
 
@@ -83,9 +83,9 @@ fn collect_positional() {
         foo: Vec<String>,
     }
 
-    let settings = Settings::parse(["test", "a", "b", "c"]).unwrap();
+    let settings = Settings::parse(["test", "a", "b", "c"]);
     assert_eq!(settings.foo, vec!["a", "b", "c"]);
-    let settings = Settings::parse(["test"]).unwrap();
+    let settings = Settings::parse(["test"]);
     assert_eq!(settings.foo, Vec::<String>::new());
 }
 
@@ -104,7 +104,7 @@ fn last1() {
         foo: Vec<String>,
     }
 
-    let settings = Settings::parse(["test", "a", "-b", "c"]).unwrap();
+    let settings = Settings::parse(["test", "a", "-b", "c"]);
     assert_eq!(settings.foo, vec!["a", "-b", "c"]);
 }
 
@@ -126,9 +126,9 @@ fn last2() {
         foo: Vec<String>,
     }
 
-    let settings = Settings::parse(["test", "-a"]).unwrap();
+    let settings = Settings::parse(["test", "-a"]);
     assert_eq!(settings.foo, Vec::<String>::new());
 
-    let settings = Settings::parse(["test", "--", "-a"]).unwrap();
+    let settings = Settings::parse(["test", "--", "-a"]);
     assert_eq!(settings.foo, vec!["-a"]);
 }

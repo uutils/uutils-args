@@ -78,27 +78,27 @@ struct Settings {
 
 #[test]
 fn show() {
-    let s = Settings::parse(["cat", "-v"]).unwrap();
+    let s = Settings::parse(["cat", "-v"]);
     assert!(!s.show_ends && !s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-E"]).unwrap();
+    let s = Settings::parse(["cat", "-E"]);
     assert!(s.show_ends && !s.show_tabs && !s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-T"]).unwrap();
+    let s = Settings::parse(["cat", "-T"]);
     assert!(!s.show_ends && s.show_tabs && !s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-e"]).unwrap();
+    let s = Settings::parse(["cat", "-e"]);
     assert!(s.show_ends && !s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-t"]).unwrap();
+    let s = Settings::parse(["cat", "-t"]);
     assert!(!s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-A"]).unwrap();
+    let s = Settings::parse(["cat", "-A"]);
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-te"]).unwrap();
+    let s = Settings::parse(["cat", "-te"]);
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-vET"]).unwrap();
+    let s = Settings::parse(["cat", "-vET"]);
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 }

@@ -33,18 +33,18 @@ struct Settings {
     names: Vec<String>,
 }
 
-fn parse(args: &'static [&'static str]) -> Result<Settings, uutils_args::Error> {
-    let mut settings = Settings::parse(args)?;
+fn parse(args: &'static [&'static str]) -> Settings {
+    let mut settings = Settings::parse(args);
     if !settings.multiple {
         assert_eq!(settings.names.len(), 2);
         settings.suffix = settings.names.pop().unwrap();
     }
-    Ok(settings)
+    settings
 }
 
 #[test]
 fn name_and_suffix() {
-    let settings = parse(&["basename", "foobar", "bar"]).unwrap();
+    let settings = parse(&["basename", "foobar", "bar"]);
     assert!(!settings.zero);
     assert_eq!(settings.names, vec!["foobar"]);
     assert_eq!(settings.suffix, "bar");
@@ -52,7 +52,7 @@ fn name_and_suffix() {
 
 #[test]
 fn zero_name_and_suffix() {
-    let settings = parse(&["basename", "-z", "foobar", "bar"]).unwrap();
+    let settings = parse(&["basename", "-z", "foobar", "bar"]);
     assert!(settings.zero);
     assert_eq!(settings.names, vec!["foobar"]);
     assert_eq!(settings.suffix, "bar");
@@ -60,7 +60,7 @@ fn zero_name_and_suffix() {
 
 #[test]
 fn all_and_names() {
-    let settings = parse(&["basename", "-a", "foobar", "bar"]).unwrap();
+    let settings = parse(&["basename", "-a", "foobar", "bar"]);
     assert!(settings.multiple);
     assert!(!settings.zero);
     assert_eq!(settings.names, vec!["foobar", "bar"]);
@@ -69,7 +69,7 @@ fn all_and_names() {
 
 #[test]
 fn option_like_names() {
-    let settings = parse(&["basename", "-a", "--", "-a", "-z", "--suffix=SUFFIX"]).unwrap();
+    let settings = parse(&["basename", "-a", "--", "-a", "-z", "--suffix=SUFFIX"]);
     assert!(settings.multiple);
     assert!(!settings.zero);
     assert_eq!(settings.names, vec!["-a", "-z", "--suffix=SUFFIX"]);

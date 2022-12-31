@@ -11,12 +11,12 @@ struct Settings {}
 
 #[test]
 fn no_args() {
-    assert!(Settings::parse(["arch"]).is_ok());
+    assert!(Settings::try_parse(["arch"]).is_ok());
 }
 
 #[test]
 fn one_arg_fails() {
-    assert!(Settings::parse(["arch", "-f"]).is_err());
-    assert!(Settings::parse(["arch", "--foo"]).is_err());
-    assert!(Settings::parse(["arch", "foo"]).is_err());
+    assert!(Settings::try_parse(["arch", "-f"]).is_err());
+    assert!(Settings::try_parse(["arch", "--foo"]).is_err());
+    assert!(Settings::try_parse(["arch", "foo"]).is_err());
 }

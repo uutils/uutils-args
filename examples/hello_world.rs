@@ -26,9 +26,10 @@ struct Settings {
     count: u8,
 }
 
-fn main() {
-    let settings = Settings::parse(std::env::args_os()).unwrap();
+fn main() -> Result<(), uutils_args::Error> {
+    let settings = Settings::parse(std::env::args_os());
     for _ in 0..settings.count {
         println!("Hello, {}!", settings.name);
     }
+    Ok(())
 }
