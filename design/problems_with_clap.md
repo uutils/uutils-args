@@ -82,7 +82,9 @@ requires a `=` for the short option. In the coreutils, however, `=` is never
 used for a short option. Hence, the only way to get the desired behaviour is to
 create multiple arguments.
 
-But even then, there is no way to tell `clap` to consider the `=` as part of the value. E.g. `cut -d=` will be parsed as `cut -d''`, which we have to work around.
+But even then, there is no way to tell `clap` to consider the `=` as part of the
+value. E.g. `cut -d=` will be parsed as `cut -d''`, which we have to work
+around.
 
 It happens quite often that we miss these subtle differences and therefore end
 up not being compatible with GNU coreutils. If we do want to do this correctly,
@@ -95,6 +97,15 @@ syntax for some options (e.g. `-5` is short for `-s 5`). We have not managed to
 implement these nicely with `clap`. Our best efforts try to filter these values
 out of the arguments before passing them to `clap`, but it is extremely
 difficult to handle all edge-cases.
+
+## Problem 6: Exit codes
+
+In coreutils, different utils have different exit codes when they fail to parse.
+For example, `timeout` returns `125`, because the command it calls probably uses
+`1` or `2`. There is no way to customize this in `clap`, so we work around it in
+uutils and when we opened as issue for it, it was discarded. This makes sense
+from `clap`'s perspective, but it shows that the priorities between `clap` and
+uutils diverge.
 
 ## Problem 6: It's stringly typed
 
