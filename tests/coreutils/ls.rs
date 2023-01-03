@@ -189,6 +189,9 @@ enum Arg {
     #[option("-i", "--inode")]
     Inode,
 
+    #[option("-I PATTERN", "--ignore=PATTERN")]
+    Ignore(String),
+
     #[option("-r", "--reverse")]
     Reverse,
 
@@ -368,9 +371,11 @@ struct Settings {
     )]
     dereference: Dereference,
 
-    // ignore_patterns: Vec<String>,
-
+    #[collect(set(Arg::Ignore))]
+    ignore_patterns: Vec<String>,
+    //
     // size_format: SizeFormat,
+    //
     #[map(Arg::Directory => true)]
     directory: bool,
 
@@ -428,8 +433,9 @@ struct Settings {
     indicator_style: IndicatorStyle,
 
     // TODO for the full implementation, to complicated
-    // to do where.
+    // to do here.
     // time_style: TimeStyle,
+    //
     #[map(Arg::SecurityContext => true)]
     context: bool,
 
@@ -482,6 +488,7 @@ fn default() {
             },
             quoting_style: QuotingStyle::Shell,
             indicator_style: IndicatorStyle::None,
+            ignore_patterns: Vec::new(),
             context: false,
             group_directories_first: false,
             eol: '\n',
