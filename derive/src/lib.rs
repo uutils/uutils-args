@@ -191,7 +191,7 @@ pub fn from_value(input: TokenStream) -> TokenStream {
                 keys
             };
 
-            options.extend_from_slice(&keys);
+            options.push(quote!(&[#(#keys),*]));
 
             let stmt = if let Some(v) = value {
                 quote!(#(| #keys)* => #v)
@@ -204,21 +204,23 @@ pub fn from_value(input: TokenStream) -> TokenStream {
         }
     }
 
-    let num_opts = options.len();
     let expanded = quote!(
         impl #impl_generics FromValue for #name #ty_generics #where_clause {
             fn from_value(option: &str, value: std::ffi::OsString) -> Result<Self, uutils_args::Error> {
                 let value = String::from_value(option, value)?;
-                let options: [&str; #num_opts] = [#(#options),*];
-                let mut candidates = Vec::new();
-                let mut exact_match = None;
+                let options: &[&[&str]] = &[#(#options),*];
+                let mut candidates: Vec<&str> = Vec::new();
+                let mut exact_match: Option<&str> = None;
 
-                for opt in options {
-                    if opt == value {
-                        exact_match = Some(opt);
-                        break;
-                    } else if opt.starts_with(&value) {
-                        candidates.push(opt);
+                'outer: for &opt in options {
+                    'inner: for &o in opt {
+                        if value == o {
+                            exact_match = Some(o);
+                            break 'outer;
+                        } else if o.starts_with(&value) {
+                            candidates.push(o);
+                            break 'inner;
+                        }
                     }
                 }
 
