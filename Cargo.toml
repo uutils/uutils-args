@@ -19,3 +19,7 @@ members = [
   "term_md",
   "derive",
 ]
+
+[dev-dependencies]
+atty = "0.2.14"
+terminal_size = "0.2.3"

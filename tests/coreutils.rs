@@ -15,3 +15,6 @@ mod cat;
 
 #[path = "coreutils/mktemp.rs"]
 mod mktemp;
+
+#[path = "coreutils/ls.rs"]
+mod ls;
