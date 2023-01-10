@@ -6,10 +6,12 @@ mod flags;
 mod help;
 mod markdown;
 
-use argument::{long_handling, parse_argument, positional_handling, short_handling};
+use argument::{
+    long_handling, parse_argument, parse_arguments_attr, positional_handling, short_handling,
+};
 use attributes::ValueAttr;
 use field::{parse_field, FieldData};
-use help::{help_handling, help_string, parse_help_attr, parse_version_attr, version_handling};
+use help::{help_handling, help_string, version_handling};
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -59,6 +61,8 @@ pub fn options(input: TokenStream) -> TokenStream {
 
     let expanded = quote!(
         impl #impl_generics Options for #name #ty_generics #where_clause {
+            type Arg = #arg_type;
+
             fn initial() -> Result<Self, uutils_args::Error> {
                 Ok(Self {
                     #(#defaults),*
@@ -71,7 +75,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                 I::Item: Into<std::ffi::OsString>,
             {
                 use uutils_args::{lexopt, FromValue, Argument};
-                let mut iter = #arg_type::parse(args);
+                let mut iter = <Self as Options>::Arg::parse(args);
                 while let Some(arg) = iter.next_arg()? {
                     match arg {
                         Argument::Help => {
@@ -86,7 +90,7 @@ pub fn options(input: TokenStream) -> TokenStream {
                         }
                     }
                 }
-                #arg_type::check_missing(iter.positional_idx)?;
+                <Self as Options>::Arg::check_missing(iter.positional_idx)?;
                 Ok(())
             }
         }
@@ -95,7 +99,7 @@ pub fn options(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(Arguments, attributes(flag, option, positional, help, version))]
+#[proc_macro_derive(Arguments, attributes(flag, option, positional, arguments))]
 pub fn arguments(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -106,16 +110,21 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         panic!("Input should be an enum!");
     };
 
-    let help_attr = parse_help_attr(&input.attrs);
-    let version_attr = parse_version_attr(&input.attrs);
+    let arguments_attr = parse_arguments_attr(&input.attrs);
     let arguments: Vec<_> = data.variants.into_iter().flat_map(parse_argument).collect();
 
+    let exit_code = arguments_attr.exit_code;
     let short = short_handling(&arguments);
-    let long = long_handling(&arguments, &help_attr.flags);
+    let long = long_handling(&arguments, &arguments_attr.help_flags);
     let (positional, missing_argument_checks) = positional_handling(&arguments);
-    let help_string = help_string(&arguments, &help_attr, &version_attr.flags);
-    let help = help_handling(&help_attr.flags);
-    let version = version_handling(&version_attr.flags);
+    let help_string = help_string(
+        &arguments,
+        &arguments_attr.help_flags,
+        &arguments_attr.version_flags,
+        &arguments_attr.file,
+    );
+    let help = help_handling(&arguments_attr.help_flags);
+    let version = version_handling(&arguments_attr.version_flags);
     let version_string = quote!(format!(
         "{} {}",
         option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_PKG_NAME")),
@@ -124,6 +133,8 @@ pub fn arguments(input: TokenStream) -> TokenStream {
 
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
+            const EXIT_CODE: i32 = #exit_code;
+
             #[allow(unreachable_code)]
             fn next_arg(
                 parser: &mut uutils_args::lexopt::Parser, positional_idx: &mut usize

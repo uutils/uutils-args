@@ -16,6 +16,8 @@ pub enum Argument<T: Arguments> {
 }
 
 pub trait Arguments: Sized + Clone {
+    const EXIT_CODE: i32;
+
     fn parse<I>(args: I) -> ArgumentIter<Self>
     where
         I: IntoIterator + 'static,
@@ -69,6 +71,8 @@ impl<T: Arguments> ArgumentIter<T> {
 }
 
 pub trait Options: Sized + Default {
+    type Arg: Arguments;
+
     fn parse<I>(args: I) -> Self
     where
         I: IntoIterator + 'static,
@@ -78,7 +82,7 @@ pub trait Options: Sized + Default {
             Ok(v) => v,
             Err(err) => {
                 eprintln!("{err}");
-                std::process::exit(0);
+                std::process::exit(<Self as Options>::Arg::EXIT_CODE);
             }
         }
     }

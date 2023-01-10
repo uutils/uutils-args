@@ -11,8 +11,6 @@ enum NumberingMode {
 }
 
 #[derive(Clone, Arguments)]
-#[help("--help")]
-#[version("--version")]
 enum Arg {
     #[option("-A", "--show-all")]
     ShowAll,

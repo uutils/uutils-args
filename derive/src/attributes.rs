@@ -31,6 +31,9 @@ enum AttributeArguments {
     NumArgs(RangeInclusive<usize>),
     File(String),
     Env(String),
+    ExitCode(i32),
+    Help(Vec<String>),
+    Version(Vec<String>),
     Last,
     Hidden,
 }
@@ -40,6 +43,45 @@ impl AttributeArguments {
         attr.parse_args_with(Punctuated::<AttributeArguments, Token![,]>::parse_terminated)
             .map(|iter| iter.into_iter().collect::<Vec<_>>())
             .unwrap_or_default()
+    }
+}
+
+pub(crate) struct ArgumentsAttr {
+    pub(crate) help_flags: Flags,
+    pub(crate) version_flags: Flags,
+    pub(crate) file: Option<String>,
+    pub(crate) exit_code: i32,
+}
+
+impl Default for ArgumentsAttr {
+    fn default() -> Self {
+        Self {
+            help_flags: Flags::new(["--help"]),
+            version_flags: Flags::new(["--version"]),
+            file: None,
+            exit_code: 1,
+        }
+    }
+}
+
+impl ArgumentsAttr {
+    pub(crate) fn parse(attr: &Attribute) -> Self {
+        let mut arguments_attr = Self::default();
+        for arg in AttributeArguments::parse_all(attr) {
+            match arg {
+                AttributeArguments::Help(flags) => {
+                    arguments_attr.help_flags = Flags::new(flags);
+                }
+                AttributeArguments::Version(flags) => {
+                    arguments_attr.version_flags = Flags::new(flags);
+                }
+                AttributeArguments::File(s) => arguments_attr.file = Some(s),
+                AttributeArguments::ExitCode(code) => arguments_attr.exit_code = code,
+                _ => panic!(),
+            }
+        }
+
+        arguments_attr
     }
 }
 
@@ -148,46 +190,6 @@ impl PositionalAttr {
     }
 }
 
-#[derive(Default)]
-pub(crate) struct HelpAttr {
-    pub(crate) flags: Flags,
-    pub(crate) file: Option<String>,
-}
-
-impl HelpAttr {
-    pub(crate) fn parse(attr: &Attribute) -> Self {
-        let mut help = Self::default();
-        for arg in AttributeArguments::parse_all(attr) {
-            match arg {
-                AttributeArguments::String(s) => help.flags.add(&s),
-                AttributeArguments::File(filename) => help.file = Some(filename),
-                _ => panic!(),
-            }
-        }
-
-        help
-    }
-}
-
-#[derive(Default)]
-pub(crate) struct VersionAttr {
-    pub(crate) flags: Flags,
-}
-
-impl VersionAttr {
-    pub(crate) fn parse(attr: &Attribute) -> Self {
-        let mut help = Self::default();
-        for arg in AttributeArguments::parse_all(attr) {
-            match arg {
-                AttributeArguments::String(s) => help.flags.add(&s),
-                _ => panic!(),
-            }
-        }
-
-        help
-    }
-}
-
 impl Parse for AttributeArguments {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(LitStr) {
@@ -256,6 +258,49 @@ impl Parse for AttributeArguments {
                 "value" => return Ok(Self::Value(input.parse::<Expr>()?)),
                 "file" => return Ok(Self::File(input.parse::<LitStr>()?.value())),
                 "env" => return Ok(Self::Env(input.parse::<LitStr>()?.value())),
+                "exit_code" => return Ok(Self::ExitCode(input.parse::<LitInt>()?.base10_parse()?)),
+                "help" => {
+                    let expr = input.parse::<Expr>()?;
+                    let arr = match expr {
+                        syn::Expr::Array(arr) => arr,
+                        _ => panic!("Argument to `help` must be an array"),
+                    };
+
+                    let mut strings = Vec::new();
+                    for elem in arr.elems {
+                        let val = match elem {
+                            syn::Expr::Lit(syn::ExprLit {
+                                attrs: _,
+                                lit: syn::Lit::Str(litstr),
+                            }) => litstr.value(),
+                            _ => panic!("Argument to `help` must be an array of string literals"),
+                        };
+                        strings.push(val);
+                    }
+                    return Ok(Self::Help(strings));
+                }
+                "version" => {
+                    let expr = input.parse::<Expr>()?;
+                    let arr = match expr {
+                        syn::Expr::Array(arr) => arr,
+                        _ => panic!("Argument to `version` must be an array"),
+                    };
+
+                    let mut strings = Vec::new();
+                    for elem in arr.elems {
+                        let val = match elem {
+                            syn::Expr::Lit(syn::ExprLit {
+                                attrs: _,
+                                lit: syn::Lit::Str(litstr),
+                            }) => litstr.value(),
+                            _ => {
+                                panic!("Argument to `version` must be an array of string literals")
+                            }
+                        };
+                        strings.push(val);
+                    }
+                    return Ok(Self::Version(strings));
+                }
                 _ => panic!("Unrecognized argument {} for option attribute", name),
             };
         }

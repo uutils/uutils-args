@@ -3,8 +3,6 @@ use std::path::PathBuf;
 use uutils_args::{Arguments, Options};
 
 #[derive(Clone, Arguments)]
-#[help("--help")]
-#[version("--version")]
 enum Arg {
     #[option("-d", "--decode")]
     Decode,

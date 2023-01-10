@@ -5,31 +5,11 @@ use std::{
 
 use crate::{
     argument::{ArgType, Argument},
-    attributes::{HelpAttr, VersionAttr},
     flags::Flags,
     markdown::{get_after_event, get_h2, str_to_renderer},
 };
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::Attribute;
-
-pub(crate) fn parse_help_attr(attrs: &[Attribute]) -> HelpAttr {
-    for attr in attrs {
-        if attr.path.is_ident("help") {
-            return HelpAttr::parse(attr);
-        }
-    }
-    HelpAttr::default()
-}
-
-pub(crate) fn parse_version_attr(attrs: &[Attribute]) -> VersionAttr {
-    for attr in attrs {
-        if attr.path.is_ident("version") {
-            return VersionAttr::parse(attr);
-        }
-    }
-    VersionAttr::default()
-}
 
 pub(crate) fn help_handling(help_flags: &Flags) -> TokenStream {
     if help_flags.is_empty() {
@@ -47,8 +27,9 @@ pub(crate) fn help_handling(help_flags: &Flags) -> TokenStream {
 
 pub(crate) fn help_string(
     args: &[Argument],
-    help_attr: &HelpAttr,
+    help_flags: &Flags,
     version_flags: &Flags,
+    file: &Option<String>,
 ) -> TokenStream {
     let mut options = Vec::new();
 
@@ -72,7 +53,7 @@ pub(crate) fn help_string(
         }
     }
 
-    let (summary, after_options) = if let Some(file) = &help_attr.file {
+    let (summary, after_options) = if let Some(file) = &file {
         let (summary, after_options) = read_help_file(file);
         (
             quote!(s.push_str(&#summary.render());),
@@ -85,8 +66,8 @@ pub(crate) fn help_string(
         (quote!(), quote!())
     };
 
-    if !help_attr.flags.is_empty() {
-        let flags = help_attr.flags.format();
+    if !help_flags.is_empty() {
+        let flags = help_flags.format();
         let renderer = str_to_renderer("Display this help message");
         options.push(quote!((#flags, #renderer)));
     }

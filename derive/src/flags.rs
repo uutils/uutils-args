@@ -21,6 +21,14 @@ pub(crate) struct Flag<T> {
 }
 
 impl Flags {
+    pub(crate) fn new<T: AsRef<str>>(flags: impl IntoIterator<Item = T>) -> Self {
+        let mut self_ = Self::default();
+        for flag in flags {
+            self_.add(flag.as_ref());
+        }
+        self_
+    }
+
     pub(crate) fn add(&mut self, flag: &str) {
         assert!(flag.starts_with('-'), "Flags must start with a '-'");
         if let Some(s) = flag.strip_prefix("--") {

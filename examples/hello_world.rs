@@ -1,8 +1,11 @@
 use uutils_args::{Arguments, Options};
 
 #[derive(Clone, Arguments)]
-#[help("--help", file = "examples/hello_world_help.md")]
-#[version("--version")]
+#[arguments(
+    help = ["--help"],
+    version = ["--version"],
+    file = "examples/hello_world_help.md"
+)]
 enum Arg {
     /// The *name* to **greet**
     ///

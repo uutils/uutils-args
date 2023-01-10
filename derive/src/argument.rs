@@ -5,7 +5,7 @@ use quote::quote;
 use syn::{Attribute, Fields, FieldsUnnamed, Ident, Lit, Meta, Variant};
 
 use crate::{
-    attributes::{parse_argument_attribute, ArgAttr},
+    attributes::{parse_argument_attribute, ArgAttr, ArgumentsAttr},
     flags::{Flags, Value},
 };
 
@@ -27,6 +27,15 @@ pub(crate) enum ArgType {
         num_args: RangeInclusive<usize>,
         last: bool,
     },
+}
+
+pub(crate) fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
+    for attr in attrs {
+        if attr.path.is_ident("arguments") {
+            return ArgumentsAttr::parse(attr);
+        }
+    }
+    ArgumentsAttr::default()
 }
 
 pub(crate) fn parse_argument(v: Variant) -> Option<Argument> {
