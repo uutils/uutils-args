@@ -57,11 +57,17 @@ pub(crate) fn help_string(
 
     for Argument { arg_type, help, .. } in args {
         match arg_type {
-            ArgType::Option { flags, .. } => {
+            ArgType::Option {
+                flags,
+                hidden: false,
+                ..
+            } => {
                 let flags = flags.format();
                 let renderer = str_to_renderer(help);
                 options.push(quote!((#flags, #renderer)));
             }
+            // Hidden arguments should not show up in --help
+            ArgType::Option { hidden: true, .. } => {}
             ArgType::Positional { .. } => {}
         }
     }

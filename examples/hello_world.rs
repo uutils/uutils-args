@@ -15,6 +15,10 @@ enum Arg {
     /// The **number of times** to `greet`
     #[option("-c N", "--count=N")]
     Count(u8),
+
+    /// This argument is hidden
+    #[option("--hidden", hidden)]
+    Hidden,
 }
 
 #[derive(Default, Options)]

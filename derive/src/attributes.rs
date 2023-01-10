@@ -32,6 +32,7 @@ enum AttributeArguments {
     File(String),
     Env(String),
     Last,
+    Hidden,
 }
 
 impl AttributeArguments {
@@ -47,6 +48,7 @@ pub(crate) struct OptionAttr {
     pub(crate) flags: Flags,
     pub(crate) parser: Option<Expr>,
     pub(crate) default: Option<Expr>,
+    pub(crate) hidden: bool,
 }
 
 impl OptionAttr {
@@ -58,6 +60,7 @@ impl OptionAttr {
                 AttributeArguments::String(a) => option_attr.flags.add(&a),
                 AttributeArguments::Parser(e) => option_attr.parser = Some(e),
                 AttributeArguments::Default(e) => option_attr.default = Some(e),
+                AttributeArguments::Hidden => option_attr.hidden = true,
                 _ => panic!("Invalid argument"),
             };
         }
@@ -238,9 +241,11 @@ impl Parse for AttributeArguments {
             let name = input.parse::<Ident>()?.to_string();
 
             // Arguments that do not take values
-            if name.as_str() == "last" {
-                return Ok(Self::Last);
-            }
+            match name.as_str() {
+                "last" => return Ok(Self::Last),
+                "hidden" => return Ok(Self::Hidden),
+                _ => {}
+            };
 
             input.parse::<Token![=]>()?;
 

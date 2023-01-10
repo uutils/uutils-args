@@ -19,6 +19,7 @@ pub(crate) struct Argument {
 pub(crate) enum ArgType {
     Option {
         flags: Flags,
+        hidden: bool,
         takes_value: bool,
         default: TokenStream,
     },
@@ -59,6 +60,7 @@ pub(crate) fn parse_argument(v: Variant) -> Option<Argument> {
                 flags: opt.flags,
                 takes_value: field.is_some(),
                 default: default_expr,
+                hidden: opt.hidden,
             }
         }
         ArgAttr::Positional(pos) => {
@@ -113,6 +115,7 @@ pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
                 ref flags,
                 takes_value,
                 ref default,
+                hidden: _,
             } => (flags, takes_value, default),
             ArgType::Positional { .. } => continue,
         };
@@ -157,6 +160,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
                 flags,
                 takes_value,
                 ref default,
+                hidden: _,
             } => (flags, takes_value, default),
             ArgType::Positional { .. } => continue,
         };
