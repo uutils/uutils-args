@@ -1,20 +1,16 @@
-use uutils_args::{Arguments, Options};
+use uutils_args::Arguments;
 
-#[derive(Clone, Arguments)]
+#[derive(Arguments)]
 enum Arg {}
-
-#[derive(Default, Options)]
-#[arg_type(Arg)]
-struct Settings {}
 
 #[test]
 fn no_args() {
-    assert!(Settings::try_parse(["arch"]).is_ok());
+    assert!(Arg::try_check(["arch"]).is_ok());
 }
 
 #[test]
 fn one_arg_fails() {
-    assert!(Settings::try_parse(["arch", "-f"]).is_err());
-    assert!(Settings::try_parse(["arch", "--foo"]).is_err());
-    assert!(Settings::try_parse(["arch", "foo"]).is_err());
+    assert!(Arg::try_check(["arch", "-f"]).is_err());
+    assert!(Arg::try_check(["arch", "--foo"]).is_err());
+    assert!(Arg::try_check(["arch", "foo"]).is_err());
 }

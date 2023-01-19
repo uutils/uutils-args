@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Initial, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -17,24 +17,26 @@ enum Arg {
     File(PathBuf),
 }
 
-#[derive(Options, Default)]
-#[arg_type(Arg)]
+#[derive(Initial)]
 struct Settings {
-    #[map(Arg::Decode => true)]
     decode: bool,
-
-    #[map(Arg::IgnoreGarbage => true)]
     ignore_garbage: bool,
-
-    #[map(
-        Arg::Wrap(0) => None,
-        Arg::Wrap(n) => Some(n),
-    )]
     #[field(default = Some(76))]
     wrap: Option<usize>,
-
-    #[map(Arg::File(f) => Some(f))]
     file: Option<PathBuf>,
+}
+
+impl Options for Settings {
+    type Arg = Arg;
+    fn apply(&mut self, arg: Arg) {
+        match arg {
+            Arg::Decode => self.decode = true,
+            Arg::IgnoreGarbage => self.ignore_garbage = true,
+            Arg::Wrap(0) => self.wrap = None,
+            Arg::Wrap(x) => self.wrap = Some(x),
+            Arg::File(f) => self.file = Some(f),
+        }
+    }
 }
 
 #[test]

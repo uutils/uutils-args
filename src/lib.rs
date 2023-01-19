@@ -15,7 +15,17 @@ pub enum Argument<T: Arguments> {
     Custom(T),
 }
 
-pub trait Arguments: Sized + Clone {
+fn exit_if_err<T>(res: Result<T, Error>, exit_code: i32) -> T {
+    match res {
+        Ok(v) => v,
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(exit_code);
+        }
+    }
+}
+
+pub trait Arguments: Sized {
     const EXIT_CODE: i32;
 
     fn parse<I>(args: I) -> ArgumentIter<Self>
@@ -36,6 +46,24 @@ pub trait Arguments: Sized + Clone {
     fn help(bin_name: &str) -> String;
 
     fn version() -> String;
+
+    fn check<I>(args: I)
+    where
+        I: IntoIterator + 'static,
+        I::Item: Into<OsString>,
+    {
+        exit_if_err(Self::try_check(args), Self::EXIT_CODE)
+    }
+
+    fn try_check<I>(args: I) -> Result<(), Error>
+    where
+        I: IntoIterator + 'static,
+        I::Item: Into<OsString>,
+    {
+        let mut iter = Self::parse(args);
+        while iter.next_arg()?.is_some() {}
+        Ok(())
+    }
 }
 
 pub struct ArgumentIter<T: Arguments> {
@@ -57,34 +85,48 @@ impl<T: Arguments> ArgumentIter<T> {
         }
     }
 
-    pub fn next_arg(&mut self) -> Result<Option<Argument<T>>, Error> {
-        T::next_arg(&mut self.parser, &mut self.positional_idx)
+    pub fn next_arg(&mut self) -> Result<Option<T>, Error> {
+        if let Some(arg) = T::next_arg(&mut self.parser, &mut self.positional_idx)? {
+            match arg {
+                Argument::Help => {
+                    print!("{}", self.help());
+                    std::process::exit(0);
+                }
+                Argument::Version => {
+                    print!("{}", self.version());
+                    std::process::exit(0);
+                }
+                Argument::Custom(arg) => Ok(Some(arg)),
+            }
+        } else {
+            Ok(None)
+        }
     }
 
-    pub fn help(&self) -> String {
+    fn help(&self) -> String {
         T::help(self.parser.bin_name().unwrap())
     }
 
-    pub fn version(&self) -> String {
+    fn version(&self) -> String {
         T::version()
     }
 }
 
-pub trait Options: Sized + Default {
+pub trait Initial: Sized {
+    fn initial() -> Result<Self, Error>;
+}
+
+pub trait Options: Sized + Initial {
     type Arg: Arguments;
+
+    fn apply(&mut self, arg: Self::Arg);
 
     fn parse<I>(args: I) -> Self
     where
         I: IntoIterator + 'static,
         I::Item: Into<OsString>,
     {
-        match Self::try_parse(args) {
-            Ok(v) => v,
-            Err(err) => {
-                eprintln!("{err}");
-                std::process::exit(<Self as Options>::Arg::EXIT_CODE);
-            }
-        }
+        exit_if_err(Self::try_parse(args), Self::Arg::EXIT_CODE)
     }
 
     fn try_parse<I>(args: I) -> Result<Self, Error>
@@ -93,16 +135,13 @@ pub trait Options: Sized + Default {
         I::Item: Into<OsString>,
     {
         let mut _self = Self::initial()?;
-        _self.apply_args(args)?;
+        let mut iter = Self::Arg::parse(args);
+        while let Some(arg) = iter.next_arg()? {
+            _self.apply(arg);
+        }
+        Self::Arg::check_missing(iter.positional_idx)?;
         Ok(_self)
     }
-
-    fn initial() -> Result<Self, Error>;
-
-    fn apply_args<I>(&mut self, args: I) -> Result<(), Error>
-    where
-        I: IntoIterator + 'static,
-        I::Item: Into<OsString>;
 }
 
 pub trait FromValue: Sized {

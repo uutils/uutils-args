@@ -1,4 +1,4 @@
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Initial, Options};
 
 #[test]
 fn one_positional() {
@@ -8,11 +8,16 @@ fn one_positional() {
         File1(String),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[set(Arg::File1)]
         file1: String,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::File1(f): Arg) {
+            self.file1 = f;
+        }
     }
 
     let settings = Settings::parse(["test", "foo"]);
@@ -23,7 +28,7 @@ fn one_positional() {
 
 #[test]
 fn two_positionals() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[positional(1)]
         Foo(String),
@@ -31,13 +36,20 @@ fn two_positionals() {
         Bar(String),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[set(Arg::Foo)]
         foo: String,
-        #[set(Arg::Bar)]
         bar: String,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Arg) {
+            match arg {
+                Arg::Foo(x) => self.foo = x,
+                Arg::Bar(x) => self.bar = x,
+            }
+        }
     }
 
     let settings = Settings::parse(["test", "a", "b"]);
@@ -49,17 +61,22 @@ fn two_positionals() {
 
 #[test]
 fn optional_positional() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[positional(0..=1)]
         Foo(String),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::Foo(s) => Some(s))]
         foo: Option<String>,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Foo(x): Arg) {
+            self.foo = Some(x);
+        }
     }
 
     let settings = Settings::parse(["test"]);
@@ -76,11 +93,16 @@ fn collect_positional() {
         Foo(String),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[collect(set(Arg::Foo))]
         foo: Vec<String>,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Foo(x): Arg) {
+            self.foo.push(x);
+        }
     }
 
     let settings = Settings::parse(["test", "a", "b", "c"]);
@@ -91,17 +113,22 @@ fn collect_positional() {
 
 #[test]
 fn last1() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[positional(last, ..)]
         Foo(Vec<String>),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[set(Arg::Foo)]
         foo: Vec<String>,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Foo(x): Arg) {
+            self.foo = x;
+        }
     }
 
     let settings = Settings::parse(["test", "a", "-b", "c"]);
@@ -119,11 +146,19 @@ fn last2() {
         Foo(Vec<String>),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[set(Arg::Foo)]
         foo: Vec<String>,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Arg) {
+            match arg {
+                Arg::A => {}
+                Arg::Foo(x) => self.foo = x,
+            }
+        }
     }
 
     let settings = Settings::parse(["test", "-a"]);

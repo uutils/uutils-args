@@ -1,7 +1,7 @@
 use std::path::PathBuf;
-use uutils_args::{Arguments, FromValue, Options};
+use uutils_args::{Arguments, FromValue, Initial, Options};
 
-#[derive(Clone, Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, FromValue)]
 enum Format {
     #[value("long")]
     Long,
@@ -20,7 +20,7 @@ enum Format {
     Commas,
 }
 
-#[derive(Clone, Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, FromValue)]
 enum When {
     #[value("yes", "always", "force")]
     Always,
@@ -60,7 +60,7 @@ enum Dereference {
     All,
 }
 
-#[derive(Clone, Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, FromValue)]
 enum QuotingStyle {
     #[value("literal")]
     Literal,
@@ -85,7 +85,7 @@ enum QuotingStyle {
     Escape,
 }
 
-#[derive(Clone, Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, FromValue)]
 enum Sort {
     #[default]
     Name,
@@ -103,7 +103,7 @@ enum Sort {
     Width,
 }
 
-#[derive(Clone, Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, FromValue)]
 enum Time {
     #[default]
     Modification,
@@ -115,7 +115,7 @@ enum Time {
     Birth,
 }
 
-#[derive(Clone, Default, Debug, FromValue, PartialEq, Eq)]
+#[derive(Default, Debug, FromValue, PartialEq, Eq)]
 enum IndicatorStyle {
     #[default]
     #[value("none")]
@@ -128,7 +128,7 @@ enum IndicatorStyle {
     Classify,
 }
 
-#[derive(Clone, Arguments)]
+#[derive(Arguments)]
 enum Arg {
     // === Files ===
     /// Do not ignore entries starting with .
@@ -333,133 +333,116 @@ fn default_terminal_size() -> u16 {
     80
 }
 
-#[derive(Default, Options, Debug, PartialEq, Eq)]
-#[arg_type(Arg)]
+#[derive(Initial, Debug, PartialEq, Eq)]
 struct Settings {
-    #[map(
-        Arg::Long | Arg::LongNoGroup | Arg::LongNoOwner | Arg::LongNumericUidGid => Format::Long,
-        Arg::Columns => Format::Columns,
-        Arg::Across => Format::Across,
-        Arg::Commas => Format::Commas,
-        Arg::SingleColumn => Format::SingleColumn,
-        Arg::Format(f) => f,
-    )]
     format: Format,
-
-    #[collect(set(Arg::File))]
     files: Vec<PathBuf>,
-
-    #[map(
-        Arg::Sort(s) => s,
-        Arg::SortTime => Sort::Time,
-        Arg::SortNone => Sort::None,
-        Arg::SortVersion => Sort::Version,
-        Arg::SortExtension => Sort::Extension,
-    )]
     sort: Sort,
-
-    #[map(Arg::Recursive => true)]
     recursive: bool,
-
-    #[map(Arg::Reverse => true)]
     reverse: bool,
-
-    #[map(
-        Arg::DerefAll => Dereference::All,
-        Arg::DerefDirArgs => Dereference::DirArgs,
-        Arg::DerefArgs => Dereference::Args,
-    )]
     dereference: Dereference,
-
-    #[collect(set(Arg::Ignore))]
     ignore_patterns: Vec<String>,
-    //
     // size_format: SizeFormat,
-    //
-    #[map(Arg::Directory => true)]
     directory: bool,
-
-    #[map(
-        Arg::ChangeTime => Time::Change,
-        Arg::AccessTime => Time::Access,
-        Arg::Time(t) => t,
-    )]
     time: Time,
-
-    #[map(Arg::Inode => true)]
     inode: bool,
-
-    #[map(Arg::Color(when) => when.to_bool())]
     color: bool,
-
-    #[map(Arg::Author => true)]
     long_author: bool,
-
-    #[map(Arg::LongNoGroup => true)]
     long_no_group: bool,
-
-    #[map(Arg::LongNoOwner => true)]
     long_no_owner: bool,
-
-    #[map(Arg::LongNumericUidGid => true)]
     long_numeric_uid_gid: bool,
-
     // alloc_size: bool,
-
     // block_size: Option<u64>,
-    #[set(Arg::Width)]
     #[field(default = default_terminal_size())]
     width: u16,
-
-    #[map(
-        Arg::QuotingStyle(q) => q,
-        Arg::Literal => QuotingStyle::Literal,
-        Arg::Escape => QuotingStyle::Escape,
-    )]
     quoting_style: QuotingStyle,
-
-    #[map(
-        Arg::IndicatorStyleClassify(when) => {
-            if when.to_bool() {
-                IndicatorStyle::Classify
-            } else {
-                IndicatorStyle::None
-            }
-        }
-        Arg::IndicatorStyle(style) => style,
-        Arg::IndicatorStyleSlash => IndicatorStyle::Slash,
-        Arg::IndicatorStyleFileType => IndicatorStyle::FileType,
-    )]
     indicator_style: IndicatorStyle,
-
-    // TODO for the full implementation, to complicated
-    // to do here.
     // time_style: TimeStyle,
-    //
-    #[map(Arg::SecurityContext => true)]
     context: bool,
-
-    #[map(Arg::GroupDirectoriesFirst => true)]
     group_directories_first: bool,
-
-    #[map(Arg::Zero => '\0')]
     #[field(default = '\n')]
     eol: char,
-
-    #[map(
-        Arg::AlmostAll => Files::AlmostAll,
-        Arg::All => Files::All,
-    )]
     which_files: Files,
-
-    #[map(Arg::IgnoreBackups => true)]
     ignore_backups: bool,
-
-    #[map(
-        Arg::HideControlChars => true,
-        Arg::ShowControlChars => false,
-    )]
     hide_control_chars: bool,
+}
+
+impl Options for Settings {
+    type Arg = Arg;
+    fn apply(&mut self, arg: Arg) {
+        match arg {
+            Arg::All => self.which_files = Files::All,
+            Arg::AlmostAll => self.which_files = Files::AlmostAll,
+            Arg::Author => self.long_author = true,
+            Arg::ChangeTime => self.time = Time::Change,
+            Arg::AccessTime => self.time = Time::Access,
+            Arg::Time(t) => self.time = t,
+            Arg::Sort(s) => self.sort = s,
+            Arg::SortTime => self.sort = Sort::Time,
+            Arg::SortNone => self.sort = Sort::None,
+            Arg::SortVersion => self.sort = Sort::Version,
+            Arg::SortExtension => self.sort = Sort::Extension,
+            Arg::SecurityContext => self.context = true,
+            Arg::IgnoreBackups => self.ignore_backups = true,
+            Arg::Directory => self.directory = true,
+            Arg::Dired => todo!(),
+            Arg::Hyperlink(_when) => todo!(),
+            Arg::Inode => self.inode = true,
+            Arg::Ignore(pattern) => self.ignore_patterns.push(pattern),
+            Arg::Reverse => self.reverse = true,
+            Arg::Recursive => self.recursive = true,
+            Arg::Width(w) => self.width = w,
+            Arg::AllocationSize => todo!(),
+            Arg::NoGroup => self.long_no_group = true,
+            Arg::Long => self.format = Format::Long,
+            Arg::Columns => self.format = Format::Columns,
+            Arg::Across => self.format = Format::Across,
+            Arg::Commas => self.format = Format::Commas,
+            Arg::SingleColumn => self.format = Format::SingleColumn,
+            Arg::LongNoGroup => {
+                self.format = Format::Long;
+                self.long_no_group = true;
+            }
+            Arg::LongNoOwner => {
+                self.format = Format::Long;
+                self.long_no_owner = true;
+            }
+            Arg::LongNumericUidGid => {
+                self.format = Format::Long;
+                self.long_numeric_uid_gid = true;
+            }
+            Arg::Format(f) => self.format = f,
+            Arg::IndicatorStyle(style) => self.indicator_style = style,
+            Arg::IndicatorStyleSlash => self.indicator_style = IndicatorStyle::Slash,
+            Arg::IndicatorStyleFileType => self.indicator_style = IndicatorStyle::FileType,
+            Arg::IndicatorStyleClassify(when) => {
+                self.indicator_style = if when.to_bool() {
+                    IndicatorStyle::Classify
+                } else {
+                    IndicatorStyle::None
+                }
+            }
+            Arg::DerefAll => self.dereference = Dereference::All,
+            Arg::DerefDirArgs => self.dereference = Dereference::DirArgs,
+            Arg::DerefArgs => self.dereference = Dereference::Args,
+            Arg::HumanReadable => todo!(),
+            Arg::Kibibytes => todo!(),
+            Arg::Si => todo!(),
+            Arg::QuotingStyle(style) => self.quoting_style = style,
+            Arg::Literal => self.quoting_style = QuotingStyle::Literal,
+            Arg::Escape => self.quoting_style = QuotingStyle::Escape,
+            Arg::QuoteName => todo!(),
+            Arg::Color(when) => self.color = when.to_bool(),
+            Arg::HideControlChars => self.hide_control_chars = true,
+            Arg::ShowControlChars => self.hide_control_chars = false,
+            Arg::Zero => {
+                self.eol = '\0';
+                // TODO: Zero changes more than just this
+            }
+            Arg::GroupDirectoriesFirst => self.group_directories_first = true,
+            Arg::File(f) => self.files.push(f),
+        }
+    }
 }
 
 #[test]

@@ -1,11 +1,7 @@
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Initial, Options};
 
-#[derive(Clone, Arguments)]
-#[arguments(
-    help = ["--help"],
-    version = ["--version"],
-    file = "examples/hello_world_help.md"
-)]
+#[derive(Arguments)]
+#[arguments(file = "examples/hello_world_help.md")]
 enum Arg {
     /// The *name* to **greet**
     ///
@@ -24,13 +20,22 @@ enum Arg {
     Hidden,
 }
 
-#[derive(Default, Options)]
-#[arg_type(Arg)]
+#[derive(Initial)]
 struct Settings {
-    #[set(Arg::Name)]
     name: String,
-    #[set(Arg::Count)]
+    #[field(default = 1)]
     count: u8,
+}
+
+impl Options for Settings {
+    type Arg = Arg;
+    fn apply(&mut self, arg: Arg) {
+        match arg {
+            Arg::Name(n) => self.name = n,
+            Arg::Count(c) => self.count = c,
+            Arg::Hidden => {}
+        }
+    }
 }
 
 fn main() -> Result<(), uutils_args::Error> {

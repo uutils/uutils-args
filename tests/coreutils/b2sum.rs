@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Initial, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -40,33 +40,31 @@ enum CheckOutput {
     Status,
 }
 
-#[derive(Default, Options)]
-#[arg_type(Arg)]
+#[derive(Initial)]
 struct Settings {
-    #[map(
-        Arg::Binary => true,
-        Arg::Text => false,
-    )]
     binary: bool,
-
-    #[map(Arg::Check => true)]
     check: bool,
-
-    #[map(Arg::Tag => true)]
     tag: bool,
-
-    #[map(
-        Arg::Warn => CheckOutput::Warn,
-        Arg::Quiet => CheckOutput::Quiet,
-        Arg::Status => CheckOutput::Status,
-    )]
     check_output: CheckOutput,
-
-    #[map(Arg::Strict => true)]
     strict: bool,
-
-    #[collect(set(Arg::File))]
     files: Vec<PathBuf>,
+}
+
+impl Options for Settings {
+    type Arg = Arg;
+    fn apply(&mut self, arg: Arg) {
+        match arg {
+            Arg::Binary => self.binary = true,
+            Arg::Check => self.check = true,
+            Arg::Tag => self.tag = true,
+            Arg::Text => self.binary = false,
+            Arg::Quiet => self.check_output = CheckOutput::Quiet,
+            Arg::Status => self.check_output = CheckOutput::Status,
+            Arg::Strict => self.strict = true,
+            Arg::Warn => self.check_output = CheckOutput::Warn,
+            Arg::File(f) => self.files.push(f),
+        }
+    }
 }
 
 #[test]

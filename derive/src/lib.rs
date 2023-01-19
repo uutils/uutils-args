@@ -1,4 +1,3 @@
-mod action;
 mod argument;
 mod attributes;
 mod field;
@@ -16,24 +15,18 @@ use help::{help_handling, help_string, version_handling};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    parse::Parse,
+    // parse::Parse,
     parse_macro_input,
     Data::{Enum, Struct},
-    DeriveInput, Fields,
+    DeriveInput,
+    Fields,
 };
 
-#[proc_macro_derive(Options, attributes(arg_type, map, set, field, collect))]
+#[proc_macro_derive(Initial, attributes(field))]
 pub fn options(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     let name = input.ident;
-    let arg_type = input
-        .attrs
-        .iter()
-        .find(|a| a.path.is_ident("arg_type"))
-        .expect("An Options struct must have a `arg_type` attribute")
-        .parse_args_with(syn::Ident::parse)
-        .expect("The `arg_type` attribute must contain a valid identifier.");
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
     let Struct(data) = input.data else {
@@ -46,52 +39,22 @@ pub fn options(input: TokenStream) -> TokenStream {
 
     // The key of this map is a literal pattern and the value
     // is whatever code needs to be run when that pattern is encountered.
-    let mut stmts = Vec::new();
     let mut defaults = Vec::new();
     for field in fields.named {
         let FieldData {
             ident,
             default_value,
-            match_stmt,
         } = parse_field(&field);
 
         defaults.push(quote!(#ident: #default_value));
-        stmts.push(match_stmt);
     }
 
     let expanded = quote!(
-        impl #impl_generics Options for #name #ty_generics #where_clause {
-            type Arg = #arg_type;
-
+        impl #impl_generics Initial for #name #ty_generics #where_clause {
             fn initial() -> Result<Self, uutils_args::Error> {
                 Ok(Self {
                     #(#defaults),*
                 })
-            }
-
-            fn apply_args<I>(&mut self, args: I) -> Result<(), uutils_args::Error>
-            where
-                I: IntoIterator + 'static,
-                I::Item: Into<std::ffi::OsString>,
-            {
-                use uutils_args::{lexopt, FromValue, Argument};
-                let mut iter = <Self as Options>::Arg::parse(args);
-                while let Some(arg) = iter.next_arg()? {
-                    match arg {
-                        Argument::Help => {
-                            print!("{}", iter.help());
-                            std::process::exit(0);
-                        },
-                        Argument::Version => {
-                            println!("{}", iter.version());
-                        },
-                        Argument::Custom(arg) => {
-                            #(#stmts)*
-                        }
-                    }
-                }
-                <Self as Options>::Arg::check_missing(iter.positional_idx)?;
-                Ok(())
             }
         }
     );

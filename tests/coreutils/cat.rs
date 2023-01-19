@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Initial, Options};
 
 #[derive(Default)]
 enum NumberingMode {
@@ -43,35 +43,42 @@ enum Arg {
     File(PathBuf),
 }
 
-#[derive(Default, Options)]
-#[arg_type(Arg)]
+#[derive(Initial)]
 struct Settings {
-    #[map(Arg::ShowAll | Arg::ShowTabs | Arg::ShowNonPrintingTabs => true)]
     show_tabs: bool,
-
-    #[map(Arg::ShowAll | Arg::ShowEnds | Arg::ShowNonPrintingEnds => true)]
     show_ends: bool,
-
-    #[map(
-        Arg::ShowAll
-        | Arg::ShowNonPrintingEnds
-        | Arg::ShowNonPrintingTabs
-        | Arg::ShowNonPrinting
-            => true
-    )]
     show_nonprinting: bool,
-
-    #[map(
-        Arg::Number => NumberingMode::All,
-        Arg::NumberNonblank => NumberingMode::NonEmpty,
-    )]
     number: NumberingMode,
-
-    #[map(Arg::SqueezeBlank => true)]
     squeeze_blank: bool,
-
-    #[collect(set(Arg::File))]
     files: Vec<PathBuf>,
+}
+
+impl Options for Settings {
+    type Arg = Arg;
+    fn apply(&mut self, arg: Arg) {
+        match arg {
+            Arg::ShowAll => {
+                self.show_tabs = true;
+                self.show_ends = true;
+                self.show_nonprinting = true;
+            }
+            Arg::ShowNonPrintingEnds => {
+                self.show_nonprinting = true;
+                self.show_ends = true;
+            }
+            Arg::ShowNonPrintingTabs => {
+                self.show_tabs = true;
+                self.show_nonprinting = true;
+            }
+            Arg::ShowEnds => self.show_ends = true,
+            Arg::ShowTabs => self.show_tabs = true,
+            Arg::ShowNonPrinting => self.show_nonprinting = true,
+            Arg::Number => self.number = NumberingMode::All,
+            Arg::NumberNonblank => self.number = NumberingMode::NonEmpty,
+            Arg::SqueezeBlank => self.squeeze_blank = true,
+            Arg::File(f) => self.files.push(f),
+        }
+    }
 }
 
 #[test]

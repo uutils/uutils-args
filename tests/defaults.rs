@@ -1,19 +1,24 @@
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Initial, Options};
 
 #[test]
 fn true_default() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("--foo")]
         Foo,
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::Foo => false)]
         #[field(default = true)]
         foo: bool,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Foo: Arg) {
+            self.foo = false;
+        }
     }
 
     assert!(Settings::parse(["test"]).foo);
@@ -22,18 +27,23 @@ fn true_default() {
 
 #[test]
 fn env_var_string() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("--foo=MSG")]
         Foo(String),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[set(Arg::Foo)]
         #[field(env = "FOO")]
         foo: String,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Foo(x): Arg) {
+            self.foo = x;
+        }
     }
 
     std::env::set_var("FOO", "one");

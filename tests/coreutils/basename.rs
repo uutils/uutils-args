@@ -1,4 +1,4 @@
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Initial, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -15,20 +15,27 @@ enum Arg {
     Names(Vec<String>),
 }
 
-#[derive(Default, Options)]
-#[arg_type(Arg)]
+#[derive(Initial)]
 struct Settings {
-    #[map(Arg::Multiple | Arg::Suffix(_) => true)]
     multiple: bool,
-
-    #[set(Arg::Suffix)]
     suffix: String,
-
-    #[map(Arg::Zero => true)]
     zero: bool,
-
-    #[set(Arg::Names)]
     names: Vec<String>,
+}
+
+impl Options for Settings {
+    type Arg = Arg;
+    fn apply(&mut self, arg: Arg) {
+        match arg {
+            Arg::Multiple => self.multiple = true,
+            Arg::Suffix(s) => {
+                self.multiple = true;
+                self.suffix = s
+            }
+            Arg::Zero => self.zero = true,
+            Arg::Names(names) => self.names = names,
+        }
+    }
 }
 
 fn parse(args: &'static [&'static str]) -> Settings {

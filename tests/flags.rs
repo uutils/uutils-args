@@ -1,18 +1,25 @@
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Initial, Options};
 
 #[test]
 fn one_flag() {
-    #[derive(Arguments, Clone, Debug, PartialEq, Eq)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-f", "--foo")]
         Foo,
     }
 
-    #[derive(Options, Default)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::Foo => true)]
         foo: bool,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Self::Arg) {
+            match arg {
+                Arg::Foo => self.foo = true,
+            }
+        }
     }
 
     let settings = Settings::parse(["test", "-f"]);
@@ -29,13 +36,20 @@ fn two_flags() {
         B,
     }
 
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
+    #[derive(Initial, PartialEq, Eq, Debug)]
     struct Settings {
-        #[map(Arg::A => true)]
         a: bool,
-        #[map(Arg::B => true)]
         b: bool,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Self::Arg) {
+            match arg {
+                Arg::A => self.a = true,
+                Arg::B => self.b = true,
+            }
+        }
     }
 
     assert_eq!(
@@ -55,63 +69,78 @@ fn two_flags() {
 
 #[test]
 fn long_and_short_flag() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-f", "--foo")]
         Foo,
     }
 
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::Foo => true)]
         foo: bool,
     }
 
-    assert_eq!(Settings::parse(["test"]), Settings { foo: false },);
-    assert_eq!(Settings::parse(["test", "--foo"]), Settings { foo: true },);
-    assert_eq!(Settings::parse(["test", "-f"]), Settings { foo: true },);
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Foo: Self::Arg) {
+            self.foo = true;
+        }
+    }
+
+    assert!(!Settings::parse(["test"]).foo);
+    assert!(Settings::parse(["test", "--foo"]).foo);
+    assert!(Settings::parse(["test", "-f"]).foo);
 }
 
 #[test]
 fn short_alias() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-b")]
         Foo,
     }
 
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::Foo => true)]
         foo: bool,
     }
 
-    assert_eq!(Settings::parse(["test", "-b"]), Settings { foo: true },);
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Foo: Self::Arg) {
+            self.foo = true;
+        }
+    }
+
+    assert!(Settings::parse(["test", "-b"]).foo);
 }
 
 #[test]
 fn long_alias() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("--bar")]
         Foo,
     }
 
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::Foo => true)]
         foo: bool,
     }
 
-    assert_eq!(Settings::parse(["test", "--bar"]), Settings { foo: true },);
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Foo: Self::Arg) {
+            self.foo = true;
+        }
+    }
+
+    assert!(Settings::parse(["test", "--bar"]).foo);
 }
 
 #[test]
 fn short_and_long_alias() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-b", "--bar")]
         Foo,
@@ -119,13 +148,20 @@ fn short_and_long_alias() {
         Bar,
     }
 
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
+    #[derive(Initial, PartialEq, Eq, Debug)]
     struct Settings {
-        #[map(Arg::Foo => true)]
         foo: bool,
-        #[map(Arg::Bar => true)]
         bar: bool,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Self::Arg) {
+            match arg {
+                Arg::Foo => self.foo = true,
+                Arg::Bar => self.bar = true,
+            }
+        }
     }
 
     let foo_true = Settings {
@@ -146,7 +182,7 @@ fn short_and_long_alias() {
 
 #[test]
 fn xyz_map_to_abc() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-x")]
         X,
@@ -156,15 +192,32 @@ fn xyz_map_to_abc() {
         Z,
     }
 
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
+    #[derive(Initial, PartialEq, Eq, Debug)]
     struct Settings {
-        #[map(Arg::X | Arg::Z => true)]
         a: bool,
-        #[map(Arg::X | Arg::Y | Arg::Z => true)]
         b: bool,
-        #[map(Arg::Y | Arg::Z => true)]
         c: bool,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Self::Arg) {
+            match arg {
+                Arg::X => {
+                    self.a = true;
+                    self.b = true;
+                }
+                Arg::Y => {
+                    self.b = true;
+                    self.c = true;
+                }
+                Arg::Z => {
+                    self.a = true;
+                    self.b = true;
+                    self.c = true;
+                }
+            }
+        }
     }
 
     assert_eq!(
@@ -206,7 +259,7 @@ fn xyz_map_to_abc() {
 
 #[test]
 fn non_rust_ident() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("--foo-bar")]
         FooBar,
@@ -214,13 +267,20 @@ fn non_rust_ident() {
         Super,
     }
 
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
+    #[derive(Initial, PartialEq, Eq, Debug)]
     struct Settings {
-        #[map(Arg::FooBar => true)]
         a: bool,
-        #[map(Arg::Super => true)]
         b: bool,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Self::Arg) {
+            match arg {
+                Arg::FooBar => self.a = true,
+                Arg::Super => self.b = true,
+            }
+        }
     }
 
     assert_eq!(
@@ -236,19 +296,24 @@ fn number_flag() {
         #[option("-1")]
         One,
     }
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
+    #[derive(Initial, PartialEq, Eq, Debug)]
     struct Settings {
-        #[map(Arg::One => true)]
         one: bool,
     }
 
-    assert_eq!(Settings::parse(["test", "-1"]), Settings { one: true })
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::One: Arg) {
+            self.one = true;
+        }
+    }
+
+    assert!(Settings::parse(["test", "-1"]).one)
 }
 
 #[test]
 fn false_bool() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-a")]
         A,
@@ -256,104 +321,47 @@ fn false_bool() {
         B,
     }
 
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(
-            Arg::A => true,
-            Arg::B => false,
-        )]
         foo: bool,
     }
 
-    assert_eq!(Settings::parse(["test", "-a"]), Settings { foo: true });
-    assert_eq!(Settings::parse(["test", "-b"]), Settings { foo: false });
-    assert_eq!(Settings::parse(["test", "-ab"]), Settings { foo: false });
-    assert_eq!(Settings::parse(["test", "-ba"]), Settings { foo: true });
-    assert_eq!(
-        Settings::parse(["test", "-a", "-b"]),
-        Settings { foo: false }
-    );
-    assert_eq!(
-        Settings::parse(["test", "-b", "-a"]),
-        Settings { foo: true }
-    );
-
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
-    struct Settings2 {
-        #[map(
-            Arg::A => true,
-            Arg::B => false,
-        )]
-        foo: bool,
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Arg) {
+            self.foo = match arg {
+                Arg::A => true,
+                Arg::B => false,
+            }
+        }
     }
 
-    assert_eq!(Settings2::parse(["test", "-a"]), Settings2 { foo: true });
-    assert_eq!(Settings2::parse(["test", "-b"]), Settings2 { foo: false });
-    assert_eq!(Settings2::parse(["test", "-ab"]), Settings2 { foo: false });
-    assert_eq!(Settings2::parse(["test", "-ba"]), Settings2 { foo: true });
-    assert_eq!(
-        Settings2::parse(["test", "-a", "-b"]),
-        Settings2 { foo: false }
-    );
-    assert_eq!(
-        Settings2::parse(["test", "-b", "-a"]),
-        Settings2 { foo: true }
-    );
+    assert!(Settings::parse(["test", "-a"]).foo);
+    assert!(!Settings::parse(["test", "-b"]).foo);
+    assert!(!Settings::parse(["test", "-ab"]).foo);
+    assert!(Settings::parse(["test", "-ba"]).foo);
+    assert!(!Settings::parse(["test", "-a", "-b"]).foo);
+    assert!(Settings::parse(["test", "-b", "-a"]).foo);
 }
 
 #[test]
-fn enum_flag() {
-    #[derive(Default, PartialEq, Eq, Debug, Clone)]
-    enum SomeEnum {
-        #[default]
-        Foo,
-        Bar,
-        Baz,
-    }
-
-    #[derive(Arguments, Clone)]
-    enum Arg {
-        #[option("--foo")]
-        Foo,
-        #[option("--bar")]
-        Bar,
-        #[option("--baz")]
-        Baz,
-    }
-
-    #[derive(Default, Options, PartialEq, Eq, Debug)]
-    #[arg_type(Arg)]
-    struct Settings {
-        #[map(
-            Arg::Foo => SomeEnum::Foo,
-            Arg::Bar => SomeEnum::Bar,
-            Arg::Baz => SomeEnum::Baz,
-        )]
-        foo: SomeEnum,
-    }
-
-    assert_eq!(Settings::parse(&[] as &[&str]).foo, SomeEnum::Foo);
-
-    assert_eq!(Settings::parse(["test", "--bar"]).foo, SomeEnum::Bar);
-
-    assert_eq!(Settings::parse(["test", "--baz"]).foo, SomeEnum::Baz,);
-}
-
-#[test]
-fn count() {
-    #[derive(Arguments, Clone)]
+fn verbosity() {
+    #[derive(Arguments)]
     enum Arg {
         #[option("-v")]
         Verbosity,
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::Verbosity => self.verbosity + 1)]
         verbosity: u8,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Verbosity: Arg) {
+            self.verbosity += 1;
+        }
     }
 
     assert_eq!(Settings::parse(["test", "-v"]).verbosity, 1);
@@ -363,7 +371,7 @@ fn count() {
 
 #[test]
 fn infer_long_args() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("--all")]
         All,
@@ -373,21 +381,67 @@ fn infer_long_args() {
         Author,
     }
 
-    #[derive(Options, Default)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::All => true)]
         all: bool,
-
-        #[map(Arg::AlmostAll => true)]
         almost_all: bool,
-
-        #[map(Arg::Author => true)]
         author: bool,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Arg) {
+            match arg {
+                Arg::All => self.all = true,
+                Arg::AlmostAll => self.almost_all = true,
+                Arg::Author => self.author = true,
+            }
+        }
     }
 
     assert!(Settings::parse(["test", "--all"]).all);
     assert!(Settings::parse(["test", "--alm"]).almost_all);
     assert!(Settings::parse(["test", "--au"]).author);
     assert!(Settings::try_parse(["test", "--a"]).is_err());
+}
+
+#[test]
+fn enum_flag() {
+    #[derive(Default, PartialEq, Eq, Debug)]
+    enum SomeEnum {
+        #[default]
+        Foo,
+        Bar,
+        Baz,
+    }
+
+    #[derive(Arguments)]
+    enum Arg {
+        #[option("--foo")]
+        Foo,
+        #[option("--bar")]
+        Bar,
+        #[option("--baz")]
+        Baz,
+    }
+
+    #[derive(Initial)]
+    struct Settings {
+        foo: SomeEnum,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Arg) {
+            self.foo = match arg {
+                Arg::Foo => SomeEnum::Foo,
+                Arg::Bar => SomeEnum::Bar,
+                Arg::Baz => SomeEnum::Baz,
+            };
+        }
+    }
+
+    assert_eq!(Settings::parse(["test"]).foo, SomeEnum::Foo);
+    assert_eq!(Settings::parse(["test", "--bar"]).foo, SomeEnum::Bar);
+    assert_eq!(Settings::parse(["test", "--baz"]).foo, SomeEnum::Baz,);
 }

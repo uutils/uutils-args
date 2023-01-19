@@ -1,20 +1,25 @@
 use std::ffi::OsString;
 
-use uutils_args::{Arguments, FromValue, Options};
+use uutils_args::{Arguments, FromValue, Initial, Options};
 
 #[test]
 fn string_option() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("--message=MSG")]
         Message(String),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[set(Arg::Message)]
         message: String,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Message(s): Arg) {
+            self.message = s
+        }
     }
 
     assert_eq!(
@@ -36,17 +41,22 @@ fn enum_option() {
         Baz,
     }
 
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("--format=FORMAT")]
         Format(Format),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[set(Arg::Format)]
         format: Format,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Format(f): Arg) {
+            self.format = f;
+        }
     }
 
     assert_eq!(
@@ -62,7 +72,7 @@ fn enum_option() {
 
 #[test]
 fn enum_option_with_fields() {
-    #[derive(FromValue, Default, Debug, PartialEq, Eq, Clone)]
+    #[derive(FromValue, Default, Debug, PartialEq, Eq)]
     enum Indent {
         #[default]
         Tabs,
@@ -71,17 +81,22 @@ fn enum_option_with_fields() {
         Spaces(u8),
     }
 
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-i INDENT")]
         Indent(Indent),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[set(Arg::Indent)]
         indent: Indent,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Indent(i): Arg) {
+            self.indent = i;
+        }
     }
 
     assert_eq!(
@@ -120,17 +135,22 @@ fn enum_with_complex_from_value() {
         }
     }
 
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-i INDENT")]
         Indent(Indent),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::Indent(i) => i.clone())]
         indent: Indent,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Indent(i): Arg) {
+            self.indent = i;
+        }
     }
 
     assert_eq!(Settings::parse(["test", "-i=tabs"]).indent, Indent::Tabs);
@@ -139,7 +159,7 @@ fn enum_with_complex_from_value() {
 
 #[test]
 fn color() {
-    #[derive(Default, FromValue, Debug, PartialEq, Eq, Clone)]
+    #[derive(Default, FromValue, Debug, PartialEq, Eq)]
     enum Color {
         #[value("yes", "always")]
         Always,
@@ -150,20 +170,23 @@ fn color() {
         Never,
     }
 
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("--color[=WHEN]")]
         Color(Option<Color>),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(
-            Arg::Color(Some(c)) => c.clone(),
-            Arg::Color(None) => Color::Always,
-        )]
+        #[field(default = Color::Auto)]
         color: Color,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Color(c): Arg) {
+            self.color = c.unwrap_or(Color::Always);
+        }
     }
 
     assert_eq!(
@@ -185,7 +208,7 @@ fn color() {
 
 #[test]
 fn actions() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-m MESSAGE")]
         Message(String),
@@ -195,49 +218,54 @@ fn actions() {
         Receive,
     }
 
-    #[derive(Options, Default)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::Message(m) => m.clone())]
-        message1: String,
-
-        #[set(Arg::Message)]
-        message2: String,
-
-        #[map(
-            Arg::Send => true,
-            Arg::Receive => false,
-        )]
+        last_message: String,
         send: bool,
-
-        // Or map, true or false inside the collect
-        #[collect(set(Arg::Message))]
         messages: Vec<String>,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Arg) {
+            match arg {
+                Arg::Message(m) => {
+                    self.last_message = m.clone();
+                    self.messages.push(m);
+                }
+                Arg::Send => self.send = true,
+                Arg::Receive => self.send = false,
+            }
+        }
     }
 
     let settings = Settings::parse(["test", "-m=Hello", "-m=World", "--send"]);
     assert_eq!(settings.messages, vec!["Hello", "World"]);
-    assert_eq!(settings.message1, "World");
-    assert_eq!(settings.message2, "World");
+    assert_eq!(settings.last_message, "World");
     assert!(settings.send);
 }
 
 #[test]
 fn width() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("-w WIDTH")]
         Width(u64),
     }
 
-    #[derive(Options, Default)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(
-            Arg::Width(0) => None,
-            Arg::Width(x) => Some(x),
-        )]
         width: Option<u64>,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Width(w): Arg) {
+            self.width = match w {
+                0 => None,
+                x => Some(x),
+            }
+        }
     }
 
     assert_eq!(Settings::parse(["test", "-w=0"]).width, None);
@@ -246,7 +274,7 @@ fn width() {
 
 #[test]
 fn integers() {
-    #[derive(Arguments, Clone)]
+    #[derive(Arguments)]
     enum Arg {
         #[option("--u8=N")]
         U8(u8),
@@ -270,22 +298,27 @@ fn integers() {
         I128(i128),
     }
 
-    #[derive(Options, Default)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(
-            Arg::U8(x) => x as i128,
-            Arg::U16(x) => x as i128,
-            Arg::U32(x) => x as i128,
-            Arg::U64(x) => x as i128,
-            Arg::U128(x) => x as i128,
-            Arg::I8(x) => x as i128,
-            Arg::I16(x) => x as i128,
-            Arg::I32(x) => x as i128,
-            Arg::I64(x) => x as i128,
-            Arg::I128(x) => x,
-        )]
         n: i128,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Arg) {
+            self.n = match arg {
+                Arg::U8(x) => x as i128,
+                Arg::U16(x) => x as i128,
+                Arg::U32(x) => x as i128,
+                Arg::U64(x) => x as i128,
+                Arg::U128(x) => x as i128,
+                Arg::I8(x) => x as i128,
+                Arg::I16(x) => x as i128,
+                Arg::I32(x) => x as i128,
+                Arg::I64(x) => x as i128,
+                Arg::I128(x) => x,
+            }
+        }
     }
 
     assert_eq!(Settings::parse(["test", "--u8=5"]).n, 5);
@@ -303,7 +336,7 @@ fn integers() {
 
 #[test]
 fn ls_classify() {
-    #[derive(FromValue, Default, Clone, PartialEq, Eq, Debug)]
+    #[derive(FromValue, Default, PartialEq, Eq, Debug)]
     enum When {
         #[value]
         Never,
@@ -314,7 +347,7 @@ fn ls_classify() {
         Always,
     }
 
-    #[derive(Clone, Arguments)]
+    #[derive(Arguments)]
     enum Arg {
         #[option(
             "-F", "--classify[=WHEN]",
@@ -323,11 +356,16 @@ fn ls_classify() {
         Classify(When),
     }
 
-    #[derive(Options, Default)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[set(Arg::Classify)]
         classify: When,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::Classify(c): Arg) {
+            self.classify = c;
+        }
     }
 
     assert_eq!(Settings::parse(["test"]).classify, When::Auto);
@@ -354,11 +392,16 @@ fn mktemp_tmpdir() {
         TmpDir(String),
     }
 
-    #[derive(Default, Options)]
-    #[arg_type(Arg)]
+    #[derive(Initial)]
     struct Settings {
-        #[map(Arg::TmpDir(dir) => Some(dir))]
         tmpdir: Option<String>,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, Arg::TmpDir(dir): Arg) {
+            self.tmpdir = Some(dir);
+        }
     }
 
     let settings = Settings::parse(["test", "-p", "X"]);

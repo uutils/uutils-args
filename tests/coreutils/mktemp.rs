@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Initial, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -26,29 +26,30 @@ enum Arg {
     Template(String),
 }
 
-#[derive(Default, Options)]
-#[arg_type(Arg)]
+#[derive(Default, Initial)]
 struct Settings {
-    #[map(Arg::Directory => true)]
     directory: bool,
-
-    #[map(Arg::DryRun => true)]
     dry_run: bool,
-
-    #[map(Arg::Quiet => true)]
     quiet: bool,
-
-    #[map(Arg::TmpDir(p) => Some(p))]
     tmp_dir: Option<PathBuf>,
-
-    #[map(Arg::Suffix(s) => Some(s))]
     suffix: Option<String>,
-
-    #[map(Arg::TreatAsTemplate => true)]
     treat_as_template: bool,
-
-    #[set(Arg::Template)]
     template: String,
+}
+
+impl Options for Settings {
+    type Arg = Arg;
+    fn apply(&mut self, arg: Arg) {
+        match arg {
+            Arg::Directory => self.directory = true,
+            Arg::DryRun => self.dry_run = true,
+            Arg::Quiet => self.quiet = true,
+            Arg::Suffix(s) => self.suffix = Some(s),
+            Arg::TreatAsTemplate => self.treat_as_template = true,
+            Arg::TmpDir(dir) => self.tmp_dir = Some(dir),
+            Arg::Template(s) => self.template = s,
+        }
+    }
 }
 
 #[test]
