@@ -143,31 +143,19 @@ enum Arg {
     #[option("--author")]
     Author,
 
-    // === Time ===
-    #[option("-c")]
-    ChangeTime,
-
-    #[option("-u")]
-    AccessTime,
-
     #[option("--time=WORD")]
+    #[option("-c", default = Time::Change)]
+    #[option("-u", default = Time::Access)]
     Time(Time),
 
-    // === Sorting ===
+    // === Sorting ==
+    /// Sort by WORD
     #[option("--sort=WORD")]
+    #[option("-t", default = Sort::Time, help = "Sort by time")]
+    #[option("-U", default = Sort::None, help = "Do not sort")]
+    #[option("-v", default = Sort::Version, help = "Sort by version")]
+    #[option("-X", default = Sort::Extension, help = "Sort by extension")]
     Sort(Sort),
-
-    #[option("-t")]
-    SortTime,
-
-    #[option("-U")]
-    SortNone,
-
-    #[option("-v")]
-    SortVersion,
-
-    #[option("-X")]
-    SortExtension,
 
     // === Miscellaneous ===
     #[option("-Z", "--context")]
@@ -208,21 +196,13 @@ enum Arg {
     NoGroup,
 
     // === Format ===
-    /// Set long format
-    #[option("-l", "--long")]
-    Long,
-
-    /// Set columns format
-    #[option("-C")]
-    Columns,
-
-    /// Set across format
-    #[option("-x")]
-    Across,
-
-    /// Set comma format
-    #[option("-m")]
-    Commas,
+    /// Set format
+    #[option("--format=FORMAT")]
+    #[option("-l", "--long", default = Format::Long, help = "Use long format")]
+    #[option("-C", default = Format::Columns, help = "Use columns format")]
+    #[option("-x", default = Format::Across, help = "Use across format")]
+    #[option("-m", default = Format::Commas, help = "Use comma format")]
+    Format(Format),
 
     /// Show single column
     #[option("-1")]
@@ -237,20 +217,13 @@ enum Arg {
     #[option("-n", "--numeric-uid-gid")]
     LongNumericUidGid,
 
-    /// Set format
-    #[option("--format=FORMAT")]
-    Format(Format),
-
     // === Indicator style ===
     #[option("--indicator-style=STYLE")]
+    #[option("-p", default = IndicatorStyle::Slash, help = "Append slash to directories")]
+    #[option("--file-type", default = IndicatorStyle::FileType, help = "Add indicators for file types")]
     IndicatorStyle(IndicatorStyle),
 
-    #[option("-p")]
-    IndicatorStyleSlash,
-
-    #[option("--file-type")]
-    IndicatorStyleFileType,
-
+    /// Classify items
     #[option("-F", "--classify[=WHEN]", default = When::Always)]
     IndicatorStyleClassify(When),
 
@@ -279,16 +252,10 @@ enum Arg {
 
     // === Quoting style ===
     #[option("--quoting-style=STYLE")]
+    #[option("-N", "--literal", default = QuotingStyle::Literal)]
+    #[option("-h", "--escape", default = QuotingStyle::Escape)]
+    #[option("-Q", "--quote-name", default = todo!())]
     QuotingStyle(QuotingStyle),
-
-    #[option("-N", "--literal")]
-    Literal,
-
-    #[option("-h", "--escape")]
-    Escape,
-
-    #[option("-Q", "--quote-name")]
-    QuoteName,
 
     /// Set the color
     #[option("--color[=WHEN]", default = When::Always)]
@@ -374,14 +341,8 @@ impl Options for Settings {
             Arg::All => self.which_files = Files::All,
             Arg::AlmostAll => self.which_files = Files::AlmostAll,
             Arg::Author => self.long_author = true,
-            Arg::ChangeTime => self.time = Time::Change,
-            Arg::AccessTime => self.time = Time::Access,
             Arg::Time(t) => self.time = t,
             Arg::Sort(s) => self.sort = s,
-            Arg::SortTime => self.sort = Sort::Time,
-            Arg::SortNone => self.sort = Sort::None,
-            Arg::SortVersion => self.sort = Sort::Version,
-            Arg::SortExtension => self.sort = Sort::Extension,
             Arg::SecurityContext => self.context = true,
             Arg::IgnoreBackups => self.ignore_backups = true,
             Arg::Directory => self.directory = true,
@@ -394,10 +355,6 @@ impl Options for Settings {
             Arg::Width(w) => self.width = w,
             Arg::AllocationSize => todo!(),
             Arg::NoGroup => self.long_no_group = true,
-            Arg::Long => self.format = Format::Long,
-            Arg::Columns => self.format = Format::Columns,
-            Arg::Across => self.format = Format::Across,
-            Arg::Commas => self.format = Format::Commas,
             Arg::SingleColumn => self.format = Format::SingleColumn,
             Arg::LongNoGroup => {
                 self.format = Format::Long;
@@ -413,8 +370,6 @@ impl Options for Settings {
             }
             Arg::Format(f) => self.format = f,
             Arg::IndicatorStyle(style) => self.indicator_style = style,
-            Arg::IndicatorStyleSlash => self.indicator_style = IndicatorStyle::Slash,
-            Arg::IndicatorStyleFileType => self.indicator_style = IndicatorStyle::FileType,
             Arg::IndicatorStyleClassify(when) => {
                 self.indicator_style = if when.to_bool() {
                     IndicatorStyle::Classify
@@ -429,9 +384,6 @@ impl Options for Settings {
             Arg::Kibibytes => todo!(),
             Arg::Si => todo!(),
             Arg::QuotingStyle(style) => self.quoting_style = style,
-            Arg::Literal => self.quoting_style = QuotingStyle::Literal,
-            Arg::Escape => self.quoting_style = QuotingStyle::Escape,
-            Arg::QuoteName => todo!(),
             Arg::Color(when) => self.color = when.to_bool(),
             Arg::HideControlChars => self.hide_control_chars = true,
             Arg::ShowControlChars => self.hide_control_chars = false,
@@ -558,4 +510,13 @@ fn classify() {
 
     let s = Settings::parse(["ls", "-F"]);
     assert_eq!(s.indicator_style, IndicatorStyle::Classify);
+}
+
+#[test]
+fn sort() {
+    let s = Settings::parse(["ls", "--sort=time"]);
+    assert_eq!(s.sort, Sort::Time);
+
+    let s = Settings::parse(["ls", "-X"]);
+    assert_eq!(s.sort, Sort::Extension);
 }

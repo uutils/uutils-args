@@ -32,8 +32,9 @@ enum AttributeArguments {
     File(String),
     Env(String),
     ExitCode(i32),
-    Help(Vec<String>),
-    Version(Vec<String>),
+    Help(String),
+    HelpFlags(Vec<String>),
+    VersionFlags(Vec<String>),
     Last,
     Hidden,
 }
@@ -69,10 +70,10 @@ impl ArgumentsAttr {
         let mut arguments_attr = Self::default();
         for arg in AttributeArguments::parse_all(attr) {
             match arg {
-                AttributeArguments::Help(flags) => {
+                AttributeArguments::HelpFlags(flags) => {
                     arguments_attr.help_flags = Flags::new(flags);
                 }
-                AttributeArguments::Version(flags) => {
+                AttributeArguments::VersionFlags(flags) => {
                     arguments_attr.version_flags = Flags::new(flags);
                 }
                 AttributeArguments::File(s) => arguments_attr.file = Some(s),
@@ -91,6 +92,7 @@ pub(crate) struct OptionAttr {
     pub(crate) parser: Option<Expr>,
     pub(crate) default: Option<Expr>,
     pub(crate) hidden: bool,
+    pub(crate) help: Option<String>,
 }
 
 impl OptionAttr {
@@ -103,6 +105,7 @@ impl OptionAttr {
                 AttributeArguments::Parser(e) => option_attr.parser = Some(e),
                 AttributeArguments::Default(e) => option_attr.default = Some(e),
                 AttributeArguments::Hidden => option_attr.hidden = true,
+                AttributeArguments::Help(h) => option_attr.help = Some(h),
                 _ => panic!("Invalid argument"),
             };
         }
@@ -258,8 +261,9 @@ impl Parse for AttributeArguments {
                 "value" => return Ok(Self::Value(input.parse::<Expr>()?)),
                 "file" => return Ok(Self::File(input.parse::<LitStr>()?.value())),
                 "env" => return Ok(Self::Env(input.parse::<LitStr>()?.value())),
+                "help" => return Ok(Self::Help(input.parse::<LitStr>()?.value())),
                 "exit_code" => return Ok(Self::ExitCode(input.parse::<LitInt>()?.base10_parse()?)),
-                "help" => {
+                "help_flags" => {
                     let expr = input.parse::<Expr>()?;
                     let arr = match expr {
                         syn::Expr::Array(arr) => arr,
@@ -277,9 +281,9 @@ impl Parse for AttributeArguments {
                         };
                         strings.push(val);
                     }
-                    return Ok(Self::Help(strings));
+                    return Ok(Self::HelpFlags(strings));
                 }
-                "version" => {
+                "version_flags" => {
                     let expr = input.parse::<Expr>()?;
                     let arr = match expr {
                         syn::Expr::Array(arr) => arr,
@@ -299,7 +303,7 @@ impl Parse for AttributeArguments {
                         };
                         strings.push(val);
                     }
-                    return Ok(Self::Version(strings));
+                    return Ok(Self::VersionFlags(strings));
                 }
                 _ => panic!("Unrecognized argument {} for option attribute", name),
             };

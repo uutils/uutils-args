@@ -38,10 +38,16 @@ pub(crate) fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
     ArgumentsAttr::default()
 }
 
-pub(crate) fn parse_argument(v: Variant) -> Option<Argument> {
+pub(crate) fn parse_argument(v: Variant) -> Vec<Argument> {
     let ident = v.ident;
     let name = ident.to_string();
-    let attribute = get_arg_attribute(&v.attrs)?;
+    let attributes = get_arg_attributes(&v.attrs);
+
+    // Return early because we don't need to check the fields if it's not used.
+    if attributes.is_empty() {
+        return Vec::new();
+    }
+
     let help = collect_help(&v.attrs);
 
     let field = match v.fields {
@@ -59,34 +65,43 @@ pub(crate) fn parse_argument(v: Variant) -> Option<Argument> {
         }
     };
 
-    let arg_type = match attribute {
-        ArgAttr::Option(opt) => {
-            let default_expr = match opt.default {
-                Some(expr) => quote!(#expr),
-                None => quote!(Default::default()),
+    attributes
+        .into_iter()
+        .map(|attribute| {
+            // We might override the help with the help given in the attribute
+            let mut arg_help = help.clone();
+            let arg_type = match attribute {
+                ArgAttr::Option(opt) => {
+                    let default_expr = match opt.default {
+                        Some(expr) => quote!(#expr),
+                        None => quote!(Default::default()),
+                    };
+                    if let Some(help) = opt.help {
+                        arg_help = help;
+                    }
+                    ArgType::Option {
+                        flags: opt.flags,
+                        takes_value: field.is_some(),
+                        default: default_expr,
+                        hidden: opt.hidden,
+                    }
+                }
+                ArgAttr::Positional(pos) => {
+                    assert!(field.is_some(), "Positional arguments must have a field");
+                    ArgType::Positional {
+                        num_args: pos.num_args,
+                        last: pos.last,
+                    }
+                }
             };
-            ArgType::Option {
-                flags: opt.flags,
-                takes_value: field.is_some(),
-                default: default_expr,
-                hidden: opt.hidden,
+            Argument {
+                ident: ident.clone(),
+                name: name.clone(),
+                arg_type,
+                help: arg_help,
             }
-        }
-        ArgAttr::Positional(pos) => {
-            assert!(field.is_some(), "Positional arguments must have a field");
-            ArgType::Positional {
-                num_args: pos.num_args,
-                last: pos.last,
-            }
-        }
-    };
-
-    Some(Argument {
-        ident,
-        name,
-        arg_type,
-        help,
-    })
+        })
+        .collect()
 }
 
 fn collect_help(attrs: &[Attribute]) -> String {
@@ -103,16 +118,12 @@ fn collect_help(attrs: &[Attribute]) -> String {
     help.join("\n")
 }
 
-fn get_arg_attribute(attrs: &[Attribute]) -> Option<ArgAttr> {
-    let attrs: Vec<_> = attrs
+fn get_arg_attributes(attrs: &[Attribute]) -> Vec<ArgAttr> {
+    attrs
         .iter()
         .filter(|a| a.path.is_ident("option") || a.path.is_ident("positional"))
-        .collect();
-    match attrs[..] {
-        [] => None,
-        [attr] => Some(parse_argument_attribute(attr)),
-        _ => panic!("Can only specify one #[option] or #[positional] per argument variant"),
-    }
+        .map(parse_argument_attribute)
+        .collect()
 }
 
 pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {

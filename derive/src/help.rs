@@ -93,7 +93,10 @@ pub(crate) fn help_string(
                 if flags.len() <= #width {
                     let line = match help_lines.next() {
                         Some(line) => line,
-                        None => return s,
+                        None => {
+                            s.push('\n');
+                            continue;
+                        },
                     };
                     let help_indent = " ".repeat(#width-flags.len()+2);
                     s.push_str(&help_indent);
