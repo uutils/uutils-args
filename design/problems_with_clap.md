@@ -182,11 +182,10 @@ libraries.
   - It is also not configurable enough.
   - Does not support a many-to-many relationship.
 - [`bpaf`](https://github.com/pacak/bpaf)
-  - Very configurable, even supports `dd`-style.
-  - No different configuration between short and long options (as far as I can
-    find).
-  - Does not have the many-to-many relationship (options map directly to fields
-    in a struct).
+  - Extremely flexible, even supports `dd`-style.
+  - A different configuration between short and long options requires a workaround.
+  - A many-to-many relation ship is possible, though not very ergonomic.
+  - For more information, see: https://github.com/tertsdiepraam/uutils-args/issues/17
 - [`gumdrop`](https://github.com/murarth/gumdrop)
   - Does not handle invalid UTF-8.
   - Not configurable enough.
