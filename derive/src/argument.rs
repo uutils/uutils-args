@@ -6,7 +6,7 @@ use syn::{Attribute, Fields, FieldsUnnamed, Ident, Lit, Meta, Variant};
 
 use crate::{
     attributes::{parse_argument_attribute, ArgAttr, ArgumentsAttr},
-    flags::{Flags, Value},
+    flags::{Flag, Flags, Value},
 };
 
 pub(crate) struct Argument {
@@ -161,10 +161,12 @@ pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
 
     quote!(
         let option = format!("-{}", short);
-        match short {
-            #(#match_arms)*
-            _ => return Err(arg.unexpected().into()),
-        }
+        Ok(Some(Argument::Custom(
+            match short {
+                #(#match_arms)*
+                _ => return Err(Error::UnexpectedOption(short.to_string())),
+            }
+        )))
     )
 }
 
@@ -206,7 +208,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
     }
 
     if options.is_empty() {
-        return quote!(return Err(arg.unexpected().into()));
+        return quote!(return Err(Error::UnexpectedOption(long.to_string())));
     }
 
     // TODO: Add version check
@@ -237,7 +239,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
         let long = match (exact_match, &candidates[..]) {
             (Some(opt), _) => opt,
             (None, [opt]) => opt,
-            (None, []) => return Err(arg.unexpected().into()),
+            (None, []) => return Err(Error::UnexpectedOption(long.to_string())),
             (None, opts) => return Err(Error::AmbiguousOption {
                 option: long.to_string(),
                 candidates: candidates.iter().map(|s| s.to_string()).collect(),
@@ -247,11 +249,36 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
         #help_check
 
         let option = format!("--{}", long);
-        match long {
-            #(#match_arms)*
-            _ => unreachable!("Should be caught by (None, []) case above.")
-        }
+        Ok(Some(Argument::Custom(
+            match long {
+                #(#match_arms)*
+                _ => unreachable!("Should be caught by (None, []) case above.")
+            }
+        )))
     )
+}
+
+pub(crate) fn number_handling(args: &[Argument]) -> TokenStream {
+    let mut number_args = Vec::new();
+
+    for arg in args {
+        let flags = match &arg.arg_type {
+            ArgType::Option { flags, .. } => flags,
+            ArgType::Positional { .. } => continue,
+        };
+
+        let ident = &arg.ident;
+
+        for Flag { flag: prefix, .. } in &flags.number_prefix {
+            number_args.push(quote!(
+                if let Some(v) = ::uutils_args::parse_prefix(parser, #prefix) {
+                    return Ok(Some(::uutils_args::Argument::Custom(Self::#ident(v))));
+                }
+            ));
+        }
+    }
+
+    quote!(#(#number_args)*)
 }
 
 pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStream) {
@@ -289,10 +316,12 @@ pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStrea
 
     let value_handling = quote!(
         *positional_idx += 1;
-        match positional_idx {
-            #(#match_arms)*
-            _ => return Err(lexopt::Arg::Value(value).unexpected().into()),
-        }
+        Ok(Some(Argument::Custom(
+            match positional_idx {
+                #(#match_arms)*
+                _ => return Err(lexopt::Arg::Value(value).unexpected().into()),
+            }
+        )))
     );
 
     let missing_argument_checks = quote!(

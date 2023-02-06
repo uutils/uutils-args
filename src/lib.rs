@@ -208,3 +208,33 @@ from_value_int!(i32);
 from_value_int!(i64);
 from_value_int!(i128);
 from_value_int!(isize);
+
+pub fn get_double_hyphen(p: &mut lexopt::Parser) -> Option<OsString> {
+    let mut raw = p.try_raw_args()?;
+    let s = raw.peek()?;
+    if s.to_str()? == "--" {
+        let s = s.into();
+        raw.next();
+        Some(s)
+    } else {
+        None
+    }
+}
+
+pub fn parse_prefix<T: FromValue>(parser: &mut lexopt::Parser, prefix: &'static str) -> Option<T> {
+    dbg!("boop");
+    let mut raw = parser.try_raw_args()?;
+    dbg!(&raw);
+    let arg = raw.peek()?.to_str()?;
+    dbg!(&arg);
+    let value_str = arg.strip_prefix(prefix)?;
+    dbg!(&value_str);
+
+    // TODO: Give a nice flag name
+    let value = T::from_value("", OsString::from(value_str)).ok()?;
+
+    // Consume the argument we just parsed
+    let _ = raw.next();
+
+    Some(value)
+}

@@ -35,6 +35,7 @@ enum AttributeArguments {
     Help(String),
     HelpFlags(Vec<String>),
     VersionFlags(Vec<String>),
+    IgnoreDoubleHyphen,
     Last,
     Hidden,
 }
@@ -52,6 +53,7 @@ pub(crate) struct ArgumentsAttr {
     pub(crate) version_flags: Flags,
     pub(crate) file: Option<String>,
     pub(crate) exit_code: i32,
+    pub(crate) ignore_double_hyphen: bool,
 }
 
 impl Default for ArgumentsAttr {
@@ -61,6 +63,7 @@ impl Default for ArgumentsAttr {
             version_flags: Flags::new(["--version"]),
             file: None,
             exit_code: 1,
+            ignore_double_hyphen: false,
         }
     }
 }
@@ -78,6 +81,9 @@ impl ArgumentsAttr {
                 }
                 AttributeArguments::File(s) => arguments_attr.file = Some(s),
                 AttributeArguments::ExitCode(code) => arguments_attr.exit_code = code,
+                AttributeArguments::IgnoreDoubleHyphen => {
+                    arguments_attr.ignore_double_hyphen = true
+                }
                 _ => panic!(),
             }
         }
@@ -249,6 +255,7 @@ impl Parse for AttributeArguments {
             match name.as_str() {
                 "last" => return Ok(Self::Last),
                 "hidden" => return Ok(Self::Hidden),
+                "ignore_double_hyphen" => return Ok(Self::IgnoreDoubleHyphen),
                 _ => {}
             };
 

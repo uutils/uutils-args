@@ -6,7 +6,8 @@ mod help;
 mod markdown;
 
 use argument::{
-    long_handling, parse_argument, parse_arguments_attr, positional_handling, short_handling,
+    long_handling, number_handling, parse_argument, parse_arguments_attr, positional_handling,
+    short_handling,
 };
 use attributes::ValueAttr;
 use field::{parse_field, FieldData};
@@ -15,15 +16,13 @@ use help::{help_handling, help_string, version_handling};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    // parse::Parse,
     parse_macro_input,
     Data::{Enum, Struct},
-    DeriveInput,
-    Fields,
+    DeriveInput, Fields,
 };
 
 #[proc_macro_derive(Initial, attributes(field))]
-pub fn options(input: TokenStream) -> TokenStream {
+pub fn initial(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     let name = input.ident;
@@ -79,6 +78,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     let exit_code = arguments_attr.exit_code;
     let short = short_handling(&arguments);
     let long = long_handling(&arguments, &arguments_attr.help_flags);
+    let number_argument = number_handling(&arguments);
     let (positional, missing_argument_checks) = positional_handling(&arguments);
     let help_string = help_string(
         &arguments,
@@ -94,6 +94,16 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         env!("CARGO_PKG_VERSION"),
     ));
 
+    let next_arg = if arguments_attr.ignore_double_hyphen {
+        quote!(if let Some(val) = uutils_args::get_double_hyphen(parser) {
+            Some(lexopt::Arg::Value(val))
+        } else {
+            parser.next()?
+        })
+    } else {
+        quote!(parser.next()?)
+    };
+
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
             const EXIT_CODE: i32 = #exit_code;
@@ -104,18 +114,22 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             ) -> Result<Option<uutils_args::Argument<Self>>, uutils_args::Error> {
                 use uutils_args::{FromValue, lexopt, Error, Argument};
 
-                let Some(arg) = parser.next()? else { return Ok(None); };
+                #number_argument
+
+                let arg = match { #next_arg } {
+                    Some(arg) => arg,
+                    None => return Ok(None),
+                };
 
                 #help
 
                 #version
 
-                let parsed = match arg {
-                    lexopt::Arg::Short(short) => { #short }
-                    lexopt::Arg::Long(long) => { #long }
-                    lexopt::Arg::Value(value) => { #positional }
-                };
-                Ok(Some(Argument::Custom(parsed)))
+                match arg {
+                    lexopt::Arg::Short(short) => { #short },
+                    lexopt::Arg::Long(long) => { #long },
+                    lexopt::Arg::Value(value) => { #positional },
+                }
             }
 
             fn check_missing(positional_idx: usize) -> Result<(), uutils_args::Error> {

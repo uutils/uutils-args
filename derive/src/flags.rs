@@ -5,6 +5,7 @@ use quote::quote;
 pub(crate) struct Flags {
     pub short: Vec<Flag<char>>,
     pub long: Vec<Flag<String>>,
+    pub number_prefix: Vec<Flag<String>>,
 }
 
 #[derive(Clone)]
@@ -30,8 +31,19 @@ impl Flags {
     }
 
     pub(crate) fn add(&mut self, flag: &str) {
-        assert!(flag.starts_with('-'), "Flags must start with a '-'");
-        if let Some(s) = flag.strip_prefix("--") {
+        if let Some((prefix, rest)) = flag.split_once('{') {
+            // It's an argument with a prefix, e.g. "-{N}" or "+{N}"
+            let (value_name, after) = rest
+                .split_once('}')
+                .expect("Missing '}' in flag definition");
+
+            assert!(after.is_empty(), "There can be no suffix after '}}'");
+
+            self.number_prefix.push(Flag {
+                flag: prefix.into(),
+                value: Value::Required(value_name.into()),
+            });
+        } else if let Some(s) = flag.strip_prefix("--") {
             // There are three possible patterns:
             //   --flag
             //   --flag=value
@@ -102,7 +114,7 @@ impl Flags {
     }
 
     pub(crate) fn is_empty(&self) -> bool {
-        self.short.is_empty() && self.long.is_empty()
+        self.short.is_empty() && self.long.is_empty() && self.number_prefix.is_empty()
     }
 
     pub(crate) fn pat(&self) -> TokenStream {

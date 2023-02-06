@@ -442,3 +442,36 @@ fn infer_value() {
     Foo::from_value("--foo", OsString::from("l")).unwrap_err();
     Foo::from_value("--foo", OsString::from("de")).unwrap_err();
 }
+
+#[test]
+fn deprecated() {
+    #[derive(Arguments)]
+    enum Arg {
+        #[option("-{N}")]
+        Min(usize),
+
+        #[option("+{N}")]
+        Plus(isize),
+    }
+
+    #[derive(Initial)]
+    struct Settings {
+        n1: usize,
+        n2: isize,
+    }
+
+    impl Options for Settings {
+        type Arg = Arg;
+        fn apply(&mut self, arg: Arg) {
+            match arg {
+                Arg::Min(n) => self.n1 = n,
+                Arg::Plus(n) => self.n2 = n,
+            }
+        }
+    }
+
+    assert_eq!(Settings::parse(["test", "-10"]).n1, 10usize);
+    assert!(Settings::try_parse(["test", "--10"]).is_err());
+    assert_eq!(Settings::parse(["test", "+10"]).n2, 10isize);
+    assert_eq!(Settings::parse(["test", "+-10"]).n2, -10isize);
+}
