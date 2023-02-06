@@ -222,7 +222,7 @@ mod tests {
 
         let output = Renderer::new(40, events).render();
 
-        println!("{}", output);
+        println!("{output}");
         assert_eq!(
             output,
             "We have \u{1b}[3memphasis\u{1b}[0m, \u{1b}[1mbold\u{1b}[0m, and \u{1b}[9mstrikethrough\u{1b}[0m.\n"
@@ -234,7 +234,7 @@ mod tests {
         let events = Parser::new("To render, call the `render` method.").map(Into::into);
 
         let output = Renderer::new(40, events).render();
-        println!("{}", output);
+        println!("{output}");
         assert_eq!(
             output,
             "To render, call the \u{1b}[38;5;250mrender\u{1b}[0m method.\n"
@@ -251,7 +251,7 @@ mod tests {
         ";
         let events = Parser::new(text).map(Into::into);
         let output = Renderer::new(40, events).render();
-        println!("{}", output);
+        println!("{output}");
         assert_eq!(
             output,
             "\u{1b}[1;4mHeading 1\u{1b}[0m\n\
@@ -266,7 +266,7 @@ mod tests {
         let text = "This is some very long text that will definitely need to get wrapped, so we better do that **right**!";
         let events = Parser::new(text).map(Into::into);
         let output = Renderer::new(10, events).render();
-        println!("{}", output);
+        println!("{output}");
 
         // The lone `!` at the end is technically a bug, because words across
         // styles need be preserved, but that's a can of worms I don't want to
@@ -296,7 +296,7 @@ mod tests {
         let text = "This is text\nwith a soft break.";
         let events = Parser::new(text).map(Into::into);
         let output = Renderer::new(40, events).render();
-        println!("{}", output);
+        println!("{output}");
 
         assert_eq!(output, "This is text with a soft break.\n");
     }
@@ -306,7 +306,7 @@ mod tests {
         let text = "This is text\\\nwith a hard break.";
         let events = Parser::new(text).map(Into::into);
         let output = Renderer::new(40, events).render();
-        println!("{}", output);
+        println!("{output}");
 
         assert_eq!(output, "This is text\nwith a hard break.\n");
     }
@@ -317,7 +317,7 @@ mod tests {
 
         let events = Parser::new(text).map(Into::into);
         let output = Renderer::new(40, events).render();
-        println!("{}", output);
+        println!("{output}");
 
         assert_eq!(
             output,

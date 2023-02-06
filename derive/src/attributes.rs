@@ -312,7 +312,7 @@ impl Parse for AttributeArguments {
                     }
                     return Ok(Self::VersionFlags(strings));
                 }
-                _ => panic!("Unrecognized argument {} for option attribute", name),
+                _ => panic!("Unrecognized argument {name} for option attribute"),
             };
         }
         panic!("Arguments to option attribute must be string literals");
