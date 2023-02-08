@@ -1,3 +1,109 @@
+//! Argument parsing for the uutils coreutils project
+//!
+//! This crate provides the argument parsing for the uutils coreutils
+//! project. It is designed to be flexible, while providing default
+//! behaviour that aligns with GNU coreutils.
+//!
+//! # Getting Started
+//!
+//! Parsing with this library consists of two "phases". In the first
+//! phase, the arguments are mapped to an iterator of an `enum`
+//! implementing [`Arguments`]. The second phase is mapping these
+//! arguments onto a `struct` implementing [`Options`]. By defining
+//! your arguments this way, there is a clear divide between the public
+//! API and the internal representation of the settings of your app.
+//!
+//! For more information on these traits, see their respective documentation:
+//!
+//!  - [`Arguments`]
+//!  - [`Options`]
+//!
+//! Below is a minimal example of a full CLI application using this library.
+//!
+//! ```
+//! use uutils_args::{Arguments, Initial, Options};
+//!
+//! #[derive(Arguments)]
+//! enum Arg {
+//!     // The docstrings below will be part of the `--help` text
+//!     // First we define a simple flag:
+//!     /// Do not transform input text to uppercase
+//!     #[option("-n", "--no-caps")]
+//!     NoCaps,
+//!     
+//!     // This option takes a value:    
+//!     /// Add exclamation marks to output
+//!     #[option("-e N", "--exclaim=N")]
+//!     ExclamationMarks(u8),
+//!
+//!     // This is a positional argument, the range specifies that
+//!     // at least one positional argument must be passed.
+//!     #[positional(1..)]
+//!     Text(String),
+//! }
+//!
+//! #[derive(Initial)]
+//! struct Settings {
+//!     // We can change the default value with the field attribute.
+//!     #[field(default = true)]
+//!     caps: bool,
+//!     exclamation_marks: u8,
+//!     text: String,
+//! }
+//!
+//! // To implement `Options`, we only need to provide the `apply` method.
+//! // The `parse` method will be automatically generated.
+//! impl Options for Settings {
+//!     type Arg = Arg;
+//!     fn apply(&mut self, arg: Arg) {
+//!         match arg {
+//!             Arg::NoCaps => self.caps = false,
+//!             Arg::ExclamationMarks(n) => self.exclamation_marks += n,
+//!             Arg::Text(s) => {
+//!                 if self.text.is_empty() {
+//!                     self.text.push_str(&s);
+//!                 } else {
+//!                     self.text.push(' ');
+//!                     self.text.push_str(&s);
+//!                 }
+//!             }
+//!         }
+//!     }
+//! }
+//!
+//! fn run(args: &'static [&'static str]) -> String {
+//!     let s = Settings::parse(args);
+//!     let mut output = if s.caps {
+//!         s.text.to_uppercase()
+//!     } else {
+//!         s.text
+//!     };
+//!     for i in 0..s.exclamation_marks {
+//!         output.push('!');
+//!     }
+//!     output
+//! }
+//!
+//! // The first argument is the binary name. In this example it's ignored.
+//! assert_eq!(run(&["shout", "hello"]), "HELLO");
+//! assert_eq!(run(&["shout", "-e3", "hello"]), "HELLO!!!");
+//! assert_eq!(run(&["shout", "-e", "3", "hello"]), "HELLO!!!");
+//! assert_eq!(run(&["shout", "--no-caps", "hello"]), "hello");
+//! assert_eq!(run(&["shout", "-e3", "-n", "hello"]), "hello!!!");
+//! assert_eq!(run(&["shout", "-e3", "hello", "world"]), "HELLO WORLD!!!");
+//! ```
+//!
+//! # Additional functionality
+//!
+//! To make it easier to implement [`Arguments`] and [`Options`], there are
+//! two additional traits:
+//!
+//! - [`Initial`] is an alternative to the [`Default`] trait from the standard
+//!   library, with a richer derive macro.
+//! - [`FromValue`] allows for easy parsing from `OsStr` to any type
+//!   implementing [`FromValue`]. This crate also provides a derive macro for
+//!   this trait.
+
 mod error;
 pub use derive::*;
 pub use lexopt;

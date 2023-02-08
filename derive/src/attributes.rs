@@ -81,9 +81,7 @@ impl ArgumentsAttr {
                 }
                 AttributeArguments::File(s) => arguments_attr.file = Some(s),
                 AttributeArguments::ExitCode(code) => arguments_attr.exit_code = code,
-                AttributeArguments::EchoStyle => {
-                    arguments_attr.parse_echo_style = true
-                }
+                AttributeArguments::EchoStyle => arguments_attr.parse_echo_style = true,
                 _ => panic!(),
             }
         }
