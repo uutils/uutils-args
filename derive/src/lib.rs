@@ -76,7 +76,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     let arguments: Vec<_> = data.variants.into_iter().flat_map(parse_argument).collect();
 
     let exit_code = arguments_attr.exit_code;
-    let short = short_handling(&arguments);
+    let (short, short_flags) = short_handling(&arguments);
     let long = long_handling(&arguments, &arguments_attr.help_flags);
     let number_argument = number_handling(&arguments);
     let (positional, missing_argument_checks) = positional_handling(&arguments);
@@ -94,8 +94,10 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         env!("CARGO_PKG_VERSION"),
     ));
 
-    let next_arg = if arguments_attr.ignore_double_hyphen {
-        quote!(if let Some(val) = uutils_args::get_double_hyphen(parser) {
+    // This is a bit of a hack to support `echo` and should probably not be
+    // used in general.
+    let next_arg = if arguments_attr.parse_echo_style {
+        quote!(if let Some(val) = uutils_args::__echo_style_positional(parser, &[#(#short_flags),*]) {
             Some(lexopt::Arg::Value(val))
         } else {
             parser.next()?

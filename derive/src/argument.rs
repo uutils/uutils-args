@@ -126,8 +126,9 @@ fn get_arg_attributes(attrs: &[Attribute]) -> Vec<ArgAttr> {
         .collect()
 }
 
-pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
+pub(crate) fn short_handling(args: &[Argument]) -> (TokenStream, Vec<char>) {
     let mut match_arms = Vec::new();
+    let mut short_flags = Vec::new();
 
     for arg in args {
         let (flags, takes_value, default) = match arg.arg_type {
@@ -155,11 +156,12 @@ pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
                 (Value::Optional(_), true) => optional_value_expression(&arg.ident, default),
                 (Value::Required(_), true) => required_value_expression(&arg.ident),
             };
-            match_arms.push(quote!(#pat => { #expr }))
+            match_arms.push(quote!(#pat => { #expr }));
+            short_flags.push(pat);
         }
     }
 
-    quote!(
+    let token_stream = quote!(
         let option = format!("-{}", short);
         Ok(Some(Argument::Custom(
             match short {
@@ -167,7 +169,8 @@ pub(crate) fn short_handling(args: &[Argument]) -> TokenStream {
                 _ => return Err(Error::UnexpectedOption(short.to_string())),
             }
         )))
-    )
+    );
+    (token_stream, short_flags)
 }
 
 pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStream {

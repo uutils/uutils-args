@@ -35,7 +35,7 @@ enum AttributeArguments {
     Help(String),
     HelpFlags(Vec<String>),
     VersionFlags(Vec<String>),
-    IgnoreDoubleHyphen,
+    EchoStyle,
     Last,
     Hidden,
 }
@@ -53,7 +53,7 @@ pub(crate) struct ArgumentsAttr {
     pub(crate) version_flags: Flags,
     pub(crate) file: Option<String>,
     pub(crate) exit_code: i32,
-    pub(crate) ignore_double_hyphen: bool,
+    pub(crate) parse_echo_style: bool,
 }
 
 impl Default for ArgumentsAttr {
@@ -63,7 +63,7 @@ impl Default for ArgumentsAttr {
             version_flags: Flags::new(["--version"]),
             file: None,
             exit_code: 1,
-            ignore_double_hyphen: false,
+            parse_echo_style: false,
         }
     }
 }
@@ -81,8 +81,8 @@ impl ArgumentsAttr {
                 }
                 AttributeArguments::File(s) => arguments_attr.file = Some(s),
                 AttributeArguments::ExitCode(code) => arguments_attr.exit_code = code,
-                AttributeArguments::IgnoreDoubleHyphen => {
-                    arguments_attr.ignore_double_hyphen = true
+                AttributeArguments::EchoStyle => {
+                    arguments_attr.parse_echo_style = true
                 }
                 _ => panic!(),
             }
@@ -237,7 +237,7 @@ impl Parse for AttributeArguments {
                 None => from..=usize::MAX,
             }));
         } else if input.peek(LitInt) {
-            // We're dealing with a single interger
+            // We're dealing with a single integer
             let int = input.parse::<LitInt>()?;
             let suffix = int.suffix();
             assert!(
@@ -255,7 +255,7 @@ impl Parse for AttributeArguments {
             match name.as_str() {
                 "last" => return Ok(Self::Last),
                 "hidden" => return Ok(Self::Hidden),
-                "ignore_double_hyphen" => return Ok(Self::IgnoreDoubleHyphen),
+                "parse_echo_style" => return Ok(Self::EchoStyle),
                 _ => {}
             };
 

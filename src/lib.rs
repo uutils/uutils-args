@@ -4,6 +4,7 @@ pub use lexopt;
 pub use term_md;
 
 pub use error::Error;
+use std::ffi::OsStr;
 use std::num::ParseIntError;
 use std::path::PathBuf;
 use std::{ffi::OsString, marker::PhantomData};
@@ -209,26 +210,45 @@ from_value_int!(i64);
 from_value_int!(i128);
 from_value_int!(isize);
 
-pub fn get_double_hyphen(p: &mut lexopt::Parser) -> Option<OsString> {
+/// Parses an echo-style positional argument
+///
+/// This means that any argument that does not solely consist of a hyphen
+/// followed by the characters in the list of `short_args` is considered
+/// to be a positional argument, instead of an invalid argument. This
+/// includes the `--` argument, which is ignored by `echo`.
+///
+/// This function is hidden and prefixed with `__` because it should only
+/// be called via the derive macros.
+#[doc(hidden)]
+pub fn __echo_style_positional(p: &mut lexopt::Parser, short_args: &[char]) -> Option<OsString> {
     let mut raw = p.try_raw_args()?;
-    let s = raw.peek()?;
-    if s.to_str()? == "--" {
-        let s = s.into();
+    let val = raw.peek()?;
+
+    if is_echo_style_positional(val, short_args) {
+        let val = val.into();
         raw.next();
-        Some(s)
+        Some(val)
     } else {
         None
     }
 }
 
+fn is_echo_style_positional(s: &OsStr, short_args: &[char]) -> bool {
+    let s = match s.to_str() {
+        Some(x) => x,
+        // If it's invalid utf-8 then it can't be a short arg, so must
+        // be a positional argument.
+        None => return true,
+    };
+    let mut chars = s.chars();
+    let is_short_args = chars.next() == Some('-') && chars.all(|c| short_args.contains(&c));
+    !is_short_args
+}
+
 pub fn parse_prefix<T: FromValue>(parser: &mut lexopt::Parser, prefix: &'static str) -> Option<T> {
-    dbg!("boop");
     let mut raw = parser.try_raw_args()?;
-    dbg!(&raw);
     let arg = raw.peek()?.to_str()?;
-    dbg!(&arg);
     let value_str = arg.strip_prefix(prefix)?;
-    dbg!(&value_str);
 
     // TODO: Give a nice flag name
     let value = T::from_value("", OsString::from(value_str)).ok()?;
@@ -237,4 +257,18 @@ pub fn parse_prefix<T: FromValue>(parser: &mut lexopt::Parser, prefix: &'static 
     let _ = raw.next();
 
     Some(value)
+}
+
+#[cfg(test)]
+mod test {
+    use std::ffi::OsStr;
+
+    use crate::is_echo_style_positional;
+
+    #[test]
+    fn echo_positional() {
+        assert!(is_echo_style_positional(OsStr::new("-aaa"), &['b']));
+        assert!(is_echo_style_positional(OsStr::new("--"), &['b']));
+        assert!(!is_echo_style_positional(OsStr::new("-b"), &['b']));
+    }
 }
