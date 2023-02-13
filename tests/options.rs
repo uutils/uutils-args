@@ -1,6 +1,6 @@
-use std::ffi::OsString;
+use std::ffi::OsStr;
 
-use uutils_args::{Arguments, FromValue, Initial, Options};
+use uutils_args::{Arguments, Initial, Options, Value, ValueResult};
 
 #[test]
 fn string_option() {
@@ -30,7 +30,7 @@ fn string_option() {
 
 #[test]
 fn enum_option() {
-    #[derive(FromValue, Default, Debug, PartialEq, Eq, Clone)]
+    #[derive(Value, Default, Debug, PartialEq, Eq, Clone)]
     enum Format {
         #[default]
         #[value]
@@ -72,7 +72,7 @@ fn enum_option() {
 
 #[test]
 fn enum_option_with_fields() {
-    #[derive(FromValue, Default, Debug, PartialEq, Eq)]
+    #[derive(Value, Default, Debug, PartialEq, Eq)]
     enum Indent {
         #[default]
         Tabs,
@@ -118,19 +118,15 @@ fn enum_with_complex_from_value() {
         Spaces(u8),
     }
 
-    impl FromValue for Indent {
-        fn from_value(option: &str, value: std::ffi::OsString) -> Result<Self, uutils_args::Error> {
-            let value = String::from_value(option, value)?;
+    impl Value for Indent {
+        fn from_value(value: &std::ffi::OsStr) -> ValueResult<Self> {
+            let value = String::from_value(value)?;
             if value == "tabs" {
                 Ok(Self::Tabs)
             } else if let Ok(n) = value.parse() {
                 Ok(Self::Spaces(n))
             } else {
-                Err(uutils_args::Error::ParsingFailed {
-                    option: option.to_string(),
-                    value,
-                    error: "Failure!".into(),
-                })
+                Err("Failure!".into())
             }
         }
     }
@@ -159,7 +155,7 @@ fn enum_with_complex_from_value() {
 
 #[test]
 fn color() {
-    #[derive(Default, FromValue, Debug, PartialEq, Eq)]
+    #[derive(Default, Value, Debug, PartialEq, Eq)]
     enum Color {
         #[value("yes", "always")]
         Always,
@@ -336,7 +332,7 @@ fn integers() {
 
 #[test]
 fn ls_classify() {
-    #[derive(FromValue, Default, PartialEq, Eq, Debug)]
+    #[derive(Value, Default, PartialEq, Eq, Debug)]
     enum When {
         #[value]
         Never,
@@ -418,7 +414,7 @@ fn mktemp_tmpdir() {
 
 #[test]
 fn infer_value() {
-    #[derive(FromValue, PartialEq, Eq, Debug)]
+    #[derive(Value, PartialEq, Eq, Debug)]
     enum Foo {
         #[value("long")]
         Long,
@@ -430,17 +426,11 @@ fn infer_value() {
         Desk,
     }
 
-    assert_eq!(
-        Foo::from_value("--foo", OsString::from("lo")).unwrap(),
-        Foo::Long
-    );
-    assert_eq!(
-        Foo::from_value("--foo", OsString::from("dec")).unwrap(),
-        Foo::Deck
-    );
+    assert_eq!(Foo::from_value(OsStr::new("lo")).unwrap(), Foo::Long);
+    assert_eq!(Foo::from_value(OsStr::new("dec")).unwrap(), Foo::Deck);
 
-    Foo::from_value("--foo", OsString::from("l")).unwrap_err();
-    Foo::from_value("--foo", OsString::from("de")).unwrap_err();
+    Foo::from_value(OsStr::new("l")).unwrap_err();
+    Foo::from_value(OsStr::new("de")).unwrap_err();
 }
 
 #[test]

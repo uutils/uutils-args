@@ -121,8 +121,8 @@
 //!
 //! - [`Initial`] is an alternative to the [`Default`] trait from the standard
 //!   library, with a richer derive macro.
-//! - [`FromValue`] allows for easy parsing from `OsStr` to any type
-//!   implementing [`FromValue`]. This crate also provides a derive macro for
+//! - [`Value`] allows for easy parsing from `OsStr` to any type
+//!   implementing [`Value`]. This crate also provides a derive macro for
 //!   this trait.
 //!
 //! # Examples
@@ -141,15 +141,19 @@
 //! - [mktemp](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/mktemp.rs)
 
 mod error;
+mod value;
+
 pub use derive::*;
 pub use lexopt;
 pub use term_md;
 
 pub use error::Error;
-use std::ffi::OsStr;
-use std::num::ParseIntError;
-use std::path::PathBuf;
-use std::{ffi::OsString, marker::PhantomData};
+pub use value::{Value, ValueError, ValueResult};
+
+use std::{
+    ffi::{OsStr, OsString},
+    marker::PhantomData,
+};
 
 /// A wrapper around a type implementing [`Arguments`] that adds `Help`
 /// and `Version` variants.
@@ -352,72 +356,6 @@ pub trait Options: Sized + Initial {
     }
 }
 
-/// Defines how a type should be parsed from an argument.
-pub trait FromValue: Sized {
-    fn from_value(option: &str, value: OsString) -> Result<Self, Error>;
-}
-
-impl FromValue for OsString {
-    fn from_value(_option: &str, value: OsString) -> Result<Self, Error> {
-        Ok(value)
-    }
-}
-
-impl FromValue for PathBuf {
-    fn from_value(_option: &str, value: OsString) -> Result<Self, Error> {
-        Ok(PathBuf::from(value))
-    }
-}
-
-impl FromValue for String {
-    fn from_value(_option: &str, value: OsString) -> Result<Self, Error> {
-        match value.into_string() {
-            Ok(s) => Ok(s),
-            Err(os) => Err(Error::NonUnicodeValue(os)),
-        }
-    }
-}
-
-impl<T> FromValue for Option<T>
-where
-    T: FromValue,
-{
-    fn from_value(option: &str, value: OsString) -> Result<Self, Error> {
-        Ok(Some(T::from_value(option, value)?))
-    }
-}
-
-macro_rules! from_value_int {
-    ($t: ty) => {
-        impl FromValue for $t {
-            fn from_value(option: &str, value: OsString) -> Result<Self, Error> {
-                let value = String::from_value(option, value)?;
-                value
-                    .parse()
-                    .map_err(|e: ParseIntError| Error::ParsingFailed {
-                        value,
-                        option: option.to_string(),
-                        error: e.into(),
-                    })
-            }
-        }
-    };
-}
-
-from_value_int!(u8);
-from_value_int!(u16);
-from_value_int!(u32);
-from_value_int!(u64);
-from_value_int!(u128);
-from_value_int!(usize);
-
-from_value_int!(i8);
-from_value_int!(i16);
-from_value_int!(i32);
-from_value_int!(i64);
-from_value_int!(i128);
-from_value_int!(isize);
-
 /// Parses an echo-style positional argument
 ///
 /// This means that any argument that does not solely consist of a hyphen
@@ -453,18 +391,31 @@ fn is_echo_style_positional(s: &OsStr, short_args: &[char]) -> bool {
     !is_short_args
 }
 
-pub fn parse_prefix<T: FromValue>(parser: &mut lexopt::Parser, prefix: &'static str) -> Option<T> {
+/// Parse an argument defined by a prefix
+#[doc(hidden)]
+pub fn parse_prefix<T: Value>(parser: &mut lexopt::Parser, prefix: &'static str) -> Option<T> {
     let mut raw = parser.try_raw_args()?;
+
+    // TODO: The to_str call is a limitation. Maybe we need to pull in something like bstr
     let arg = raw.peek()?.to_str()?;
     let value_str = arg.strip_prefix(prefix)?;
 
-    // TODO: Give a nice flag name
-    let value = T::from_value("", OsString::from(value_str)).ok()?;
+    let value = T::from_value(OsStr::new(value_str)).ok()?;
 
     // Consume the argument we just parsed
     let _ = raw.next();
 
     Some(value)
+}
+
+/// Parse a value and wrap the error into an `Error::ParsingFailed`
+#[doc(hidden)]
+pub fn parse_value_for_option<T: Value>(opt: &str, v: &OsStr) -> Result<T, Error> {
+    T::from_value(v).map_err(|e| Error::ParsingFailed {
+        option: opt.into(),
+        value: v.to_string_lossy().to_string(),
+        error: e,
+    })
 }
 
 #[cfg(test)]

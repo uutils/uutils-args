@@ -1,7 +1,7 @@
 use std::path::PathBuf;
-use uutils_args::{Arguments, FromValue, Initial, Options};
+use uutils_args::{Arguments, Initial, Options, Value};
 
-#[derive(Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, Value)]
 enum Format {
     #[value("long")]
     Long,
@@ -20,7 +20,7 @@ enum Format {
     Commas,
 }
 
-#[derive(Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, Value)]
 enum When {
     #[value("yes", "always", "force")]
     Always,
@@ -60,7 +60,7 @@ enum Dereference {
     All,
 }
 
-#[derive(Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, Value)]
 enum QuotingStyle {
     #[value("literal")]
     Literal,
@@ -85,7 +85,7 @@ enum QuotingStyle {
     Escape,
 }
 
-#[derive(Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, Value)]
 enum Sort {
     #[default]
     Name,
@@ -103,7 +103,7 @@ enum Sort {
     Width,
 }
 
-#[derive(Default, Debug, PartialEq, Eq, FromValue)]
+#[derive(Default, Debug, PartialEq, Eq, Value)]
 enum Time {
     #[default]
     Modification,
@@ -115,7 +115,7 @@ enum Time {
     Birth,
 }
 
-#[derive(Default, Debug, FromValue, PartialEq, Eq)]
+#[derive(Default, Debug, Value, PartialEq, Eq)]
 enum IndicatorStyle {
     #[default]
     #[value("none")]

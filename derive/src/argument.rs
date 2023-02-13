@@ -358,19 +358,19 @@ fn default_value_expression(ident: &Ident, default_expr: &TokenStream) -> TokenS
 
 fn optional_value_expression(ident: &Ident, default_expr: &TokenStream) -> TokenStream {
     quote!(match parser.optional_value() {
-        Some(value) => Self::#ident(FromValue::from_value(&option, value)?),
+        Some(value) => Self::#ident(::uutils_args::parse_value_for_option(&option, &value)?),
         None => Self::#ident(#default_expr),
     })
 }
 
 fn required_value_expression(ident: &Ident) -> TokenStream {
-    quote!(Self::#ident(FromValue::from_value(&option, parser.value()?)?))
+    quote!(Self::#ident(::uutils_args::parse_value_for_option(&option, &parser.value()?)?))
 }
 
 fn positional_expression(ident: &Ident) -> TokenStream {
     // TODO: Add option name in this from_value call
     quote!(
-        Self::#ident(FromValue::from_value("", value)?)
+        Self::#ident(::uutils_args::parse_value_for_option("", &value)?)
     )
 }
 
@@ -380,7 +380,7 @@ fn last_positional_expression(ident: &Ident) -> TokenStream {
         let raw_args = parser.raw_args()?;
         let collection = std::iter::once(value)
             .chain(raw_args)
-            .map(|v| FromValue::from_value("", v))
+            .map(|v| ::uutils_args::parse_value_for_option("", &v))
             .collect::<Result<_,_>>()?;
         Self::#ident(collection)
     })

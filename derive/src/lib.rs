@@ -114,7 +114,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             fn next_arg(
                 parser: &mut uutils_args::lexopt::Parser, positional_idx: &mut usize
             ) -> Result<Option<uutils_args::Argument<Self>>, uutils_args::Error> {
-                use uutils_args::{FromValue, lexopt, Error, Argument};
+                use uutils_args::{Value, lexopt, Error, Argument};
 
                 #number_argument
 
@@ -151,8 +151,8 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(FromValue, attributes(value))]
-pub fn from_value(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(Value, attributes(value))]
+pub fn value(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     let name = input.ident;
@@ -195,9 +195,9 @@ pub fn from_value(input: TokenStream) -> TokenStream {
     }
 
     let expanded = quote!(
-        impl #impl_generics FromValue for #name #ty_generics #where_clause {
-            fn from_value(option: &str, value: std::ffi::OsString) -> Result<Self, uutils_args::Error> {
-                let value = String::from_value(option, value)?;
+        impl #impl_generics Value for #name #ty_generics #where_clause {
+            fn from_value(value: &::std::ffi::OsStr) -> ::uutils_args::ValueResult<Self> {
+                let value = String::from_value(value)?;
                 let options: &[&[&str]] = &[#(#options),*];
                 let mut candidates: Vec<&str> = Vec::new();
                 let mut exact_match: Option<&str> = None;
@@ -217,16 +217,11 @@ pub fn from_value(input: TokenStream) -> TokenStream {
                 let opt = match (exact_match, &candidates[..]) {
                     (Some(opt), _) => opt,
                     (None, [opt]) => opt,
-                    (None, []) => return Err(uutils_args::Error::ParsingFailed {
-                        option: option.to_string(),
-                        value,
-                        error: "Invalid value".into(),
-                    }),
-                    (None, opts) => return Err(uutils_args::Error::AmbiguousValue {
-                        option: option.to_string(),
+                    (None, []) => return Err("Invalid value".into()),
+                    (None, opts) => return Err(uutils_args::ValueError::AmbiguousValue {
                         value,
                         candidates: candidates.iter().map(|s| s.to_string()).collect(),
-                    })
+                    }.into())
                 };
 
                 Ok(match opt {

@@ -35,19 +35,8 @@ pub enum Error {
         candidates: Vec<String>,
     },
 
-    /// An abbreviated value was given that could match multiple values.
-    AmbiguousValue {
-        option: String,
-        value: String,
-        candidates: Vec<String>,
-    },
-
     /// The value was required to be valid UTF-8, but it wasn't.
     NonUnicodeValue(OsString),
-
-    /// Some custom error, probably returned by a
-    /// [`FromValue`](crate::FromValue) implementation.
-    Custom(Box<dyn StdError + Send + Sync + 'static>),
 }
 
 impl StdError for Error {}
@@ -91,13 +80,12 @@ impl Display for Error {
                 value,
                 error,
             } => {
+                // TODO: option should not not be Option<String>, because even for positional
+                // arguments we want to specify the name of the value.
                 if option.is_empty() {
-                    write!(f, "Could not parse value '{value}': {error}")
+                    write!(f, "Invalid value '{value}': {error}")
                 } else {
-                    write!(
-                        f,
-                        "Could not parse value '{value}' for option '{option}': {error}"
-                    )
+                    write!(f, "Invalid value '{value}' for '{option}': {error}")
                 }
             }
             Error::AmbiguousOption { option, candidates } => {
@@ -110,24 +98,9 @@ impl Display for Error {
                 }
                 Ok(())
             }
-            Error::AmbiguousValue {
-                option,
-                value,
-                candidates,
-            } => {
-                write!(
-                    f,
-                    "Value '{value}' for option '{option}' is ambiguous. The following candidates match:",
-                )?;
-                for candidate in candidates {
-                    write!(f, "  - {candidate}")?;
-                }
-                Ok(())
-            }
             Error::NonUnicodeValue(x) => {
                 write!(f, "Invalid unicode value found: {}", x.to_string_lossy())
             }
-            Error::Custom(err) => std::fmt::Display::fmt(err, f),
         }
     }
 }
@@ -141,9 +114,10 @@ impl From<lexopt::Error> for Error {
             lexopt::Error::UnexpectedValue { option, value } => {
                 Self::UnexpectedValue { option, value }
             }
-            lexopt::Error::ParsingFailed { .. } => panic!("Conversion not supported"),
             lexopt::Error::NonUnicodeValue(s) => Self::NonUnicodeValue(s),
-            lexopt::Error::Custom(e) => Self::Custom(e),
+            lexopt::Error::ParsingFailed { .. } | lexopt::Error::Custom(_) => {
+                panic!("Should never be constructed.")
+            }
         }
     }
 }
