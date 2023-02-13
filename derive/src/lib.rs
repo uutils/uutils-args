@@ -50,10 +50,10 @@ pub fn initial(input: TokenStream) -> TokenStream {
 
     let expanded = quote!(
         impl #impl_generics Initial for #name #ty_generics #where_clause {
-            fn initial() -> Result<Self, uutils_args::Error> {
-                Ok(Self {
+            fn initial() -> Self {
+                Self {
                     #(#defaults),*
-                })
+                }
             }
         }
     );

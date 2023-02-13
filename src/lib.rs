@@ -1,8 +1,29 @@
 //! Argument parsing for the uutils coreutils project
 //!
-//! This crate provides the argument parsing for the uutils coreutils
-//! project. It is designed to be flexible, while providing default
+//! This crate provides the argument parsing for the
+//! [uutils coreutils](https://www.github.com/uutils/coreutils)
+//! It is designed to be flexible, while providing default
 //! behaviour that aligns with GNU coreutils.
+//!
+//! # Features
+//!
+//!  - A derive macro for declarative argument definition.
+//!  - Automatic help generation.
+//!  - (Limited) markdown support in help text.
+//!  - Positional and optional arguments.
+//!  - Automatically parsing values into Rust types.
+//!  - Define a custom exit code on errors.
+//!  - Automatically accept unambiguous abbreviations of long options.
+//!  - Handles invalid UTF-8 gracefully.
+//!
+//! # When you should not use this library
+//!
+//! The goal of this library is to make it easy to build applications that
+//! mimic the behaviour of the GNU coreutils. There are other applications
+//! that have similar behaviour, which are C application that use `getopt`
+//! and `getopt_long`. If you want to mimic that behaviour exactly, this
+//! is the library for you. If you want to write basically anything else,
+//! you should probably pick another argument parser.
 //!
 //! # Getting Started
 //!
@@ -15,8 +36,8 @@
 //!
 //! For more information on these traits, see their respective documentation:
 //!
-//!  - [`Arguments`]
-//!  - [`Options`]
+//! - [`Arguments`]
+//! - [`Options`]
 //!
 //! Below is a minimal example of a full CLI application using this library.
 //!
@@ -25,7 +46,7 @@
 //!
 //! #[derive(Arguments)]
 //! enum Arg {
-//!     // The docstrings below will be part of the `--help` text
+//!     // The doc strings below will be part of the `--help` text
 //!     // First we define a simple flag:
 //!     /// Do not transform input text to uppercase
 //!     #[option("-n", "--no-caps")]
@@ -103,6 +124,21 @@
 //! - [`FromValue`] allows for easy parsing from `OsStr` to any type
 //!   implementing [`FromValue`]. This crate also provides a derive macro for
 //!   this trait.
+//!
+//! # Examples
+//!
+//! The following files contain examples of commands defined with
+//! `uutils_args`:
+//!
+//! - [hello world](https://github.com/tertsdiepraam/uutils-args/blob/main/examples/hello_world.rs)
+//! - [arch](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/arch.rs)
+//! - [b2sum](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/b2sum.rs)
+//! - [base32](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/base32.rs)
+//! - [basename](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/basename.rs)
+//! - [cat](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/cat.rs)
+//! - [echo](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/echo.rs)
+//! - [ls](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/ls.rs)
+//! - [mktemp](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/mktemp.rs)
 
 mod error;
 pub use derive::*;
@@ -115,6 +151,8 @@ use std::num::ParseIntError;
 use std::path::PathBuf;
 use std::{ffi::OsString, marker::PhantomData};
 
+/// A wrapper around a type implementing [`Arguments`] that adds `Help`
+/// and `Version` variants.
 #[derive(Clone)]
 pub enum Argument<T: Arguments> {
     Help,
@@ -132,9 +170,20 @@ fn exit_if_err<T>(res: Result<T, Error>, exit_code: i32) -> T {
     }
 }
 
+/// Defines how the arguments are parsed.
+///
+/// If a type `T` implements this trait, we can construct an `ArgumentIter<T>`,
+/// meaning that we can parse the individual arguments to `T`.\
+///
+/// Usually, this trait will be implemented via the
+/// [derive macro](derive::Arguments) and does not need to be implemented
+/// manually.
 pub trait Arguments: Sized {
+    /// The exit code to exit the program with on error.
     const EXIT_CODE: i32;
 
+    /// Parse an iterator of arguments into an
+    /// [`ArgumentIter<Self>`](ArgumentIter).
     fn parse<I>(args: I) -> ArgumentIter<Self>
     where
         I: IntoIterator + 'static,
@@ -143,17 +192,34 @@ pub trait Arguments: Sized {
         ArgumentIter::<Self>::from_args(args)
     }
 
+    /// Parse the next argument from the lexopt parser.
+    ///
+    /// This method is called by [`ArgumentIter::next_arg`].
     fn next_arg(
         parser: &mut lexopt::Parser,
         positional_idx: &mut usize,
     ) -> Result<Option<Argument<Self>>, Error>;
 
+    /// Check for any required arguments that have not been found.
+    ///
+    /// If any missing arguments are found, the appropriate error is returned.
+    /// The `positional_idx` parameter specifies how many positional arguments
+    /// have been passed so far. This method is called at the end of
+    /// [`Options::parse`] and [`Options::try_parse`].
     fn check_missing(positional_idx: usize) -> Result<(), Error>;
 
+    /// Get the help string for this command.
+    ///
+    /// The `bin_name` specifies the name that executable was called with.
     fn help(bin_name: &str) -> String;
 
+    /// Get the version string for this command.
     fn version() -> String;
 
+    /// Check all arguments immediately and exit on errors.
+    ///
+    /// This is useful if you want to validate the arguments. This method will
+    /// exit if `--help` or `--version` are passed and if any errors are found.
     fn check<I>(args: I)
     where
         I: IntoIterator + 'static,
@@ -162,6 +228,10 @@ pub trait Arguments: Sized {
         exit_if_err(Self::try_check(args), Self::EXIT_CODE)
     }
 
+    /// Check all arguments immediately and return any errors.
+    ///
+    /// This is useful if you want to validate the arguments. This method will
+    /// exit if `--help` or `--version` are passed.
     fn try_check<I>(args: I) -> Result<(), Error>
     where
         I: IntoIterator + 'static,
@@ -173,6 +243,11 @@ pub trait Arguments: Sized {
     }
 }
 
+/// An iterator over arguments.
+///
+/// Can be constructed by calling [`Arguments::parse`]. Usually, this method
+/// won't be used directly, but is used internally in [`Options::parse`] and
+/// [`Options::try_parse`].
 pub struct ArgumentIter<T: Arguments> {
     parser: lexopt::Parser,
     pub positional_idx: usize,
@@ -219,15 +294,41 @@ impl<T: Arguments> ArgumentIter<T> {
     }
 }
 
+/// An alternative for the [`Default`](std::default::Default) trait, with a more feature
+/// packed derive macro.
+///
+/// The `Initial` trait is used by `Options` to construct the initial
+/// state of the options before any arguments are parsed.
+///
+/// The [derive macro](derive::Initial) supports setting the initial
+/// value per field and parsing the initial values from environment
+/// variables. Otherwise, it will be equivalent to the derive macro
+/// for the [`Default`](std::default::Default) trait.
 pub trait Initial: Sized {
-    fn initial() -> Result<Self, Error>;
+    /// Create the initial state of `Self`
+    fn initial() -> Self;
 }
 
+/// Defines the app settings by consuming [`Arguments`].
+///
+/// When implementing this trait, only two things need to be provided:
+/// - the [`Arg`](Options::Arg) type, which defines the type to use for
+///   argument parsing,
+/// - the [`apply`](Options::apply) method, which defines to how map that
+///   type onto the options.
+///
+/// By default, the [`Options::parse`] method will
+/// 1. create a new instance of `Self` using [`Initial::initial`],
+/// 2. repeatedly call [`ArgumentIter::next_arg`] and call [`Options::apply`]
+///    on the result until the arguments are exhausted,
+/// 3. and finally call [`Arguments::check_missing`].
 pub trait Options: Sized + Initial {
     type Arg: Arguments;
 
+    /// Apply a single argument to the options.
     fn apply(&mut self, arg: Self::Arg);
 
+    /// Parse an iterator of arguments into
     fn parse<I>(args: I) -> Self
     where
         I: IntoIterator + 'static,
@@ -241,7 +342,7 @@ pub trait Options: Sized + Initial {
         I: IntoIterator + 'static,
         I::Item: Into<OsString>,
     {
-        let mut _self = Self::initial()?;
+        let mut _self = Self::initial();
         let mut iter = Self::Arg::parse(args);
         while let Some(arg) = iter.next_arg()? {
             _self.apply(arg);
@@ -251,6 +352,7 @@ pub trait Options: Sized + Initial {
     }
 }
 
+/// Defines how a type should be parsed from an argument.
 pub trait FromValue: Sized {
     fn from_value(option: &str, value: OsString) -> Result<Self, Error>;
 }

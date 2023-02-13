@@ -21,10 +21,9 @@ pub(crate) fn parse_field(field: &Field) -> FieldData {
 
     if let Some(env_var) = field_attr.env {
         default_value = quote!(
-            match ::std::env::var_os(#env_var) {
-                Some(x) => ::uutils_args::FromValue::from_value("", x)?,
-                None => #default_value
-            }
+            ::std::env::var_os(#env_var)
+                .and_then(|v| ::uutils_args::FromValue::from_value("", v).ok())
+                .unwrap_or(#default_value)
         )
     }
 

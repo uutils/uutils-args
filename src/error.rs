@@ -4,32 +4,49 @@ use std::{
     fmt::{Debug, Display},
 };
 
+/// Errors that can occur while parsing arguments.
 pub enum Error {
-    MissingValue {
-        option: Option<String>,
-    },
+    /// There was an option that required an option, but none was given.
+    MissingValue { option: Option<String> },
+
+    /// Some positional arguments were not given.
     MissingPositionalArguments(Vec<String>),
+
+    /// An unrecognized option was passed.
     UnexpectedOption(String),
+
+    /// No more positional arguments were expected, but one was given anyway.
     UnexpectedArgument(OsString),
-    UnexpectedValue {
-        option: String,
-        value: OsString,
-    },
+
+    /// A value was passed to an option that didn't expect a value.
+    UnexpectedValue { option: String, value: OsString },
+
+    /// Parsing of a value failed.
     ParsingFailed {
         option: String,
         value: String,
         error: Box<dyn StdError + Send + Sync + 'static>,
     },
+
+    /// An abbreviated long option was given that could match multiple
+    /// long options.
     AmbiguousOption {
         option: String,
         candidates: Vec<String>,
     },
+
+    /// An abbreviated value was given that could match multiple values.
     AmbiguousValue {
         option: String,
         value: String,
         candidates: Vec<String>,
     },
+
+    /// The value was required to be valid UTF-8, but it wasn't.
     NonUnicodeValue(OsString),
+
+    /// Some custom error, probably returned by a
+    /// [`FromValue`](crate::FromValue) implementation.
     Custom(Box<dyn StdError + Send + Sync + 'static>),
 }
 
