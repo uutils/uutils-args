@@ -38,7 +38,9 @@ impl When {
         match self {
             Self::Always => true,
             Self::Never => false,
-            Self::Auto => atty::is(atty::Stream::Stdout),
+            // Should be atty::is(atty::Stream::Stdout), but I don't want to
+            // pull that depenency in just for this test.
+            Self::Auto => true,
         }
     }
 }
@@ -280,9 +282,9 @@ enum Arg {
 }
 
 fn default_terminal_size() -> u16 {
-    if let Some((width, _)) = terminal_size::terminal_size() {
-        return width.0;
-    }
+    // There should be a check for the terminal size here, but that requires
+    // additional dependencies. Besides, it would make the tests dependent on
+    // the terminal width, which is not great.
 
     if let Some(columns) = std::env::var_os("COLUMNS") {
         match columns.to_str().and_then(|s| s.parse().ok()) {
@@ -416,11 +418,7 @@ fn default() {
             long_no_group: false,
             long_no_owner: false,
             long_numeric_uid_gid: false,
-            width: if let Some((width, _)) = terminal_size::terminal_size() {
-                width.0
-            } else {
-                80
-            },
+            width: 80,
             quoting_style: QuotingStyle::Shell,
             indicator_style: IndicatorStyle::None,
             ignore_patterns: Vec::new(),
