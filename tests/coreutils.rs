@@ -21,3 +21,6 @@ mod mktemp;
 
 #[path = "coreutils/ls.rs"]
 mod ls;
+
+#[path = "coreutils/tail.rs"]
+mod tail;
