@@ -1,6 +1,92 @@
-use std::path::PathBuf;
+use std::{ffi::OsString, path::PathBuf};
 
 use uutils_args::{Arguments, Initial, Options, Value};
+
+#[derive(Arguments)]
+enum DeprecatedArg {
+    #[option("{N}")]
+    Shorthand(Shorthand),
+    #[positional]
+    File(PathBuf),
+}
+
+impl Options<DeprecatedArg> for Settings {
+    fn apply(&mut self, arg: DeprecatedArg) {
+        match arg {
+            DeprecatedArg::Shorthand(Shorthand { num, mode, follow }) => {
+                self.number = num;
+                self.mode = mode;
+                self.follow = follow.then_some(FollowMode::Descriptor);
+            }
+            DeprecatedArg::File(file) => {
+                self.inputs.push(file);
+            }
+        }
+    }
+}
+
+struct Shorthand {
+    num: SigNum,
+    mode: Mode,
+    follow: bool,
+}
+
+// This is not technically 100% compatible with GNU, because the shorthand can
+// appear as any argument, not just the first.
+impl Value for Shorthand {
+    fn from_value(value: &std::ffi::OsStr) -> uutils_args::ValueResult<Self> {
+        let s = String::from_value(value)?;
+
+        let mut rest: &str = &s;
+
+        let sig = if let Some(r) = rest.strip_prefix('-') {
+            rest = r;
+            SigNum::Negative
+        } else if let Some(r) = rest.strip_prefix('+') {
+            rest = r;
+            SigNum::Positive
+        } else {
+            return Err("Invalid shorthand".into());
+        };
+
+        // Find and parse the number part of the string
+        let end_num = rest
+            .find(|c: char| !c.is_ascii_digit())
+            .unwrap_or(rest.len());
+        let num = rest[..end_num].parse().unwrap_or(10);
+        rest = &rest[end_num..];
+
+        let mode = if let Some(r) = rest.strip_prefix('l') {
+            rest = r;
+            Mode::Lines
+        } else if let Some(r) = rest.strip_prefix('c') {
+            rest = r;
+            Mode::Bytes
+        } else if let Some(r) = rest.strip_prefix('b') {
+            rest = r;
+            Mode::Blocks
+        } else {
+            Mode::Lines
+        };
+
+        let follow = if let Some(r) = rest.strip_prefix('f') {
+            rest = r;
+            true
+        } else {
+            false
+        };
+
+        if !rest.is_empty() {
+            return Err("Invalid shorthand!".into());
+        }
+
+        Ok(Self {
+            num: sig(num),
+            mode,
+            follow,
+        })
+    }
+}
 
 #[derive(Arguments)]
 enum Arg {
@@ -38,60 +124,11 @@ enum Arg {
     #[option("-z", "--zero-terminated")]
     Zero,
 
-    #[option("-{N}")]
-    NegativeShorthand(Shorthand),
-
-    #[option("+{N}")]
-    PositiveShorthand(Shorthand),
-
     #[positional(..)]
     File(PathBuf),
 
     #[option("---presume-input-pipe", hidden)]
     PresumeInputPipe,
-}
-
-struct Shorthand {
-    num: u64,
-    mode: Mode,
-    follow: bool,
-}
-
-impl Value for Shorthand {
-    fn from_value(value: &std::ffi::OsStr) -> uutils_args::ValueResult<Self> {
-        let s = String::from_value(value)?;
-        let mut rest: &str = &s;
-
-        let end_num = rest.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
-        let num = rest[..end_num].parse().unwrap_or(10);
-        rest = &rest[end_num..];
-
-        let mode = if let Some(r) = rest.strip_prefix('l') {
-            rest = r;
-            Mode::Lines
-        } else if let Some(r) = rest.strip_prefix('c') {
-            rest = r;
-            Mode::Bytes
-        } else if let Some(r) = rest.strip_prefix('b') {
-            rest = r;
-            Mode::Blocks
-        } else {
-            Mode::Lines
-        };
-
-        let follow = if let Some(r) = rest.strip_prefix('f') {
-            rest = r;
-            true
-        } else {
-            false
-        };
-
-        if !rest.is_empty() {
-            return Err("Invalid shorthand!".into());
-        }
-
-        Ok(Self { num, mode, follow })
-    }
 }
 
 // We need both negative and positive 0
@@ -139,8 +176,7 @@ struct Settings {
     zero: bool,
 }
 
-impl Options for Settings {
-    type Arg = Arg;
+impl Options<Arg> for Settings {
     fn apply(&mut self, arg: Arg) {
         match arg {
             Arg::Bytes(n) => {
@@ -163,35 +199,33 @@ impl Options for Settings {
             Arg::SleepInterval(n) => self.sleep_sec = n,
             Arg::Verbose => self.verbose = true,
             Arg::Zero => self.zero = true,
-            Arg::NegativeShorthand(Shorthand { num, mode, follow }) => {
-                self.number = SigNum::Negative(num);
-                self.mode = mode;
-                self.follow = follow.then_some(FollowMode::Descriptor);
-            }
-            Arg::PositiveShorthand(Shorthand { num, mode, follow }) => {
-                self.number = SigNum::Positive(num);
-                self.mode = mode;
-                self.follow = follow.then_some(FollowMode::Descriptor);
-            }
             Arg::File(input) => self.inputs.push(input),
             Arg::PresumeInputPipe => self.presume_input_pipe = true,
         }
     }
 }
 
+fn parse_tail<I>(iter: I) -> Result<Settings, uutils_args::Error>
+where
+    I: IntoIterator + Clone + 'static,
+    I::Item: Into<OsString>,
+{
+    <Settings as Options<DeprecatedArg>>::try_parse(iter.clone())
+        .or_else(|_| <Settings as Options<Arg>>::try_parse(iter))
+}
 #[test]
 fn shorthand() {
-    let s = Settings::try_parse(["tail", "-20"]).unwrap();
+    let s = parse_tail(["tail", "-20", "somefile"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
     assert_eq!(s.mode, Mode::Lines);
     assert_eq!(s.follow, None);
 
-    let s = Settings::try_parse(["tail", "+20"]).unwrap();
+    let s = parse_tail(["tail", "+20", "somefile"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(20));
     assert_eq!(s.mode, Mode::Lines);
     assert_eq!(s.follow, None);
 
-    let s = Settings::try_parse(["tail", "-100cf"]).unwrap();
+    let s = parse_tail(["tail", "-100cf", "somefile"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(100));
     assert_eq!(s.mode, Mode::Bytes);
     assert_eq!(s.follow, Some(FollowMode::Descriptor));

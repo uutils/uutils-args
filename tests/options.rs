@@ -15,8 +15,7 @@ fn string_option() {
         message: String,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Message(s): Arg) {
             self.message = s
         }
@@ -52,8 +51,7 @@ fn enum_option() {
         format: Format,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Format(f): Arg) {
             self.format = f;
         }
@@ -92,8 +90,7 @@ fn enum_option_with_fields() {
         indent: Indent,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Indent(i): Arg) {
             self.indent = i;
         }
@@ -142,8 +139,7 @@ fn enum_with_complex_from_value() {
         indent: Indent,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Indent(i): Arg) {
             self.indent = i;
         }
@@ -178,8 +174,7 @@ fn color() {
         color: Color,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Color(c): Arg) {
             self.color = c.unwrap_or(Color::Always);
         }
@@ -221,8 +216,7 @@ fn actions() {
         messages: Vec<String>,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::Message(m) => {
@@ -254,8 +248,7 @@ fn width() {
         width: Option<u64>,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Width(w): Arg) {
             self.width = match w {
                 0 => None,
@@ -299,8 +292,7 @@ fn integers() {
         n: i128,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, arg: Arg) {
             self.n = match arg {
                 Arg::U8(x) => x as i128,
@@ -357,8 +349,7 @@ fn ls_classify() {
         classify: When,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Classify(c): Arg) {
             self.classify = c;
         }
@@ -393,8 +384,7 @@ fn mktemp_tmpdir() {
         tmpdir: Option<String>,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::TmpDir(dir): Arg) {
             self.tmpdir = Some(dir);
         }
@@ -450,8 +440,7 @@ fn deprecated() {
         n2: isize,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::Min(n) => self.n1 = n,

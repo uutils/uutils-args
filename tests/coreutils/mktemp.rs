@@ -37,8 +37,7 @@ struct Settings {
     template: String,
 }
 
-impl Options for Settings {
-    type Arg = Arg;
+impl Options<Arg> for Settings {
     fn apply(&mut self, arg: Arg) {
         match arg {
             Arg::Directory => self.directory = true,

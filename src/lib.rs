@@ -74,8 +74,7 @@
 //!
 //! // To implement `Options`, we only need to provide the `apply` method.
 //! // The `parse` method will be automatically generated.
-//! impl Options for Settings {
-//!     type Arg = Arg;
+//! impl Options<Arg> for Settings {
 //!     fn apply(&mut self, arg: Arg) {
 //!         match arg {
 //!             Arg::NoCaps => self.caps = false,
@@ -316,7 +315,7 @@ pub trait Initial: Sized {
 /// Defines the app settings by consuming [`Arguments`].
 ///
 /// When implementing this trait, only two things need to be provided:
-/// - the [`Arg`](Options::Arg) type, which defines the type to use for
+/// - the `Arg` type parameter, which defines the type to use for
 ///   argument parsing,
 /// - the [`apply`](Options::apply) method, which defines to how map that
 ///   type onto the options.
@@ -326,11 +325,9 @@ pub trait Initial: Sized {
 /// 2. repeatedly call [`ArgumentIter::next_arg`] and call [`Options::apply`]
 ///    on the result until the arguments are exhausted,
 /// 3. and finally call [`Arguments::check_missing`].
-pub trait Options: Sized + Initial {
-    type Arg: Arguments;
-
+pub trait Options<Arg: Arguments>: Sized + Initial {
     /// Apply a single argument to the options.
-    fn apply(&mut self, arg: Self::Arg);
+    fn apply(&mut self, arg: Arg);
 
     /// Parse an iterator of arguments into
     fn parse<I>(args: I) -> Self
@@ -338,7 +335,7 @@ pub trait Options: Sized + Initial {
         I: IntoIterator + 'static,
         I::Item: Into<OsString>,
     {
-        exit_if_err(Self::try_parse(args), Self::Arg::EXIT_CODE)
+        exit_if_err(Self::try_parse(args), Arg::EXIT_CODE)
     }
 
     fn try_parse<I>(args: I) -> Result<Self, Error>
@@ -347,11 +344,11 @@ pub trait Options: Sized + Initial {
         I::Item: Into<OsString>,
     {
         let mut _self = Self::initial();
-        let mut iter = Self::Arg::parse(args);
+        let mut iter = Arg::parse(args);
         while let Some(arg) = iter.next_arg()? {
             _self.apply(arg);
         }
-        Self::Arg::check_missing(iter.positional_idx)?;
+        Arg::check_missing(iter.positional_idx)?;
         Ok(_self)
     }
 }

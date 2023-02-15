@@ -14,8 +14,7 @@ fn true_default() {
         foo: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Foo: Arg) {
             self.foo = false;
         }
@@ -39,8 +38,7 @@ fn env_var_string() {
         foo: String,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Foo(x): Arg) {
             self.foo = x;
         }

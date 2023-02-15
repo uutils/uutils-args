@@ -336,8 +336,7 @@ struct Settings {
     hide_control_chars: bool,
 }
 
-impl Options for Settings {
-    type Arg = Arg;
+impl Options<Arg> for Settings {
     fn apply(&mut self, arg: Arg) {
         match arg {
             Arg::All => self.which_files = Files::All,

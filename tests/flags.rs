@@ -13,9 +13,8 @@ fn one_flag() {
         foo: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
-        fn apply(&mut self, arg: Self::Arg) {
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::Foo => self.foo = true,
             }
@@ -42,9 +41,8 @@ fn two_flags() {
         b: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
-        fn apply(&mut self, arg: Self::Arg) {
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::A => self.a = true,
                 Arg::B => self.b = true,
@@ -80,9 +78,8 @@ fn long_and_short_flag() {
         foo: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
-        fn apply(&mut self, Arg::Foo: Self::Arg) {
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, Arg::Foo: Arg) {
             self.foo = true;
         }
     }
@@ -105,9 +102,8 @@ fn short_alias() {
         foo: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
-        fn apply(&mut self, Arg::Foo: Self::Arg) {
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, Arg::Foo: Arg) {
             self.foo = true;
         }
     }
@@ -128,9 +124,8 @@ fn long_alias() {
         foo: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
-        fn apply(&mut self, Arg::Foo: Self::Arg) {
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, Arg::Foo: Arg) {
             self.foo = true;
         }
     }
@@ -154,9 +149,8 @@ fn short_and_long_alias() {
         bar: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
-        fn apply(&mut self, arg: Self::Arg) {
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::Foo => self.foo = true,
                 Arg::Bar => self.bar = true,
@@ -199,9 +193,8 @@ fn xyz_map_to_abc() {
         c: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
-        fn apply(&mut self, arg: Self::Arg) {
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::X => {
                     self.a = true;
@@ -273,9 +266,8 @@ fn non_rust_ident() {
         b: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
-        fn apply(&mut self, arg: Self::Arg) {
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::FooBar => self.a = true,
                 Arg::Super => self.b = true,
@@ -301,8 +293,7 @@ fn number_flag() {
         one: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::One: Arg) {
             self.one = true;
         }
@@ -326,8 +317,7 @@ fn false_bool() {
         foo: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, arg: Arg) {
             self.foo = match arg {
                 Arg::A => true,
@@ -357,8 +347,7 @@ fn verbosity() {
         verbosity: u8,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Verbosity: Arg) {
             self.verbosity += 1;
         }
@@ -388,8 +377,7 @@ fn infer_long_args() {
         author: bool,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::All => self.all = true,
@@ -430,8 +418,7 @@ fn enum_flag() {
         foo: SomeEnum,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, arg: Arg) {
             self.foo = match arg {
                 Arg::Foo => SomeEnum::Foo,

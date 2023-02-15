@@ -53,8 +53,7 @@ struct Settings {
     files: Vec<PathBuf>,
 }
 
-impl Options for Settings {
-    type Arg = Arg;
+impl Options<Arg> for Settings {
     fn apply(&mut self, arg: Arg) {
         match arg {
             Arg::ShowAll => {

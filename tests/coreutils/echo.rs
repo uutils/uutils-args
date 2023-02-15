@@ -27,8 +27,7 @@ struct Settings {
     strings: Vec<OsString>,
 }
 
-impl Options for Settings {
-    type Arg = Arg;
+impl Options<Arg> for Settings {
     fn apply(&mut self, arg: Arg) {
         match arg {
             Arg::NoNewline => self.trailing_newline = false,

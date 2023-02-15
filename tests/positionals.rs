@@ -13,8 +13,7 @@ fn one_positional() {
         file1: String,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::File1(f): Arg) {
             self.file1 = f;
         }
@@ -42,8 +41,7 @@ fn two_positionals() {
         bar: String,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::Foo(x) => self.foo = x,
@@ -72,8 +70,7 @@ fn optional_positional() {
         foo: Option<String>,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Foo(x): Arg) {
             self.foo = Some(x);
         }
@@ -98,8 +95,7 @@ fn collect_positional() {
         foo: Vec<String>,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Foo(x): Arg) {
             self.foo.push(x);
         }
@@ -124,8 +120,7 @@ fn last1() {
         foo: Vec<String>,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, Arg::Foo(x): Arg) {
             self.foo = x;
         }
@@ -151,8 +146,7 @@ fn last2() {
         foo: Vec<String>,
     }
 
-    impl Options for Settings {
-        type Arg = Arg;
+    impl Options<Arg> for Settings {
         fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::A => {}

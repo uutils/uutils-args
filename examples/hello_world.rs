@@ -27,8 +27,7 @@ struct Settings {
     count: u8,
 }
 
-impl Options for Settings {
-    type Arg = Arg;
+impl Options<Arg> for Settings {
     fn apply(&mut self, arg: Arg) {
         match arg {
             Arg::Name(n) => self.name = n,
