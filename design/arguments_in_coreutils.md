@@ -109,4 +109,10 @@ Some utils take positional arguments, which might be required.
 
 ### Deprecated syntax `+N` and `-N`
 
-Some utils (e.g. `head`, `tail` and `uniq`) support an old deprecated syntax where numbers can be directly passed as arguments as a shorthand. For example, `uniq +5` is a shorthand for `uniq -s 5` and `uniq -5` is short for `uniq -f 5`.
+Some utils (e.g. `head`, `tail`, `kill`, `fold` and `uniq`) support an old deprecated syntax where numbers can be directly passed as arguments as a shorthand. For example, `uniq +5` is a shorthand for `uniq -s 5` and `uniq -5` is short for `uniq -f 5`.
+
+These all behave slightly differently.
+1. `head` and `tail` only accept this if it is the first argument and exactly 2 arguments are given.
+2. In `fold` the `-N` must be standalone (e.g. `-10b` is rejected), but can appear at any position.
+3. In `kill`, the same rules as `fold` apply, but it can also be a name instead of a number.
+4. In `uniq`, the syntax does not need to stand alone and is additive in a weird way, because they hack `-22` as `-2 -2` so each flag `-1...-9` multiplies the previous by 10 and adds itself. I'm not sure that we need to support this. Doing something like what `fold` and `kill` do is probably fine.
