@@ -29,7 +29,7 @@ where
     }
 
     // Parse the shorthand by turning it into a String (via OsString)
-    // The format we're parsing is `{+/-}[NUM][bcl][f]`.
+    // The format we're parsing is `-[NUM][bkm][cqv]`.
     let os_string = shorthand.into();
 
     // The part of the string that is not parsed yet
@@ -58,10 +58,8 @@ where
     let num = rest[..end_num].parse().unwrap_or(10);
     rest = &rest[end_num..];
 
-    // Parse the optional size modifier
-
     // Parse the other options (`-c`, `-q`, `-v`), which can appear any number
-    // of times. `-z` is also supported, though that is undocumented.
+    // of times. `-z` is also supported, though that is undocumented in GNU.
     let mut mode = Mode::Lines;
     let mut verbose = false;
     let mut zero = false;
@@ -76,7 +74,7 @@ where
     }
 
     Some(Settings {
-        number: SigNum::Positive(num),
+        number: SigNum::Negative(num),
         mode,
         inputs: vec![input.into().into()],
         verbose,
@@ -161,7 +159,7 @@ impl Value for SigNum {
 
         let number = match multiplier.and_then(|m| m.checked_mul(num)) {
             Some(number) => number,
-            None => return Err("Value too large for defined data type".into())
+            None => return Err("Value too large for defined data type".into()),
         };
 
         Ok(sign(number))

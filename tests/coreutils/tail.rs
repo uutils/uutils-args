@@ -200,7 +200,7 @@ impl Value for SigNum {
 
         let number = match multiplier.and_then(|m| m.checked_mul(num)) {
             Some(number) => number,
-            None => return Err("Value too large for defined data type".into())
+            None => return Err("Value too large for defined data type".into()),
         };
 
         Ok(sign(number))
