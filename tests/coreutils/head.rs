@@ -36,71 +36,51 @@ where
     let mut rest = os_string.to_str()?;
 
     // Corner case: If it's just `-` then it needs to be parsed like
-    // the nondeprecated syntax, because `-` represents standard input.
-    // Curiously, GNU parses `tail + a.txt` as the deprecated syntax.
+    // the non-deprecated syntax, because `-` represents standard input.
     if rest == "-" {
         return None;
     }
 
-    // Corner case: `tail -c 10` is ambiguous and should be interpreted as
-    // `tail -c10 -`, not as `tail -c10 10`. All other things in this syntax
-    // do not create problems. For example, `tail -f a` has the same effect in
-    // this syntax and normal parsing.
-    if rest == "-c" {
-        return None;
-    }
-
-    // Parse the sign
-    let sig = if let Some(r) = rest.strip_prefix('-') {
-        rest = r;
-        SigNum::Negative
-    } else if let Some(r) = rest.strip_prefix('+') {
-        rest = r;
-        SigNum::Positive
-    } else {
-        return None;
-    };
+    // Parse the sign, only '-' is supported.
+    rest = rest.strip_prefix('-')?;
 
     // Find and parse the number part of the string
     let end_num = rest
         .find(|c: char| !c.is_ascii_digit())
         .unwrap_or(rest.len());
-    let mut num = rest[..end_num].parse().unwrap_or(10);
-    rest = &rest[end_num..];
 
-    // Parse the mode, one of `b`, `c`, 'l`.
-    let mode = if let Some(r) = rest.strip_prefix('l') {
-        rest = r;
-        Mode::Lines
-    } else if let Some(r) = rest.strip_prefix('c') {
-        rest = r;
-        Mode::Bytes
-    } else if let Some(r) = rest.strip_prefix('b') {
-        rest = r;
-        num *= 512;
-        Mode::Bytes
-    } else {
-        Mode::Lines
-    };
-
-    // Parse the `f`
-    let follow = if let Some(r) = rest.strip_prefix('f') {
-        rest = r;
-        Some(FollowMode::Descriptor)
-    } else {
-        None
-    };
-
-    if !rest.is_empty() {
+    // In `head`, the shorthand must start with a number.
+    // `-k` (which fails) and `-c`, etc. are parsed as normal.
+    if end_num == 0 {
         return None;
     }
 
+    let num = rest[..end_num].parse().unwrap_or(10);
+    rest = &rest[end_num..];
+
+    // Parse the optional size modifier
+
+    // Parse the other options (`-c`, `-q`, `-v`), which can appear any number
+    // of times. `-z` is also supported, though that is undocumented.
+    let mut mode = Mode::Lines;
+    let mut verbose = false;
+    let mut zero = false;
+    for char in rest.chars() {
+        match char {
+            'c' => mode = Mode::Bytes,
+            'q' => verbose = false,
+            'v' => verbose = true,
+            'z' => zero = true,
+            _ => return None,
+        }
+    }
+
     Some(Settings {
-        number: sig(num),
+        number: SigNum::Positive(num),
         mode,
-        follow,
         inputs: vec![input.into().into()],
-        ..Settings::initial()
+        verbose,
+        zero,
     })
 }
 
@@ -109,29 +89,11 @@ enum Arg {
     #[option("-c NUM", "--bytes=NUM")]
     Bytes(SigNum),
 
-    #[option("-f", "--follow[=HOW]", default=FollowMode::Descriptor)]
-    Follow(FollowMode),
-
-    #[option("-F")]
-    FollowRetry,
-
-    #[option("--max-unchanged-stats=N")]
-    MaxUnchangedStats(u32),
-
     #[option("-n NUM", "--lines=NUM")]
     Lines(SigNum),
 
-    #[option("--pid=PID")]
-    Pid(u64),
-
     #[option("-q", "--quiet", "--silent")]
     Quiet,
-
-    #[option("--retry")]
-    Retry,
-
-    #[option("-s NUMBER", "--sleep-interval=NUMBER")]
-    SleepInterval(u64),
 
     #[option("-v", "--verbose")]
     Verbose,
@@ -141,9 +103,6 @@ enum Arg {
 
     #[positional(..)]
     File(PathBuf),
-
-    #[option("---presume-input-pipe", hidden)]
-    PresumeInputPipe,
 }
 
 // We need both negative and positive 0
@@ -176,7 +135,9 @@ impl Value for SigNum {
         rest = &rest[end_num..];
 
         // Determine the multiplier
-        let multiplier = match rest {
+        // We're being a bit overly defensive here. I'm assuming it will
+        // be optimized away.
+        let multiplier: Option<u64> = match rest {
             "" => Some(1),
             "b" => Some(512),
             "K" | "KiB" => Some(1024),
@@ -213,14 +174,6 @@ impl Default for SigNum {
     }
 }
 
-#[derive(Value, Debug, PartialEq, Eq)]
-enum FollowMode {
-    #[value("descriptor")]
-    Descriptor,
-    #[value("name")]
-    Name,
-}
-
 #[derive(Default, Debug, PartialEq, Eq)]
 pub enum Mode {
     Bytes,
@@ -230,16 +183,10 @@ pub enum Mode {
 
 #[derive(Initial)]
 struct Settings {
-    follow: Option<FollowMode>,
-    max_unchanged_stats: u32,
     mode: Mode,
     number: SigNum,
     // TODO: Should be a dedicated PID type
-    pid: u64,
-    retry: bool,
-    sleep_sec: u64,
     verbose: bool,
-    presume_input_pipe: bool,
     inputs: Vec<PathBuf>,
     zero: bool,
 }
@@ -255,25 +202,15 @@ impl Options<Arg> for Settings {
                 self.mode = Mode::Lines;
                 self.number = n;
             }
-            Arg::Follow(mode) => self.follow = Some(mode),
-            Arg::FollowRetry => {
-                self.follow = Some(FollowMode::Name);
-                self.retry = true;
-            }
-            Arg::MaxUnchangedStats(n) => self.max_unchanged_stats = n,
-            Arg::Pid(pid) => self.pid = pid,
             Arg::Quiet => self.verbose = false,
-            Arg::Retry => self.retry = true,
-            Arg::SleepInterval(n) => self.sleep_sec = n,
             Arg::Verbose => self.verbose = true,
             Arg::Zero => self.zero = true,
             Arg::File(input) => self.inputs.push(input),
-            Arg::PresumeInputPipe => self.presume_input_pipe = true,
         }
     }
 }
 
-fn parse_tail<I>(iter: I) -> Result<Settings, uutils_args::Error>
+fn parse_head<I>(iter: I) -> Result<Settings, uutils_args::Error>
 where
     I: IntoIterator + Clone + 'static,
     I::Item: Into<OsString>,
@@ -286,23 +223,20 @@ where
 
 #[test]
 fn shorthand() {
-    let s = parse_tail(["tail", "-20", "some_file"]).unwrap();
+    let s = parse_head(["head", "-20", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
     assert_eq!(s.mode, Mode::Lines);
-    assert_eq!(s.follow, None);
 
-    let s = parse_tail(["tail", "+20", "some_file"]).unwrap();
+    let s = parse_head(["head", "+20", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(20));
     assert_eq!(s.mode, Mode::Lines);
-    assert_eq!(s.follow, None);
 
-    let s = parse_tail(["tail", "-100cf", "some_file"]).unwrap();
+    let s = parse_head(["head", "-100cf", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(100));
     assert_eq!(s.mode, Mode::Bytes);
-    assert_eq!(s.follow, Some(FollowMode::Descriptor));
 
     // Corner case where the shorthand does not apply
-    let s = parse_tail(["tail", "-c", "42"]).unwrap();
+    let s = parse_head(["head", "-c", "42"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(42));
     assert_eq!(s.mode, Mode::Bytes);
     assert_eq!(s.inputs, Vec::<PathBuf>::new());
@@ -310,71 +244,35 @@ fn shorthand() {
 
 #[test]
 fn standard_input() {
-    let s = parse_tail(["tail", "-"]).unwrap();
+    let s = parse_head(["head", "-"]).unwrap();
     assert_eq!(s.inputs, vec![PathBuf::from("-")])
 }
 
 #[test]
 fn normal_format() {
-    let s = parse_tail(["tail", "-c", "20", "some_file"]).unwrap();
+    let s = parse_head(["head", "-c", "20", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
     assert_eq!(s.mode, Mode::Bytes);
 }
 
 #[test]
 fn signum() {
-    let s = parse_tail(["tail", "-n", "20"]).unwrap();
+    let s = parse_head(["head", "-n", "20"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
-    let s = parse_tail(["tail", "-n", "-20"]).unwrap();
+    let s = parse_head(["head", "-n", "-20"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
-    let s = parse_tail(["tail", "-n", "+20"]).unwrap();
+    let s = parse_head(["head", "-n", "+20"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(20));
 
-    let s = parse_tail(["tail", "-n", "20b"]).unwrap();
+    let s = parse_head(["head", "-n", "20b"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20 * 512));
-    let s = parse_tail(["tail", "-n", "+20b"]).unwrap();
+    let s = parse_head(["head", "-n", "+20b"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(20 * 512));
 
-    let s = parse_tail(["tail", "-n", "b"]).unwrap();
+    let s = parse_head(["head", "-n", "b"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(512));
-    let s = parse_tail(["tail", "-n", "+b"]).unwrap();
+    let s = parse_head(["head", "-n", "+b"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(512));
 
-    assert!(parse_tail(["tail", "-n", "20invalid_suffix"]).is_err());
-}
-
-#[test]
-fn follow_mode() {
-    // Sanity check: should be None initially
-    let s = parse_tail(["tail"]).unwrap();
-    assert_eq!(s.follow, None);
-
-    let s = parse_tail(["tail", "--follow"]).unwrap();
-    assert_eq!(s.follow, Some(FollowMode::Descriptor));
-
-    let s = parse_tail(["tail", "-f"]).unwrap();
-    assert_eq!(s.follow, Some(FollowMode::Descriptor));
-
-    let s = parse_tail(["tail", "--follow=descriptor"]).unwrap();
-    assert_eq!(s.follow, Some(FollowMode::Descriptor));
-
-    let s = parse_tail(["tail", "--follow=des"]).unwrap();
-    assert_eq!(s.follow, Some(FollowMode::Descriptor));
-
-    let s = parse_tail(["tail", "--follow=d"]).unwrap();
-    assert_eq!(s.follow, Some(FollowMode::Descriptor));
-
-    let s = parse_tail(["tail", "--follow=name"]).unwrap();
-    assert_eq!(s.follow, Some(FollowMode::Name));
-
-    let s = parse_tail(["tail", "--follow=na"]).unwrap();
-    assert_eq!(s.follow, Some(FollowMode::Name));
-
-    let s = parse_tail(["tail", "--follow=n"]).unwrap();
-    assert_eq!(s.follow, Some(FollowMode::Name));
-
-    assert!(parse_tail(["tail", "--follow="]).is_err());
-
-    let s = parse_tail(["tail", "-F"]).unwrap();
-    assert_eq!(s.follow, Some(FollowMode::Name));
+    assert!(parse_head(["head", "-n", "20invalid_suffix"]).is_err());
 }

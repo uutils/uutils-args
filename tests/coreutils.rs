@@ -16,6 +16,9 @@ mod cat;
 #[path = "coreutils/echo.rs"]
 mod echo;
 
+#[path = "coreutils/head.rs"]
+mod head;
+
 #[path = "coreutils/mktemp.rs"]
 mod mktemp;
 
