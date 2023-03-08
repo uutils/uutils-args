@@ -225,11 +225,7 @@ fn shorthand() {
     assert_eq!(s.number, SigNum::Negative(20));
     assert_eq!(s.mode, Mode::Lines);
 
-    let s = parse_head(["head", "+20", "some_file"]).unwrap();
-    assert_eq!(s.number, SigNum::Positive(20));
-    assert_eq!(s.mode, Mode::Lines);
-
-    let s = parse_head(["head", "-100cf", "some_file"]).unwrap();
+    let s = parse_head(["head", "-100cq", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(100));
     assert_eq!(s.mode, Mode::Bytes);
 

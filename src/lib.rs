@@ -66,7 +66,7 @@
 //! #[derive(Initial)]
 //! struct Settings {
 //!     // We can change the default value with the field attribute.
-//!     #[field(default = true)]
+//!     #[initial(true)]
 //!     caps: bool,
 //!     exclamation_marks: u8,
 //!     text: String,
