@@ -1,64 +1,28 @@
 mod argument;
 mod attributes;
-mod field;
 mod flags;
 mod help;
 mod markdown;
+mod initial;
 
 use argument::{
     long_handling, number_handling, parse_argument, parse_arguments_attr, positional_handling,
     short_handling,
 };
 use attributes::ValueAttr;
-use field::{parse_field, FieldData};
 use help::{help_handling, help_string, version_handling};
 
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse_macro_input,
-    Data::{Enum, Struct},
-    DeriveInput, Fields,
+    Data::Enum,
+    DeriveInput,
 };
 
-#[proc_macro_derive(Initial, attributes(field))]
+#[proc_macro_derive(Initial, attributes(initial))]
 pub fn initial(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-
-    let name = input.ident;
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-
-    let Struct(data) = input.data else {
-        panic!("Input should be a struct!");
-    };
-
-    let Fields::Named(fields) = data.fields else {
-        panic!("Fields must be named");
-    };
-
-    // The key of this map is a literal pattern and the value
-    // is whatever code needs to be run when that pattern is encountered.
-    let mut defaults = Vec::new();
-    for field in fields.named {
-        let FieldData {
-            ident,
-            default_value,
-        } = parse_field(&field);
-
-        defaults.push(quote!(#ident: #default_value));
-    }
-
-    let expanded = quote!(
-        impl #impl_generics Initial for #name #ty_generics #where_clause {
-            fn initial() -> Self {
-                Self {
-                    #(#defaults),*
-                }
-            }
-        }
-    );
-
-    TokenStream::from(expanded)
+    initial::initial(input)
 }
 
 #[proc_macro_derive(Arguments, attributes(flag, option, positional, arguments))]

@@ -170,7 +170,7 @@ fn color() {
 
     #[derive(Initial)]
     struct Settings {
-        #[field(default = Color::Auto)]
+        #[initial(Color::Auto)]
         color: Color,
     }
 

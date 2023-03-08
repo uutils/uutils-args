@@ -21,7 +21,7 @@ enum Arg {
 struct Settings {
     decode: bool,
     ignore_garbage: bool,
-    #[field(default = Some(76))]
+    #[initial(Some(76))]
     wrap: Option<usize>,
     file: Option<PathBuf>,
 }

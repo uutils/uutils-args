@@ -10,7 +10,7 @@ fn true_default() {
 
     #[derive(Initial)]
     struct Settings {
-        #[field(default = true)]
+        #[initial(true)]
         foo: bool,
     }
 
@@ -34,7 +34,7 @@ fn env_var_string() {
 
     #[derive(Initial)]
     struct Settings {
-        #[field(env = "FOO")]
+        #[initial("FOO")]
         foo: String,
     }
 

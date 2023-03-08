@@ -322,14 +322,14 @@ struct Settings {
     long_numeric_uid_gid: bool,
     // alloc_size: bool,
     // block_size: Option<u64>,
-    #[field(default = default_terminal_size())]
+    #[initial(default_terminal_size())]
     width: u16,
     quoting_style: QuotingStyle,
     indicator_style: IndicatorStyle,
     // time_style: TimeStyle,
     context: bool,
     group_directories_first: bool,
-    #[field(default = '\n')]
+    #[initial('\n')]
     eol: char,
     which_files: Files,
     ignore_backups: bool,

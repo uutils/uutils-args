@@ -30,7 +30,6 @@ enum AttributeArguments {
     Value(Expr),
     NumArgs(RangeInclusive<usize>),
     File(String),
-    Env(String),
     ExitCode(i32),
     Help(String),
     HelpFlags(Vec<String>),
@@ -120,28 +119,6 @@ impl OptionAttr {
         );
 
         option_attr
-    }
-}
-
-#[derive(Default)]
-pub(crate) struct FieldAttr {
-    pub(crate) default: Option<Expr>,
-    pub(crate) env: Option<String>,
-}
-
-impl FieldAttr {
-    pub(crate) fn parse(attr: &Attribute) -> Self {
-        let mut field_attr = Self::default();
-
-        for arg in AttributeArguments::parse_all(attr) {
-            match arg {
-                AttributeArguments::Default(e) => field_attr.default = Some(e),
-                AttributeArguments::Env(e) => field_attr.env = Some(e),
-                _ => panic!("Invalid argument"),
-            };
-        }
-
-        field_attr
     }
 }
 
@@ -265,7 +242,6 @@ impl Parse for AttributeArguments {
                 "default" => return Ok(Self::Default(input.parse::<Expr>()?)),
                 "value" => return Ok(Self::Value(input.parse::<Expr>()?)),
                 "file" => return Ok(Self::File(input.parse::<LitStr>()?.value())),
-                "env" => return Ok(Self::Env(input.parse::<LitStr>()?.value())),
                 "help" => return Ok(Self::Help(input.parse::<LitStr>()?.value())),
                 "exit_code" => return Ok(Self::ExitCode(input.parse::<LitInt>()?.base10_parse()?)),
                 "help_flags" => {
@@ -313,6 +289,7 @@ impl Parse for AttributeArguments {
                 _ => panic!("Unrecognized argument {name} for option attribute"),
             };
         }
+
         panic!("Arguments to option attribute must be string literals");
     }
 }

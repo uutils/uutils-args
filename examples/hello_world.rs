@@ -23,7 +23,7 @@ enum Arg {
 #[derive(Initial)]
 struct Settings {
     name: String,
-    #[field(default = 1)]
+    #[initial(1)]
     count: u8,
 }
 

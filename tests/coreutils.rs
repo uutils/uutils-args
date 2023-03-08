@@ -27,3 +27,6 @@ mod ls;
 
 #[path = "coreutils/tail.rs"]
 mod tail;
+
+#[path = "coreutils/uniq.rs"]
+mod uniq;
