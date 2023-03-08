@@ -1,12 +1,11 @@
 use syn::{
-    parse_macro_input,
-    Data::Struct,
-    DeriveInput, Fields, parse::{ParseStream, Parse}, Token,
+    parse::{Parse, ParseStream},
+    parse_macro_input, Data, DeriveInput, Fields, Token,
 };
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Attribute, Expr, LitStr, punctuated::Punctuated};
+use syn::{punctuated::Punctuated, Attribute, Expr, LitStr};
 
 mod kw {
     syn::custom_keyword!(env);
@@ -36,11 +35,12 @@ impl Parse for InitialArg {
 }
 
 impl InitialField {
-    fn from_attribute(attribute: &Attribute) -> syn::Result<Self> { 
+    fn from_attribute(attribute: &Attribute) -> syn::Result<Self> {
         let mut _self = Self::default();
 
-        let args = attribute.parse_args_with(Punctuated::<InitialArg, Token![,]>::parse_terminated)?;
-    
+        let args =
+            attribute.parse_args_with(Punctuated::<InitialArg, Token![,]>::parse_terminated)?;
+
         for arg in args {
             match arg {
                 InitialArg::Expr(e) => {
@@ -61,7 +61,7 @@ impl InitialField {
         Ok(_self)
     }
 
-    fn to_expr(self) -> proc_macro2::TokenStream {
+    fn into_expr(self) -> proc_macro2::TokenStream {
         let mut default_value = match self.expr {
             Some(val) => quote!(#val.into()),
             None => quote!(::core::default::Default::default()),
@@ -74,7 +74,8 @@ impl InitialField {
                     .unwrap_or(#default_value)
             );
         }
-        default_value.into()
+
+        default_value
     }
 }
 
@@ -84,10 +85,22 @@ pub fn initial(input: TokenStream) -> TokenStream {
     let name = input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    let Struct(data) = input.data else {
-        panic!("Input should be a struct!");
+    let function_body = match input.data {
+        Data::Struct(data) => initial_struct(data),
+        _ => panic!("Initial derive macro can only be used on structs"),
     };
 
+    quote!(
+        impl #impl_generics Initial for #name #ty_generics #where_clause {
+            fn initial() -> Self {
+                #function_body
+            }
+        }
+    )
+    .into()
+}
+
+fn initial_struct(data: syn::DataStruct) -> proc_macro2::TokenStream {
     let Fields::Named(fields) = data.fields else {
         panic!("Fields must be named");
     };
@@ -98,22 +111,16 @@ pub fn initial(input: TokenStream) -> TokenStream {
     for field in fields.named {
         let ident = field.ident;
         let field = parse_field_attr(&field.attrs);
-        let default_value = field.to_expr();
+        let default_value = field.into_expr();
 
         defaults.push(quote!(#ident: #default_value));
     }
 
-    let expanded = quote!(
-        impl #impl_generics Initial for #name #ty_generics #where_clause {
-            fn initial() -> Self {
-                Self {
-                    #(#defaults),*
-                }
-            }
+    quote!(
+        Self {
+            #(#defaults),*
         }
-    );
-
-    TokenStream::from(expanded)
+    )
 }
 
 fn parse_field_attr(attrs: &[Attribute]) -> InitialField {
@@ -124,4 +131,3 @@ fn parse_field_attr(attrs: &[Attribute]) -> InitialField {
     }
     InitialField::default()
 }
-

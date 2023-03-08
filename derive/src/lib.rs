@@ -2,8 +2,8 @@ mod argument;
 mod attributes;
 mod flags;
 mod help;
-mod markdown;
 mod initial;
+mod markdown;
 
 use argument::{
     long_handling, number_handling, parse_argument, parse_arguments_attr, positional_handling,
@@ -14,11 +14,7 @@ use help::{help_handling, help_string, version_handling};
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{
-    parse_macro_input,
-    Data::Enum,
-    DeriveInput,
-};
+use syn::{parse_macro_input, Data::Enum, DeriveInput};
 
 #[proc_macro_derive(Initial, attributes(initial))]
 pub fn initial(input: TokenStream) -> TokenStream {
