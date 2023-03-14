@@ -34,7 +34,7 @@ fn env_var_string() {
 
     #[derive(Initial)]
     struct Settings {
-        #[initial(env="FOO")]
+        #[initial(env = "FOO")]
         foo: String,
     }
 
