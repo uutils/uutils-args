@@ -7,7 +7,9 @@ use std::{
 /// Errors that can occur while parsing arguments.
 pub enum Error {
     /// There was an option that required an option, but none was given.
-    MissingValue { option: Option<String> },
+    MissingValue {
+        option: Option<String>,
+    },
 
     /// Some positional arguments were not given.
     MissingPositionalArguments(Vec<String>),
@@ -19,7 +21,10 @@ pub enum Error {
     UnexpectedArgument(OsString),
 
     /// A value was passed to an option that didn't expect a value.
-    UnexpectedValue { option: String, value: OsString },
+    UnexpectedValue {
+        option: String,
+        value: OsString,
+    },
 
     /// Parsing of a value failed.
     ParsingFailed {
@@ -37,6 +42,14 @@ pub enum Error {
 
     /// The value was required to be valid UTF-8, but it wasn't.
     NonUnicodeValue(OsString),
+
+    IoError(std::io::Error),
+}
+
+impl From<std::io::Error> for Error {
+    fn from(value: std::io::Error) -> Self {
+        Error::IoError(value)
+    }
 }
 
 impl StdError for Error {}
@@ -101,6 +114,7 @@ impl Display for Error {
             Error::NonUnicodeValue(x) => {
                 write!(f, "Invalid unicode value found: {}", x.to_string_lossy())
             }
+            Error::IoError(x) => std::fmt::Display::fmt(x, f),
         }
     }
 }

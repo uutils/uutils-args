@@ -6,7 +6,7 @@ use std::{
 use crate::{
     argument::{ArgType, Argument},
     flags::Flags,
-    markdown::{get_after_event, get_h2, str_to_renderer},
+    help_parser::{parse_about, parse_section, parse_usage},
 };
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -44,8 +44,7 @@ pub(crate) fn help_string(
                 ..
             } => {
                 let flags = flags.format();
-                let renderer = str_to_renderer(help);
-                options.push(quote!((#flags, #renderer)));
+                options.push(quote!((#flags, #help)));
             }
             // Hidden arguments should not show up in --help
             ArgType::Option { hidden: true, .. } => {}
@@ -53,64 +52,51 @@ pub(crate) fn help_string(
         }
     }
 
-    let (summary, after_options) = if let Some(file) = &file {
-        let (summary, after_options) = read_help_file(file);
-        (
-            quote!(s.push_str(&#summary.render());),
-            quote!(
-                s.push('\n');
-                s.push_str(&#after_options.render());
-            ),
-        )
+    // FIXME: We need to get an option per item and provide proper defaults
+    let (summary, usage, after_options) = if let Some(file) = file {
+        read_help_file(file)
     } else {
-        (quote!(), quote!())
+        ("".into(), "{} [OPTIONS] [ARGUMENTS]".into(), "".into())
     };
 
     if !help_flags.is_empty() {
         let flags = help_flags.format();
-        let renderer = str_to_renderer("Display this help message");
-        options.push(quote!((#flags, #renderer)));
+        options.push(quote!((#flags, "Display this help message")));
     }
 
     if !version_flags.is_empty() {
         let flags = version_flags.format();
-        let renderer = str_to_renderer("Display version information");
-        options.push(quote!((#flags, #renderer)));
+        options.push(quote!((#flags, "Display version information")));
     }
 
     let options = if !options.is_empty() {
         let options = quote!([#(#options),*]);
         quote!(
-            s.push_str("\nOptions:\n");
-            for (flags, renderer) in #options {
+            writeln!(w, "\nOptions:")?;
+            for (flags, help_string) in #options {
                 let indent = " ".repeat(#indent);
 
-                let help_string = renderer.render();
                 let mut help_lines = help_string.lines();
-                s.push_str(&indent);
-                s.push_str(&flags);
+                write!(w, "{}", &indent)?;
+                write!(w, "{}", &flags)?;
 
                 if flags.len() <= #width {
                     let line = match help_lines.next() {
                         Some(line) => line,
                         None => {
-                            s.push('\n');
+                            writeln!(w)?;
                             continue;
                         },
                     };
                     let help_indent = " ".repeat(#width-flags.len()+2);
-                    s.push_str(&help_indent);
-                    s.push_str(line);
-                    s.push('\n');
+                    writeln!(w, "{}{}", help_indent, line)?;
                 } else {
-                    s.push('\n');
+                    writeln!(w, "\n")?;
                 }
 
                 let help_indent = " ".repeat(#width+#indent+2);
                 for line in help_lines {
-                    s.push_str(&help_indent);
-                    s.push_str(line);
-                    s.push('\n');
+                    writeln!(w, "{}{}", help_indent, line)?;
                 }
             }
         )
@@ -119,26 +105,25 @@ pub(crate) fn help_string(
     };
 
     quote!(
-        let mut s = String::new();
-
-        s.push_str(&format!("{} {}\n",
+        let mut w = ::std::io::stdout();
+        use ::std::io::Write;
+        writeln!(w, "{} {}",
             option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_PKG_NAME")),
             env!("CARGO_PKG_VERSION"),
-        ));
+        )?;
 
-        #summary
+        writeln!(w, "{}", #summary)?;
 
-        s.push_str(&format!("\nUsage:\n  {} [OPTIONS] [ARGS]\n", bin_name));
+        writeln!(w, "\nUsage:\n  {}", format!(#usage, bin_name))?;
 
         #options
 
-        #after_options
-
-        s
+        writeln!(w, "{}", #after_options)?;
+        Ok(())
     )
 }
 
-fn read_help_file(file: &str) -> (TokenStream, TokenStream) {
+fn read_help_file(file: &str) -> (String, String, String) {
     let path = Path::new(file);
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let mut location = PathBuf::from(manifest_dir);
@@ -148,8 +133,9 @@ fn read_help_file(file: &str) -> (TokenStream, TokenStream) {
     f.read_to_string(&mut contents).unwrap();
 
     (
-        get_h2("summary", &contents),
-        get_after_event(pulldown_cmark::Event::Rule, &contents),
+        parse_about(&contents),
+        parse_usage(&contents),
+        parse_section("after help", &contents).unwrap_or_default(),
     )
 }
 

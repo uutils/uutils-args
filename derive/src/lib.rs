@@ -2,8 +2,8 @@ mod argument;
 mod attributes;
 mod flags;
 mod help;
+mod help_parser;
 mod initial;
-mod markdown;
 
 use argument::{
     long_handling, number_handling, parse_argument, parse_arguments_attr, positional_handling,
@@ -98,7 +98,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 #missing_argument_checks
             }
 
-            fn help(bin_name: &str) -> String {
+            fn help(bin_name: &str) -> ::std::io::Result<()> {
                 #help_string
             }
 

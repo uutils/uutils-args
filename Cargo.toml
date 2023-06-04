@@ -12,10 +12,8 @@ readme = "README.md"
 [dependencies]
 derive = { version = "0.1.0", path = "derive" }
 lexopt = "0.3.0"
-term_md = { version = "0.1.0", path = "term_md" }
 
 [workspace]
 members = [
-  "term_md",
   "derive",
 ]

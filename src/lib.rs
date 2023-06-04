@@ -9,7 +9,6 @@
 //!
 //!  - A derive macro for declarative argument definition.
 //!  - Automatic help generation.
-//!  - (Limited) markdown support in help text.
 //!  - Positional and optional arguments.
 //!  - Automatically parsing values into Rust types.
 //!  - Define a custom exit code on errors.
@@ -144,7 +143,6 @@ mod value;
 
 pub use derive::*;
 pub use lexopt;
-pub use term_md;
 
 pub use error::Error;
 pub use value::{Value, ValueError, ValueResult};
@@ -211,10 +209,10 @@ pub trait Arguments: Sized {
     /// [`Options::parse`] and [`Options::try_parse`].
     fn check_missing(positional_idx: usize) -> Result<(), Error>;
 
-    /// Get the help string for this command.
+    /// Print the help string for this command.
     ///
     /// The `bin_name` specifies the name that executable was called with.
-    fn help(bin_name: &str) -> String;
+    fn help(bin_name: &str) -> std::io::Result<()>;
 
     /// Get the version string for this command.
     fn version() -> String;
@@ -274,7 +272,7 @@ impl<T: Arguments> ArgumentIter<T> {
         if let Some(arg) = T::next_arg(&mut self.parser, &mut self.positional_idx)? {
             match arg {
                 Argument::Help => {
-                    print!("{}", self.help());
+                    self.help()?;
                     std::process::exit(0);
                 }
                 Argument::Version => {
@@ -288,7 +286,7 @@ impl<T: Arguments> ArgumentIter<T> {
         }
     }
 
-    fn help(&self) -> String {
+    fn help(&self) -> std::io::Result<()> {
         T::help(self.parser.bin_name().unwrap())
     }
 
