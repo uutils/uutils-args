@@ -129,7 +129,7 @@ pub fn value(input: TokenStream) -> TokenStream {
         let variant_name = variant.ident.to_string();
         let attrs = variant.attrs.clone();
         for attr in attrs {
-            if !attr.path.is_ident("value") {
+            if !attr.path().is_ident("value") {
                 continue;
             }
 

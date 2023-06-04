@@ -14,9 +14,9 @@ pub(crate) enum ArgAttr {
 }
 
 pub(crate) fn parse_argument_attribute(attr: &Attribute) -> ArgAttr {
-    if attr.path.is_ident("option") {
+    if attr.path().is_ident("option") {
         ArgAttr::Option(OptionAttr::parse(attr))
-    } else if attr.path.is_ident("positional") {
+    } else if attr.path().is_ident("positional") {
         ArgAttr::Positional(PositionalAttr::parse(attr))
     } else {
         panic!("Internal error: invalid argument attribute");
@@ -183,7 +183,7 @@ impl Parse for AttributeArguments {
         if (input.peek(LitInt) && input.peek2(Token![..])) || input.peek(Token![..]) {
             // We're dealing with a range
             let range = input.parse::<ExprRange>()?;
-            let from = match range.from.as_deref() {
+            let from = match range.start.as_deref() {
                 Some(Expr::Lit(ExprLit {
                     lit: Lit::Int(i), ..
                 })) => i.base10_parse::<usize>().unwrap(),
@@ -192,7 +192,7 @@ impl Parse for AttributeArguments {
             };
 
             let inclusive = matches!(range.limits, RangeLimits::Closed(_));
-            let to = match range.to.as_deref() {
+            let to = match range.end.as_deref() {
                 Some(Expr::Lit(ExprLit {
                     lit: Lit::Int(i), ..
                 })) => {

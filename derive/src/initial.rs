@@ -125,7 +125,7 @@ fn initial_struct(data: syn::DataStruct) -> proc_macro2::TokenStream {
 
 fn parse_field_attr(attrs: &[Attribute]) -> InitialField {
     for attr in attrs {
-        if attr.path.is_ident("initial") {
+        if attr.path().is_ident("initial") {
             return InitialField::from_attribute(attr).expect("Failed to parse initial attribute");
         }
     }

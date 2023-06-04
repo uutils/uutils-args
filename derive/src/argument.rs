@@ -2,7 +2,7 @@ use std::ops::RangeInclusive;
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Attribute, Fields, FieldsUnnamed, Ident, Lit, Meta, Variant};
+use syn::{Attribute, Fields, FieldsUnnamed, Ident, Meta, Variant};
 
 use crate::{
     attributes::{parse_argument_attribute, ArgAttr, ArgumentsAttr},
@@ -31,7 +31,7 @@ pub(crate) enum ArgType {
 
 pub(crate) fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
     for attr in attrs {
-        if attr.path.is_ident("arguments") {
+        if attr.path().is_ident("arguments") {
             return ArgumentsAttr::parse(attr);
         }
     }
@@ -107,13 +107,21 @@ pub(crate) fn parse_argument(v: Variant) -> Vec<Argument> {
 fn collect_help(attrs: &[Attribute]) -> String {
     let mut help = Vec::new();
     for attr in attrs {
-        let Ok(meta) = attr.parse_meta() else { continue; };
-        let Meta::NameValue(name_value) = meta else { continue; };
-        if !name_value.path.is_ident("doc") {
-            continue;
+        if attr.path().is_ident("doc") {
+            let value = match &attr.meta {
+                Meta::NameValue(name_value) => &name_value.value,
+                _ => panic!("doc attribute must be a name and a value"),
+            };
+            let lit = match value {
+                syn::Expr::Lit(expr_lit) => &expr_lit.lit,
+                _ => panic!("argument to doc attribute must be a string literal"),
+            };
+            let litstr = match lit {
+                syn::Lit::Str(litstr) => litstr,
+                _ => panic!("argument to doc attribute must be a string literal"),
+            };
+            help.push(litstr.value().trim().to_string());
         }
-        let Lit::Str(litstr) = name_value.lit else { continue; };
-        help.push(litstr.value().trim().to_string())
     }
     help.join("\n")
 }
@@ -121,7 +129,7 @@ fn collect_help(attrs: &[Attribute]) -> String {
 fn get_arg_attributes(attrs: &[Attribute]) -> Vec<ArgAttr> {
     attrs
         .iter()
-        .filter(|a| a.path.is_ident("option") || a.path.is_ident("positional"))
+        .filter(|a| a.path().is_ident("option") || a.path().is_ident("positional"))
         .map(parse_argument_attribute)
         .collect()
 }
