@@ -32,7 +32,7 @@ pub(crate) enum ArgType {
 pub(crate) fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
     for attr in attrs {
         if attr.path().is_ident("arguments") {
-            return ArgumentsAttr::parse(attr);
+            return ArgumentsAttr::parse(attr).unwrap();
         }
     }
     ArgumentsAttr::default()
@@ -41,7 +41,7 @@ pub(crate) fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
 pub(crate) fn parse_argument(v: Variant) -> Vec<Argument> {
     let ident = v.ident;
     let name = ident.to_string();
-    let attributes = get_arg_attributes(&v.attrs);
+    let attributes = get_arg_attributes(&v.attrs).unwrap();
 
     // Return early because we don't need to check the fields if it's not used.
     if attributes.is_empty() {
@@ -126,7 +126,7 @@ fn collect_help(attrs: &[Attribute]) -> String {
     help.join("\n")
 }
 
-fn get_arg_attributes(attrs: &[Attribute]) -> Vec<ArgAttr> {
+fn get_arg_attributes(attrs: &[Attribute]) -> syn::Result<Vec<ArgAttr>> {
     attrs
         .iter()
         .filter(|a| a.path().is_ident("option") || a.path().is_ident("positional"))
