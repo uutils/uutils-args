@@ -6,7 +6,7 @@ mod help_parser;
 mod initial;
 
 use argument::{
-    long_handling, number_handling, parse_argument, parse_arguments_attr, positional_handling,
+    free_handling, long_handling, parse_argument, parse_arguments_attr, positional_handling,
     short_handling,
 };
 use attributes::ValueAttr;
@@ -21,7 +21,7 @@ pub fn initial(input: TokenStream) -> TokenStream {
     initial::initial(input)
 }
 
-#[proc_macro_derive(Arguments, attributes(flag, option, positional, arguments))]
+#[proc_macro_derive(Arguments, attributes(flag, option, positional, free, arguments))]
 pub fn arguments(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -38,7 +38,8 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     let exit_code = arguments_attr.exit_code;
     let (short, short_flags) = short_handling(&arguments);
     let long = long_handling(&arguments, &arguments_attr.help_flags);
-    let number_argument = number_handling(&arguments);
+    // let number_argument = number_handling(&arguments);
+    let free = free_handling(&arguments);
     let (positional, missing_argument_checks) = positional_handling(&arguments);
     let help_string = help_string(
         &arguments,
@@ -76,7 +77,8 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             ) -> Result<Option<uutils_args::Argument<Self>>, uutils_args::Error> {
                 use uutils_args::{Value, lexopt, Error, Argument};
 
-                #number_argument
+                // #number_argment
+                #free
 
                 let arg = match { #next_arg } {
                     Some(arg) => arg,

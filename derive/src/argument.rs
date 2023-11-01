@@ -6,7 +6,7 @@ use syn::{Attribute, Fields, FieldsUnnamed, Ident, Meta, Variant};
 
 use crate::{
     attributes::{parse_argument_attribute, ArgAttr, ArgumentsAttr},
-    flags::{Flag, Flags, Value},
+    flags::{Flags, Value},
 };
 
 pub(crate) struct Argument {
@@ -26,6 +26,9 @@ pub(crate) enum ArgType {
     Positional {
         num_args: RangeInclusive<usize>,
         last: bool,
+    },
+    Free {
+        filters: Vec<syn::Ident>,
     },
 }
 
@@ -93,6 +96,9 @@ pub(crate) fn parse_argument(v: Variant) -> Vec<Argument> {
                         last: pos.last,
                     }
                 }
+                ArgAttr::Free(free) => ArgType::Free {
+                    filters: free.filters,
+                },
             };
             Argument {
                 ident: ident.clone(),
@@ -129,7 +135,11 @@ fn collect_help(attrs: &[Attribute]) -> String {
 fn get_arg_attributes(attrs: &[Attribute]) -> syn::Result<Vec<ArgAttr>> {
     attrs
         .iter()
-        .filter(|a| a.path().is_ident("option") || a.path().is_ident("positional"))
+        .filter(|a| {
+            a.path().is_ident("option")
+                || a.path().is_ident("positional")
+                || a.path().is_ident("free")
+        })
         .map(parse_argument_attribute)
         .collect()
 }
@@ -147,6 +157,7 @@ pub(crate) fn short_handling(args: &[Argument]) -> (TokenStream, Vec<char>) {
                 hidden: _,
             } => (flags, takes_value, default),
             ArgType::Positional { .. } => continue,
+            ArgType::Free { .. } => continue,
         };
 
         if flags.short.is_empty() {
@@ -196,6 +207,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
                 hidden: _,
             } => (flags, takes_value, default),
             ArgType::Positional { .. } => continue,
+            ArgType::Free { .. } => continue,
         };
 
         if flags.long.is_empty() {
@@ -269,27 +281,65 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
     )
 }
 
-pub(crate) fn number_handling(args: &[Argument]) -> TokenStream {
-    let mut number_args = Vec::new();
+pub(crate) fn free_handling(args: &[Argument]) -> TokenStream {
+    let mut if_expressions = Vec::new();
 
-    for arg in args {
-        let flags = match &arg.arg_type {
-            ArgType::Option { flags, .. } => flags,
+    // Free arguments
+    for arg @ Argument { arg_type, .. } in args {
+        let filters = match arg_type {
+            ArgType::Free { filters } => filters,
             ArgType::Positional { .. } => continue,
+            ArgType::Option { .. } => continue,
         };
 
-        let ident = &arg.ident;
+        for filter in filters {
+            let ident = &arg.ident;
 
-        for Flag { flag: prefix, .. } in &flags.number_prefix {
-            number_args.push(quote!(
-                if let Some(v) = ::uutils_args::parse_prefix(parser, #prefix) {
-                    return Ok(Some(::uutils_args::Argument::Custom(Self::#ident(v))));
+            if_expressions.push(quote!(
+                if let Some(inner) = #filter(arg) {
+                    let value = ::uutils_args::parse_value_for_option("", ::std::ffi::OsStr::new(inner))?;
+                    let _ = raw.next();
+                    return Ok(Some(Argument::Custom(Self::#ident(value))));
                 }
             ));
         }
     }
 
-    quote!(#(#number_args)*)
+    // dd-style arguments
+    let mut dd_branches = Vec::new();
+    for arg @ Argument { arg_type, .. } in args {
+        let flags = match arg_type {
+            ArgType::Option { flags, .. } => flags,
+            ArgType::Free { .. } => continue,
+            ArgType::Positional { .. } => continue,
+        };
+
+        for (prefix, _) in &flags.dd_style {
+            let ident = &arg.ident;
+
+            dd_branches.push(quote!(
+                if prefix == #prefix {
+                    let value = ::uutils_args::parse_value_for_option("", ::std::ffi::OsStr::new(value))?;
+                    let _ = raw.next();
+                    return Ok(Some(Argument::Custom(Self::#ident(value))));
+                }
+            ));
+        }
+    }
+
+    if !dd_branches.is_empty() {
+        if_expressions.push(quote!(
+            if let Some((prefix, value)) = arg.split_once('=') {
+                #(#dd_branches)*
+            }
+        ));
+    }
+
+    quote!(if let Some(mut raw) = parser.try_raw_args() {
+        if let Some(arg) = raw.peek().and_then(|s| s.to_str()) {
+            #(#if_expressions)*
+        }
+    })
 }
 
 pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStream) {
@@ -306,6 +356,7 @@ pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStrea
         let (num_args, last) = match arg_type {
             ArgType::Positional { num_args, last } => (num_args, last),
             ArgType::Option { .. } => continue,
+            ArgType::Free { .. } => continue,
         };
 
         if *num_args.start() > 0 {

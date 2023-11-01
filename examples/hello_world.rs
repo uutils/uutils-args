@@ -8,7 +8,7 @@ enum Arg {
     /// Just to show off, I can do multiple paragraphs and wrap text!
     ///
     /// # Also headings!
-    #[option("-n NAME", "--name=NAME")]
+    #[option("-n NAME", "--name=NAME", "name=NAME")]
     Name(String),
 
     /// The **number of times** to `greet`
