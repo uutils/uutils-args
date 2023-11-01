@@ -63,7 +63,7 @@ impl InitialField {
 
     fn into_expr(self) -> proc_macro2::TokenStream {
         let mut default_value = match self.expr {
-            Some(val) => quote!(#val.into()),
+            Some(val) => quote!(#val),
             None => quote!(::core::default::Default::default()),
         };
 
