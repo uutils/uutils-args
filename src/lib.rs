@@ -295,7 +295,7 @@ impl<T: Arguments> ArgumentIter<T> {
     }
 }
 
-/// An alternative for the [`Default`](std::default::Default) trait, with a more feature
+/// An alternative for the [`Default`] trait, with a more feature
 /// packed derive macro.
 ///
 /// The `Initial` trait is used by `Options` to construct the initial
@@ -304,7 +304,7 @@ impl<T: Arguments> ArgumentIter<T> {
 /// The [derive macro](derive::Initial) supports setting the initial
 /// value per field and parsing the initial values from environment
 /// variables. Otherwise, it will be equivalent to the derive macro
-/// for the [`Default`](std::default::Default) trait.
+/// for the [`Default`] trait.
 pub trait Initial: Sized {
     /// Create the initial state of `Self`
     fn initial() -> Self;
