@@ -13,6 +13,9 @@ mod basename;
 #[path = "coreutils/cat.rs"]
 mod cat;
 
+#[path = "coreutils/dd.rs"]
+mod dd;
+
 #[path = "coreutils/echo.rs"]
 mod echo;
 

@@ -425,12 +425,30 @@ fn infer_value() {
 
 #[test]
 fn deprecated() {
+    fn parse_minus(s: &str) -> Option<&str> {
+        let num = s.strip_prefix('-')?;
+        if num.chars().all(|c| c.is_ascii_digit()) {
+            Some(num)
+        } else {
+            None
+        }
+    }
+    fn parse_plus(s: &str) -> Option<&str> {
+        let num = s.strip_prefix('+')?;
+        let num2 = num.strip_prefix('-').unwrap_or(num);
+        if num2.chars().all(|c| c.is_ascii_digit()) {
+            Some(num)
+        } else {
+            None
+        }
+    }
+
     #[derive(Arguments)]
     enum Arg {
-        #[option("-{N}")]
+        #[free(parse_minus)]
         Min(usize),
 
-        #[option("+{N}")]
+        #[free(parse_plus)]
         Plus(isize),
     }
 

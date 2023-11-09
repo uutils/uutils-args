@@ -10,6 +10,7 @@ use crate::flags::Flags;
 pub(crate) enum ArgAttr {
     Option(OptionAttr),
     Positional(PositionalAttr),
+    Free(FreeAttr),
 }
 
 pub(crate) fn parse_argument_attribute(attr: &Attribute) -> syn::Result<ArgAttr> {
@@ -17,6 +18,8 @@ pub(crate) fn parse_argument_attribute(attr: &Attribute) -> syn::Result<ArgAttr>
         Ok(ArgAttr::Option(OptionAttr::parse(attr)?))
     } else if attr.path().is_ident("positional") {
         Ok(ArgAttr::Positional(PositionalAttr::parse(attr)?))
+    } else if attr.path().is_ident("free") {
+        Ok(ArgAttr::Free(FreeAttr::parse(attr)?))
     } else {
         panic!("Internal error: invalid argument attribute");
     }
@@ -182,6 +185,25 @@ impl OptionAttr {
         })?;
 
         Ok(option_attr)
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct FreeAttr {
+    pub(crate) filters: Vec<syn::Ident>,
+}
+
+impl FreeAttr {
+    pub(crate) fn parse(attr: &Attribute) -> syn::Result<Self> {
+        let mut free_attr = FreeAttr::default();
+
+        parse_args(attr, |s: ParseStream| {
+            let ident = s.parse::<Ident>()?;
+            free_attr.filters.push(ident);
+            Ok(())
+        })?;
+
+        Ok(free_attr)
     }
 }
 
