@@ -185,7 +185,7 @@ pub(crate) fn short_handling(args: &[Argument]) -> (TokenStream, Vec<char>) {
         Ok(Some(Argument::Custom(
             match short {
                 #(#match_arms)*
-                _ => return Err(Error::UnexpectedOption(short.to_string())),
+                _ => return Err(::uutils_args::Error::UnexpectedOption(short.to_string(), Vec::new())),
             }
         )))
     );
@@ -231,14 +231,19 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
     }
 
     if options.is_empty() {
-        return quote!(return Err(Error::UnexpectedOption(long.to_string())));
+        return quote!(
+            return Err(::uutils_args::Error::UnexpectedOption(
+                long.to_string(),
+                Vec::new()
+            ))
+        );
     }
 
     // TODO: Add version check
     let help_check = if !help_flags.long.is_empty() {
         let long_help_flags = help_flags.long.iter().map(|f| &f.flag);
         quote!(if let #(#long_help_flags)|* = long {
-            return Ok(Some(Argument::Help));
+            return Ok(Some(::uutils_args::Argument::Help));
         })
     } else {
         quote!()
@@ -248,26 +253,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
 
     quote!(
         let long_options: [&str; #num_opts] = [#(#options),*];
-        let mut candidates = Vec::new();
-        let mut exact_match = None;
-        for opt in long_options {
-            if opt == long {
-                exact_match = Some(opt);
-                break;
-            } else if opt.starts_with(long) {
-                candidates.push(opt);
-            }
-        }
-
-        let long = match (exact_match, &candidates[..]) {
-            (Some(opt), _) => opt,
-            (None, [opt]) => opt,
-            (None, []) => return Err(Error::UnexpectedOption(long.to_string())),
-            (None, opts) => return Err(Error::AmbiguousOption {
-                option: long.to_string(),
-                candidates: candidates.iter().map(|s| s.to_string()).collect(),
-            })
-        };
+        let long = ::uutils_args::infer_long_option(long, &long_options)?;
 
         #help_check
 
@@ -307,6 +293,7 @@ pub(crate) fn free_handling(args: &[Argument]) -> TokenStream {
 
     // dd-style arguments
     let mut dd_branches = Vec::new();
+    let mut dd_args = Vec::new();
     for arg @ Argument { arg_type, .. } in args {
         let flags = match arg_type {
             ArgType::Option { flags, .. } => flags,
@@ -317,6 +304,7 @@ pub(crate) fn free_handling(args: &[Argument]) -> TokenStream {
         for (prefix, _) in &flags.dd_style {
             let ident = &arg.ident;
 
+            dd_args.push(prefix);
             dd_branches.push(quote!(
                 if prefix == #prefix {
                     let value = ::uutils_args::parse_value_for_option("", ::std::ffi::OsStr::new(value))?;
@@ -331,15 +319,19 @@ pub(crate) fn free_handling(args: &[Argument]) -> TokenStream {
         if_expressions.push(quote!(
             if let Some((prefix, value)) = arg.split_once('=') {
                 #(#dd_branches)*
+
+                return Err(::uutils_args::Error::UnexpectedOption(prefix.to_string(), ::uutils_args::filter_suggestions(prefix, &[#(#dd_args),*], "")));
             }
         ));
     }
 
-    quote!(if let Some(mut raw) = parser.try_raw_args() {
-        if let Some(arg) = raw.peek().and_then(|s| s.to_str()) {
-            #(#if_expressions)*
+    quote!(
+        if let Some(mut raw) = parser.try_raw_args() {
+            if let Some(arg) = raw.peek().and_then(|s| s.to_str()) {
+                #(#if_expressions)*
+            }
         }
-    })
+    )
 }
 
 pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStream) {
