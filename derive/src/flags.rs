@@ -5,27 +5,27 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 #[derive(Default)]
-pub(crate) struct Flags {
+pub struct Flags {
     pub short: Vec<Flag<char>>,
     pub long: Vec<Flag<String>>,
     pub dd_style: Vec<(String, String)>,
 }
 
 #[derive(Clone)]
-pub(crate) enum Value {
+pub enum Value {
     No,
     Optional(String),
     Required(String),
 }
 
 #[derive(Clone)]
-pub(crate) struct Flag<T> {
-    pub(crate) flag: T,
-    pub(crate) value: Value,
+pub struct Flag<T> {
+    pub flag: T,
+    pub value: Value,
 }
 
 impl Flags {
-    pub(crate) fn new<T: AsRef<str>>(flags: impl IntoIterator<Item = T>) -> Self {
+    pub fn new<T: AsRef<str>>(flags: impl IntoIterator<Item = T>) -> Self {
         let mut self_ = Self::default();
         for flag in flags {
             self_.add(flag.as_ref());
@@ -33,7 +33,7 @@ impl Flags {
         self_
     }
 
-    pub(crate) fn add(&mut self, flag: &str) {
+    pub fn add(&mut self, flag: &str) {
         if let Some(s) = flag.strip_prefix("--") {
             // There are three possible patterns:
             //   --flag
@@ -110,11 +110,11 @@ impl Flags {
         }
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.short.is_empty() && self.long.is_empty() && self.dd_style.is_empty()
     }
 
-    pub(crate) fn pat(&self) -> TokenStream {
+    pub fn pat(&self) -> TokenStream {
         let short: Vec<_> = self.short.iter().map(|f| f.flag).collect();
         let long: Vec<_> = self.long.iter().map(|f| &f.flag).collect();
         match (&short[..], &long[..]) {
@@ -127,7 +127,7 @@ impl Flags {
         }
     }
 
-    pub(crate) fn format(&self) -> String {
+    pub fn format(&self) -> String {
         let short = self
             .short
             .iter()

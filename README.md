@@ -48,17 +48,17 @@ enum Arg {
     // The doc strings below will be part of the `--help` text
     // First we define a simple flag:
     /// Do not transform input text to uppercase
-    #[option("-n", "--no-caps")]
+    #[arg("-n", "--no-caps")]
     NoCaps,
-    
+     
     // This option takes a value:    
     /// Add exclamation marks to output
-    #[option("-e N", "--exclaim=N")]
+    #[arg("-e N", "--exclaim=N")]
     ExclamationMarks(u8),
 
     // This is a positional argument, the range specifies that
     // at least one positional argument must be passed.
-    #[positional(1..)]
+    #[arg("TEXT", 1..)]
     Text(String),
 }
 

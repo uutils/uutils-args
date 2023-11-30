@@ -4,25 +4,25 @@ use uutils_args::{Arguments, Initial, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
-    #[option("-d", "--directory")]
+    #[arg("-d", "--directory")]
     Directory,
 
-    #[option("-u", "--dry-run")]
+    #[arg("-u", "--dry-run")]
     DryRun,
 
-    #[option("-q", "--quiet")]
+    #[arg("-q", "--quiet")]
     Quiet,
 
-    #[option("--suffix=SUFFIX")]
+    #[arg("--suffix=SUFFIX")]
     Suffix(String),
 
-    #[option("-t")]
+    #[arg("-t")]
     TreatAsTemplate,
 
-    #[option("-p DIR", "--tmpdir[=DIR]", default = ".".into())]
+    #[arg("-p DIR", "--tmpdir[=DIR]", default = ".".into())]
     TmpDir(PathBuf),
 
-    #[positional(0..=1)]
+    #[arg("TEMPLATE", 0..=1)]
     Template(String),
 }
 

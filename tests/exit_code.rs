@@ -5,7 +5,7 @@ fn one_flag() {
     #[derive(Arguments, Clone, Debug, PartialEq, Eq)]
     #[arguments(exit_code = 4)]
     enum Arg {
-        #[option("-f", "--foo")]
+        #[arg("-f", "--foo")]
         Foo,
     }
 

@@ -20,10 +20,10 @@ fn parse_plus(s: &str) -> Option<&str> {
 
 #[derive(Arguments)]
 enum Arg {
-    #[free(parse_minus)]
+    #[arg(parse_minus)]
     Min(usize),
 
-    #[free(parse_plus)]
+    #[arg(parse_plus)]
     Plus(isize),
 }
 

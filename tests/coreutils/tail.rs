@@ -106,44 +106,44 @@ where
 
 #[derive(Arguments)]
 enum Arg {
-    #[option("-c NUM", "--bytes=NUM")]
+    #[arg("-c NUM", "--bytes=NUM")]
     Bytes(SigNum),
 
-    #[option("-f", "--follow[=HOW]", default=FollowMode::Descriptor)]
+    #[arg("-f", "--follow[=HOW]", default=FollowMode::Descriptor)]
     Follow(FollowMode),
 
-    #[option("-F")]
+    #[arg("-F")]
     FollowRetry,
 
-    #[option("--max-unchanged-stats=N")]
+    #[arg("--max-unchanged-stats=N")]
     MaxUnchangedStats(u32),
 
-    #[option("-n NUM", "--lines=NUM")]
+    #[arg("-n NUM", "--lines=NUM")]
     Lines(SigNum),
 
-    #[option("--pid=PID")]
+    #[arg("--pid=PID")]
     Pid(u64),
 
-    #[option("-q", "--quiet", "--silent")]
+    #[arg("-q", "--quiet", "--silent")]
     Quiet,
 
-    #[option("--retry")]
+    #[arg("--retry")]
     Retry,
 
-    #[option("-s NUMBER", "--sleep-interval=NUMBER")]
+    #[arg("-s NUMBER", "--sleep-interval=NUMBER")]
     SleepInterval(u64),
 
-    #[option("-v", "--verbose")]
+    #[arg("-v", "--verbose")]
     Verbose,
 
-    #[option("-z", "--zero-terminated")]
+    #[arg("-z", "--zero-terminated")]
     Zero,
 
-    #[positional(..)]
-    File(PathBuf),
-
-    #[option("---presume-input-pipe", hidden)]
+    #[arg("---presume-input-pipe", hidden)]
     PresumeInputPipe,
+
+    #[arg("FILES", ..)]
+    File(PathBuf),
 }
 
 // We need both negative and positive 0

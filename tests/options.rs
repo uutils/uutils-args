@@ -6,7 +6,7 @@ use uutils_args::{Arguments, Initial, Options, Value, ValueResult};
 fn string_option() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("--message=MSG")]
+        #[arg("--message=MSG")]
         Message(String),
     }
 
@@ -42,7 +42,7 @@ fn enum_option() {
 
     #[derive(Arguments)]
     enum Arg {
-        #[option("--format=FORMAT")]
+        #[arg("--format=FORMAT")]
         Format(Format),
     }
 
@@ -81,7 +81,7 @@ fn enum_option_with_fields() {
 
     #[derive(Arguments)]
     enum Arg {
-        #[option("-i INDENT")]
+        #[arg("-i INDENT")]
         Indent(Indent),
     }
 
@@ -130,7 +130,7 @@ fn enum_with_complex_from_value() {
 
     #[derive(Arguments)]
     enum Arg {
-        #[option("-i INDENT")]
+        #[arg("-i INDENT")]
         Indent(Indent),
     }
 
@@ -164,7 +164,7 @@ fn color() {
 
     #[derive(Arguments)]
     enum Arg {
-        #[option("--color[=WHEN]")]
+        #[arg("--color[=WHEN]")]
         Color(Option<Color>),
     }
 
@@ -201,11 +201,11 @@ fn color() {
 fn actions() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("-m MESSAGE")]
+        #[arg("-m MESSAGE")]
         Message(String),
-        #[option("--send")]
+        #[arg("--send")]
         Send,
-        #[option("--receive")]
+        #[arg("--receive")]
         Receive,
     }
 
@@ -239,7 +239,7 @@ fn actions() {
 fn width() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("-w WIDTH")]
+        #[arg("-w WIDTH")]
         Width(u64),
     }
 
@@ -265,25 +265,25 @@ fn width() {
 fn integers() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("--u8=N")]
+        #[arg("--u8=N")]
         U8(u8),
-        #[option("--u16=N")]
+        #[arg("--u16=N")]
         U16(u16),
-        #[option("--u32=N")]
+        #[arg("--u32=N")]
         U32(u32),
-        #[option("--u64=N")]
+        #[arg("--u64=N")]
         U64(u64),
-        #[option("--u128=N")]
+        #[arg("--u128=N")]
         U128(u128),
-        #[option("--i8=N")]
+        #[arg("--i8=N")]
         I8(i8),
-        #[option("--i16=N")]
+        #[arg("--i16=N")]
         I16(i16),
-        #[option("--i32=N")]
+        #[arg("--i32=N")]
         I32(i32),
-        #[option("--i64=N")]
+        #[arg("--i64=N")]
         I64(i64),
-        #[option("--i128=N")]
+        #[arg("--i128=N")]
         I128(i128),
     }
 
@@ -337,7 +337,7 @@ fn ls_classify() {
 
     #[derive(Arguments)]
     enum Arg {
-        #[option(
+        #[arg(
             "-F", "--classify[=WHEN]",
             default = When::Always,
         )]
@@ -372,7 +372,7 @@ fn ls_classify() {
 fn mktemp_tmpdir() {
     #[derive(Clone, Arguments)]
     enum Arg {
-        #[option(
+        #[arg(
             "-p DIR", "--tmpdir[=DIR]",
             default = String::from("/tmp"),
         )]
@@ -445,10 +445,10 @@ fn deprecated() {
 
     #[derive(Arguments)]
     enum Arg {
-        #[free(parse_minus)]
+        #[arg(parse_minus)]
         Min(usize),
 
-        #[free(parse_plus)]
+        #[arg(parse_plus)]
         Plus(isize),
     }
 

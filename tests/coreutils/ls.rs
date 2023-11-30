@@ -134,150 +134,150 @@ enum IndicatorStyle {
 enum Arg {
     // === Files ===
     /// Do not ignore entries starting with .
-    #[option("-a")]
+    #[arg("-a")]
     All,
 
     /// Do not list implied . and ..
-    #[option("-A")]
+    #[arg("-A")]
     AlmostAll,
 
     /// Show file author (ignored)
-    #[option("--author")]
+    #[arg("--author")]
     Author,
 
-    #[option("--time=WORD")]
-    #[option("-c", default = Time::Change)]
-    #[option("-u", default = Time::Access)]
+    #[arg("--time=WORD")]
+    #[arg("-c", default = Time::Change)]
+    #[arg("-u", default = Time::Access)]
     Time(Time),
 
     // === Sorting ==
     /// Sort by WORD
-    #[option("--sort=WORD")]
-    #[option("-t", default = Sort::Time, help = "Sort by time")]
-    #[option("-U", default = Sort::None, help = "Do not sort")]
-    #[option("-v", default = Sort::Version, help = "Sort by version")]
-    #[option("-X", default = Sort::Extension, help = "Sort by extension")]
+    #[arg("--sort=WORD")]
+    #[arg("-t", default = Sort::Time, help = "Sort by time")]
+    #[arg("-U", default = Sort::None, help = "Do not sort")]
+    #[arg("-v", default = Sort::Version, help = "Sort by version")]
+    #[arg("-X", default = Sort::Extension, help = "Sort by extension")]
     Sort(Sort),
 
     // === Miscellaneous ===
-    #[option("-Z", "--context")]
+    #[arg("-Z", "--context")]
     SecurityContext,
 
     /// Do not list files starting with ~
-    #[option("-B", "--ignore-backups")]
+    #[arg("-B", "--ignore-backups")]
     IgnoreBackups,
 
-    #[option("-d", "--directory")]
+    #[arg("-d", "--directory")]
     Directory,
 
-    #[option("-D", "--dired")]
+    #[arg("-D", "--dired")]
     Dired,
 
-    #[option("--hyperlink")]
+    #[arg("--hyperlink")]
     Hyperlink(When),
 
-    #[option("-i", "--inode")]
+    #[arg("-i", "--inode")]
     Inode,
 
-    #[option("-I PATTERN", "--ignore=PATTERN")]
+    #[arg("-I PATTERN", "--ignore=PATTERN")]
     Ignore(String),
 
-    #[option("-r", "--reverse")]
+    #[arg("-r", "--reverse")]
     Reverse,
 
-    #[option("-R", "--recursive")]
+    #[arg("-R", "--recursive")]
     Recursive,
 
-    #[option("-w COLS", "--width=COLS")]
+    #[arg("-w COLS", "--width=COLS")]
     Width(u16),
 
-    #[option("-s", "--size")]
+    #[arg("-s", "--size")]
     AllocationSize,
 
-    #[option("-G", "--no-group")]
+    #[arg("-G", "--no-group")]
     NoGroup,
 
     // === Format ===
     /// Set format
-    #[option("--format=FORMAT")]
-    #[option("-l", "--long", default = Format::Long, help = "Use long format")]
-    #[option("-C", default = Format::Columns, help = "Use columns format")]
-    #[option("-x", default = Format::Across, help = "Use across format")]
-    #[option("-m", default = Format::Commas, help = "Use comma format")]
+    #[arg("--format=FORMAT")]
+    #[arg("-l", "--long", default = Format::Long, help = "Use long format")]
+    #[arg("-C", default = Format::Columns, help = "Use columns format")]
+    #[arg("-x", default = Format::Across, help = "Use across format")]
+    #[arg("-m", default = Format::Commas, help = "Use comma format")]
     Format(Format),
 
     /// Show single column
-    #[option("-1")]
+    #[arg("-1")]
     SingleColumn,
 
-    #[option("-o")]
+    #[arg("-o")]
     LongNoGroup,
 
-    #[option("-g")]
+    #[arg("-g")]
     LongNoOwner,
 
-    #[option("-n", "--numeric-uid-gid")]
+    #[arg("-n", "--numeric-uid-gid")]
     LongNumericUidGid,
 
     // === Indicator style ===
-    #[option("--indicator-style=STYLE")]
-    #[option("-p", default = IndicatorStyle::Slash, help = "Append slash to directories")]
-    #[option("--file-type", default = IndicatorStyle::FileType, help = "Add indicators for file types")]
+    #[arg("--indicator-style=STYLE")]
+    #[arg("-p", default = IndicatorStyle::Slash, help = "Append slash to directories")]
+    #[arg("--file-type", default = IndicatorStyle::FileType, help = "Add indicators for file types")]
     IndicatorStyle(IndicatorStyle),
 
     /// Classify items
-    #[option("-F", "--classify[=WHEN]", default = When::Always)]
+    #[arg("-F", "--classify[=WHEN]", default = When::Always)]
     IndicatorStyleClassify(When),
 
     // === Dereference ===
-    #[option("-L", "--dereference")]
+    #[arg("-L", "--dereference")]
     DerefAll,
 
-    #[option("--dereference-command-line-symlink-to-dir")]
+    #[arg("--dereference-command-line-symlink-to-dir")]
     DerefDirArgs,
 
-    #[option("--dereference-command-line")]
+    #[arg("--dereference-command-line")]
     DerefArgs,
 
     // === Size ===
-    #[option("-h", "--human-readable")]
+    #[arg("-h", "--human-readable")]
     HumanReadable,
 
-    #[option("-k", "--kibibytes")]
+    #[arg("-k", "--kibibytes")]
     Kibibytes,
 
-    #[option("--si")]
+    #[arg("--si")]
     Si,
 
-    // #[option("--block-size=BLOCKSIZE")]
+    // #[arg("--block-size=BLOCKSIZE")]
     // BlockSize(Size),
 
     // === Quoting style ===
-    #[option("--quoting-style=STYLE")]
-    #[option("-N", "--literal", default = QuotingStyle::Literal)]
-    #[option("-h", "--escape", default = QuotingStyle::Escape)]
-    #[option("-Q", "--quote-name", default = todo!())]
+    #[arg("--quoting-style=STYLE")]
+    #[arg("-N", "--literal", default = QuotingStyle::Literal)]
+    #[arg("-h", "--escape", default = QuotingStyle::Escape)]
+    #[arg("-Q", "--quote-name", default = todo!())]
     QuotingStyle(QuotingStyle),
 
     /// Set the color
-    #[option("--color[=WHEN]", default = When::Always)]
+    #[arg("--color[=WHEN]", default = When::Always)]
     Color(When),
 
     /// Print control characters as ?
-    #[option("-q", "--hide-control-chars")]
+    #[arg("-q", "--hide-control-chars")]
     HideControlChars,
 
     /// Show control characters as is
-    #[option("--show-control-chars")]
+    #[arg("--show-control-chars")]
     ShowControlChars,
 
-    #[option("--zero")]
+    #[arg("--zero")]
     Zero,
 
-    #[option("--group-directories-first")]
+    #[arg("--group-directories-first")]
     GroupDirectoriesFirst,
 
-    #[positional(..)]
+    #[arg("FILES", ..)]
     File(PathBuf),
 }
 

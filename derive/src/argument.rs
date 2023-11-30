@@ -8,18 +8,18 @@ use quote::quote;
 use syn::{Attribute, Fields, FieldsUnnamed, Ident, Meta, Variant};
 
 use crate::{
-    attributes::{parse_argument_attribute, ArgAttr, ArgumentsAttr},
+    attributes::{ArgAttr, ArgumentsAttr},
     flags::{Flags, Value},
 };
 
-pub(crate) struct Argument {
-    pub(crate) ident: Ident,
-    pub(crate) name: String,
-    pub(crate) arg_type: ArgType,
-    pub(crate) help: String,
+pub struct Argument {
+    pub ident: Ident,
+    pub name: String,
+    pub arg_type: ArgType,
+    pub help: String,
 }
 
-pub(crate) enum ArgType {
+pub enum ArgType {
     Option {
         flags: Flags,
         hidden: bool,
@@ -35,7 +35,7 @@ pub(crate) enum ArgType {
     },
 }
 
-pub(crate) fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
+pub fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
     for attr in attrs {
         if attr.path().is_ident("arguments") {
             return ArgumentsAttr::parse(attr).unwrap();
@@ -44,7 +44,7 @@ pub(crate) fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
     ArgumentsAttr::default()
 }
 
-pub(crate) fn parse_argument(v: Variant) -> Vec<Argument> {
+pub fn parse_argument(v: Variant) -> Vec<Argument> {
     let ident = v.ident;
     let name = ident.to_string();
     let attributes = get_arg_attributes(&v.attrs).unwrap();
@@ -138,16 +138,12 @@ fn collect_help(attrs: &[Attribute]) -> String {
 fn get_arg_attributes(attrs: &[Attribute]) -> syn::Result<Vec<ArgAttr>> {
     attrs
         .iter()
-        .filter(|a| {
-            a.path().is_ident("option")
-                || a.path().is_ident("positional")
-                || a.path().is_ident("free")
-        })
-        .map(parse_argument_attribute)
+        .filter(|a| a.path().is_ident("arg"))
+        .map(ArgAttr::parse)
         .collect()
 }
 
-pub(crate) fn short_handling(args: &[Argument]) -> (TokenStream, Vec<char>) {
+pub fn short_handling(args: &[Argument]) -> (TokenStream, Vec<char>) {
     let mut match_arms = Vec::new();
     let mut short_flags = Vec::new();
 
@@ -195,7 +191,7 @@ pub(crate) fn short_handling(args: &[Argument]) -> (TokenStream, Vec<char>) {
     (token_stream, short_flags)
 }
 
-pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStream {
+pub fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStream {
     let mut match_arms = Vec::new();
     let mut options = Vec::new();
 
@@ -270,7 +266,7 @@ pub(crate) fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStrea
     )
 }
 
-pub(crate) fn free_handling(args: &[Argument]) -> TokenStream {
+pub fn free_handling(args: &[Argument]) -> TokenStream {
     let mut if_expressions = Vec::new();
 
     // Free arguments
@@ -337,7 +333,7 @@ pub(crate) fn free_handling(args: &[Argument]) -> TokenStream {
     )
 }
 
-pub(crate) fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStream) {
+pub fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStream) {
     let mut match_arms = Vec::new();
     // The largest index of the previous argument, so the the argument after this should
     // belong to the next argument.

@@ -10,83 +10,12 @@ use syn::{
 
 use crate::flags::Flags;
 
-pub(crate) enum ArgAttr {
-    Option(OptionAttr),
-    Positional(PositionalAttr),
-    Free(FreeAttr),
-}
-
-pub(crate) fn parse_argument_attribute(attr: &Attribute) -> syn::Result<ArgAttr> {
-    if attr.path().is_ident("option") {
-        Ok(ArgAttr::Option(OptionAttr::parse(attr)?))
-    } else if attr.path().is_ident("positional") {
-        Ok(ArgAttr::Positional(PositionalAttr::parse(attr)?))
-    } else if attr.path().is_ident("free") {
-        Ok(ArgAttr::Free(FreeAttr::parse(attr)?))
-    } else {
-        panic!("Internal error: invalid argument attribute");
-    }
-}
-
-pub(crate) struct ArgumentsAttr {
-    pub(crate) help_flags: Flags,
-    pub(crate) version_flags: Flags,
-    pub(crate) file: Option<String>,
-    pub(crate) exit_code: i32,
-    pub(crate) parse_echo_style: bool,
-}
-
-fn get_ident(meta: &ParseNestedMeta) -> syn::Result<String> {
-    match meta.path.get_ident() {
-        Some(ident) => Ok(ident.to_string()),
-        None => Err(meta.error("expected an identifier")),
-    }
-}
-
-fn assert_expr_is_array_of_litstr(expr: Expr, flag: &str) -> syn::Result<Vec<String>> {
-    let arr = match expr {
-        syn::Expr::Array(arr) => arr,
-        _ => {
-            return Err(syn::Error::new_spanned(
-                expr,
-                format!("Argument to `{flag}` must be an array"),
-            ))
-        }
-    };
-
-    let mut strings = Vec::new();
-    for elem in arr.elems {
-        let val = match elem {
-            syn::Expr::Lit(syn::ExprLit {
-                attrs: _,
-                lit: syn::Lit::Str(litstr),
-            }) => litstr.value(),
-            _ => {
-                return Err(syn::Error::new_spanned(
-                    elem,
-                    format!("Argument to `{flag}` must be an array of string literals"),
-                ))
-            }
-        };
-        strings.push(val);
-    }
-    Ok(strings)
-}
-
-fn parse_args(
-    attr: &Attribute,
-    mut logic: impl FnMut(ParseStream) -> syn::Result<()>,
-) -> syn::Result<()> {
-    attr.parse_args_with(|s: ParseStream| loop {
-        logic(s)?;
-        if s.is_empty() {
-            return Ok(());
-        }
-        s.parse::<Token![,]>()?;
-        if s.is_empty() {
-            return Ok(());
-        }
-    })
+pub struct ArgumentsAttr {
+    pub help_flags: Flags,
+    pub version_flags: Flags,
+    pub file: Option<String>,
+    pub exit_code: i32,
+    pub parse_echo_style: bool,
 }
 
 impl Default for ArgumentsAttr {
@@ -102,7 +31,7 @@ impl Default for ArgumentsAttr {
 }
 
 impl ArgumentsAttr {
-    pub(crate) fn parse(attr: &Attribute) -> syn::Result<Self> {
+    pub fn parse(attr: &Attribute) -> syn::Result<Self> {
         let mut args = ArgumentsAttr::default();
 
         attr.parse_nested_meta(|meta| {
@@ -138,27 +67,57 @@ impl ArgumentsAttr {
     }
 }
 
+pub enum ArgAttr {
+    Option(OptionAttr),
+    Positional(PositionalAttr),
+    Free(FreeAttr),
+}
+
+impl ArgAttr {
+    pub fn parse(attr: &Attribute) -> syn::Result<Self> {
+        assert!(attr.path().is_ident("arg"));
+
+        attr.parse_args_with(|s: ParseStream| {
+            // Based on the first value, we determine the type of argument.
+            if let Ok(litstr) = s.parse::<LitStr>() {
+                let v = litstr.value();
+                if v.starts_with('-') || v.contains('=') {
+                    OptionAttr::from_args(v, s).map(Self::Option)
+                } else {
+                    PositionalAttr::from_args(v, s).map(Self::Positional)
+                }
+            } else if let Ok(v) = s.parse::<syn::Ident>() {
+                FreeAttr::from_args(v, s).map(Self::Free)
+            } else {
+                // TODO: Improve error message
+                panic!("Could not determine type of argument");
+            }
+        })
+    }
+}
+
 #[derive(Default)]
-pub(crate) struct OptionAttr {
-    pub(crate) flags: Flags,
-    pub(crate) parser: Option<Expr>,
-    pub(crate) default: Option<Expr>,
-    pub(crate) hidden: bool,
-    pub(crate) help: Option<String>,
+pub struct OptionAttr {
+    pub flags: Flags,
+    pub parser: Option<Expr>,
+    pub default: Option<Expr>,
+    pub hidden: bool,
+    pub help: Option<String>,
 }
 
 impl OptionAttr {
-    pub(crate) fn parse(attr: &Attribute) -> syn::Result<Self> {
+    fn from_args(first_flag: String, s: ParseStream) -> syn::Result<OptionAttr> {
         let mut option_attr = OptionAttr::default();
+        option_attr.flags.add(&first_flag);
 
-        parse_args(attr, |s: ParseStream| {
+        parse_args(s, |s: ParseStream| {
             if let Ok(litstr) = s.parse::<LitStr>() {
                 option_attr.flags.add(&litstr.value());
                 return Ok(());
             }
 
             let ident = s.parse::<Ident>()?;
-            match ident.to_string().as_str() {
+            match ident.to_string().as_ref() {
                 "parser" => {
                     s.parse::<Token![=]>()?;
                     let p = s.parse::<Expr>()?;
@@ -192,15 +151,16 @@ impl OptionAttr {
 }
 
 #[derive(Default)]
-pub(crate) struct FreeAttr {
-    pub(crate) filters: Vec<syn::Ident>,
+pub struct FreeAttr {
+    pub filters: Vec<syn::Ident>,
 }
 
 impl FreeAttr {
-    pub(crate) fn parse(attr: &Attribute) -> syn::Result<Self> {
+    pub fn from_args(first_value: syn::Ident, s: ParseStream) -> syn::Result<Self> {
         let mut free_attr = FreeAttr::default();
+        free_attr.filters.push(first_value);
 
-        parse_args(attr, |s: ParseStream| {
+        parse_args(s, |s: ParseStream| {
             let ident = s.parse::<Ident>()?;
             free_attr.filters.push(ident);
             Ok(())
@@ -210,46 +170,9 @@ impl FreeAttr {
     }
 }
 
-#[derive(Default)]
-pub(crate) struct ValueAttr {
-    pub(crate) keys: Vec<String>,
-    pub(crate) value: Option<Expr>,
-}
-
-impl ValueAttr {
-    pub(crate) fn parse(attr: &Attribute) -> syn::Result<Self> {
-        let mut value_attr = Self::default();
-
-        // value does not need to take arguments, so short circuit if it does not have one
-        if let syn::Meta::Path(_) = &attr.meta {
-            return Ok(value_attr);
-        }
-
-        parse_args(attr, |s: ParseStream| {
-            if let Ok(litstr) = s.parse::<LitStr>() {
-                value_attr.keys.push(litstr.value());
-                return Ok(());
-            }
-
-            let ident = s.parse::<Ident>()?;
-            match ident.to_string().as_str() {
-                "value" => {
-                    s.parse::<Token![=]>()?;
-                    let p = s.parse::<Expr>()?;
-                    value_attr.value = Some(p);
-                }
-                _ => return Err(s.error("unrecognized keyword in value attribute")),
-            }
-            Ok(())
-        })?;
-
-        Ok(value_attr)
-    }
-}
-
-pub(crate) struct PositionalAttr {
-    pub(crate) num_args: RangeInclusive<usize>,
-    pub(crate) last: bool,
+pub struct PositionalAttr {
+    pub num_args: RangeInclusive<usize>,
+    pub last: bool,
 }
 
 impl Default for PositionalAttr {
@@ -262,9 +185,9 @@ impl Default for PositionalAttr {
 }
 
 impl PositionalAttr {
-    pub(crate) fn parse(attr: &Attribute) -> syn::Result<Self> {
+    pub fn from_args(_first_value: String, s: ParseStream) -> syn::Result<Self> {
         let mut positional_attr = Self::default();
-        parse_args(attr, |s| {
+        parse_args(s, |s| {
             if (s.peek(LitInt) && s.peek2(Token![..])) || s.peek(Token![..]) {
                 let range = s.parse::<ExprRange>()?;
                 // We're dealing with a range
@@ -321,4 +244,100 @@ impl PositionalAttr {
 
         Ok(positional_attr)
     }
+}
+
+#[derive(Default)]
+pub struct ValueAttr {
+    pub keys: Vec<String>,
+    pub value: Option<Expr>,
+}
+
+impl ValueAttr {
+    pub fn parse(attr: &Attribute) -> syn::Result<Self> {
+        let mut value_attr = Self::default();
+
+        // value does not need to take arguments, so short circuit if it does not have one
+        if let syn::Meta::Path(_) = &attr.meta {
+            return Ok(value_attr);
+        }
+
+        attr.parse_args_with(|s: ParseStream| loop {
+            if let Ok(litstr) = s.parse::<LitStr>() {
+                value_attr.keys.push(litstr.value());
+            } else {
+                let ident = s.parse::<Ident>()?;
+                match ident.to_string().as_str() {
+                    "value" => {
+                        s.parse::<Token![=]>()?;
+                        let p = s.parse::<Expr>()?;
+                        value_attr.value = Some(p);
+                    }
+                    _ => return Err(s.error("unrecognized keyword in value attribute")),
+                }
+            }
+
+            if s.is_empty() {
+                return Ok(());
+            }
+            s.parse::<Token![,]>()?;
+            if s.is_empty() {
+                return Ok(());
+            }
+        })?;
+
+        Ok(value_attr)
+    }
+}
+
+fn parse_args(
+    s: ParseStream,
+    mut logic: impl FnMut(ParseStream) -> syn::Result<()>,
+) -> syn::Result<()> {
+    loop {
+        if s.is_empty() {
+            return Ok(());
+        }
+        s.parse::<Token![,]>()?;
+        if s.is_empty() {
+            return Ok(());
+        }
+        logic(s)?;
+    }
+}
+
+fn get_ident(meta: &ParseNestedMeta) -> syn::Result<String> {
+    match meta.path.get_ident() {
+        Some(ident) => Ok(ident.to_string()),
+        None => Err(meta.error("expected an identifier")),
+    }
+}
+
+fn assert_expr_is_array_of_litstr(expr: Expr, flag: &str) -> syn::Result<Vec<String>> {
+    let arr = match expr {
+        syn::Expr::Array(arr) => arr,
+        _ => {
+            return Err(syn::Error::new_spanned(
+                expr,
+                format!("Argument to `{flag}` must be an array"),
+            ))
+        }
+    };
+
+    let mut strings = Vec::new();
+    for elem in arr.elems {
+        let val = match elem {
+            syn::Expr::Lit(syn::ExprLit {
+                attrs: _,
+                lit: syn::Lit::Str(litstr),
+            }) => litstr.value(),
+            _ => {
+                return Err(syn::Error::new_spanned(
+                    elem,
+                    format!("Argument to `{flag}` must be an array of string literals"),
+                ))
+            }
+        };
+        strings.push(val);
+    }
+    Ok(strings)
 }

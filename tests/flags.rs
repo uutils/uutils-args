@@ -4,7 +4,7 @@ use uutils_args::{Arguments, Initial, Options};
 fn one_flag() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("-f", "--foo")]
+        #[arg("-f", "--foo")]
         Foo,
     }
 
@@ -29,9 +29,9 @@ fn one_flag() {
 fn two_flags() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option("-a")]
+        #[arg("-a")]
         A,
-        #[option("-b")]
+        #[arg("-b")]
         B,
     }
 
@@ -69,7 +69,7 @@ fn two_flags() {
 fn long_and_short_flag() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("-f", "--foo")]
+        #[arg("-f", "--foo")]
         Foo,
     }
 
@@ -93,7 +93,7 @@ fn long_and_short_flag() {
 fn short_alias() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("-b")]
+        #[arg("-b")]
         Foo,
     }
 
@@ -115,7 +115,7 @@ fn short_alias() {
 fn long_alias() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("--bar")]
+        #[arg("--bar")]
         Foo,
     }
 
@@ -137,9 +137,9 @@ fn long_alias() {
 fn short_and_long_alias() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("-b", "--bar")]
+        #[arg("-b", "--bar")]
         Foo,
-        #[option("-f", "--foo")]
+        #[arg("-f", "--foo")]
         Bar,
     }
 
@@ -178,11 +178,11 @@ fn short_and_long_alias() {
 fn xyz_map_to_abc() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("-x")]
+        #[arg("-x")]
         X,
-        #[option("-y")]
+        #[arg("-y")]
         Y,
-        #[option("-z")]
+        #[arg("-z")]
         Z,
     }
 
@@ -254,9 +254,9 @@ fn xyz_map_to_abc() {
 fn non_rust_ident() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("--foo-bar")]
+        #[arg("--foo-bar")]
         FooBar,
-        #[option("--super")]
+        #[arg("--super")]
         Super,
     }
 
@@ -285,7 +285,7 @@ fn non_rust_ident() {
 fn number_flag() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option("-1")]
+        #[arg("-1")]
         One,
     }
     #[derive(Initial, PartialEq, Eq, Debug)]
@@ -306,9 +306,9 @@ fn number_flag() {
 fn false_bool() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("-a")]
+        #[arg("-a")]
         A,
-        #[option("-b")]
+        #[arg("-b")]
         B,
     }
 
@@ -338,7 +338,7 @@ fn false_bool() {
 fn verbosity() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("-v")]
+        #[arg("-v")]
         Verbosity,
     }
 
@@ -362,11 +362,11 @@ fn verbosity() {
 fn infer_long_args() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("--all")]
+        #[arg("--all")]
         All,
-        #[option("--almost-all")]
+        #[arg("--almost-all")]
         AlmostAll,
-        #[option("--author")]
+        #[arg("--author")]
         Author,
     }
 
@@ -405,11 +405,11 @@ fn enum_flag() {
 
     #[derive(Arguments)]
     enum Arg {
-        #[option("--foo")]
+        #[arg("--foo")]
         Foo,
-        #[option("--bar")]
+        #[arg("--bar")]
         Bar,
-        #[option("--baz")]
+        #[arg("--baz")]
         Baz,
     }
 

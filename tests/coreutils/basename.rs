@@ -2,16 +2,16 @@ use uutils_args::{Arguments, Initial, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
-    #[option("-a", "--multiple")]
+    #[arg("-a", "--multiple")]
     Multiple,
 
-    #[option("-s SUFFIX", "--suffix=SUFFIX")]
+    #[arg("-s SUFFIX", "--suffix=SUFFIX")]
     Suffix(String),
 
-    #[option("-z", "--zero")]
+    #[arg("-z", "--zero")]
     Zero,
 
-    #[positional(last, ..)]
+    #[arg("NAMES", last, ..)]
     Names(Vec<String>),
 }
 
