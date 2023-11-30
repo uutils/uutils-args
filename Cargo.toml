@@ -10,7 +10,7 @@ repository = "https://github.com/tertsdiepraam/uutils-args"
 readme = "README.md"
 
 [dependencies]
-derive = { version = "0.1.0", path = "derive" }
+uutils-args-derive = { version = "0.1.0", path = "derive" }
 strsim = "0.10.0"
 lexopt = "0.3.0"
 

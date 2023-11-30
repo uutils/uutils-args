@@ -144,8 +144,8 @@
 mod error;
 mod value;
 
-pub use derive::*;
 pub use lexopt;
+pub use uutils_args_derive::*;
 
 pub use error::Error;
 pub use value::{Value, ValueError, ValueResult};
