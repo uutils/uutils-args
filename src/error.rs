@@ -15,7 +15,9 @@ pub enum Error {
     MissingPositionalArguments(Vec<String>),
 
     /// An unrecognized option was passed.
-    UnexpectedOption(String),
+    ///
+    /// The second argument is a list of suggestions
+    UnexpectedOption(String, Vec<String>),
 
     /// No more positional arguments were expected, but one was given anyway.
     UnexpectedArgument(OsString),
@@ -75,8 +77,12 @@ impl Display for Error {
                 }
                 Ok(())
             }
-            Error::UnexpectedOption(opt) => {
-                write!(f, "Found an invalid option '{opt}'.")
+            Error::UnexpectedOption(opt, suggestions) => {
+                write!(f, "Found an invalid option '{opt}'.")?;
+                if !suggestions.is_empty() {
+                    write!(f, "\nDid you mean: {}", suggestions.join(", "))?;
+                }
+                Ok(())
             }
             Error::UnexpectedArgument(arg) => {
                 write!(f, "Found an invalid argument '{}'.", arg.to_string_lossy())
@@ -123,7 +129,7 @@ impl From<lexopt::Error> for Error {
     fn from(other: lexopt::Error) -> Error {
         match other {
             lexopt::Error::MissingValue { option } => Self::MissingValue { option },
-            lexopt::Error::UnexpectedOption(s) => Self::UnexpectedOption(s),
+            lexopt::Error::UnexpectedOption(s) => Self::UnexpectedOption(s, Vec::new()),
             lexopt::Error::UnexpectedArgument(s) => Self::UnexpectedArgument(s),
             lexopt::Error::UnexpectedValue { option, value } => {
                 Self::UnexpectedValue { option, value }

@@ -413,6 +413,44 @@ pub fn parse_value_for_option<T: Value>(opt: &str, v: &OsStr) -> Result<T, Error
     })
 }
 
+pub fn infer_long_option<'a>(
+    input: &'a str,
+    long_options: &'a [&'a str],
+) -> Result<&'a str, Error> {
+    let mut candidates = Vec::new();
+    let mut exact_match = None;
+    for opt in long_options {
+        if *opt == input {
+            exact_match = Some(opt);
+            break;
+        } else if opt.starts_with(input) {
+            candidates.push(opt);
+        }
+    }
+
+    match (exact_match, &candidates[..]) {
+        (Some(opt), _) => Ok(*opt),
+        (None, [opt]) => Ok(**opt),
+        (None, []) => Err(Error::UnexpectedOption(
+            format!("--{input}"),
+            filter_suggestions(input, long_options, "--"),
+        )),
+        (None, _) => Err(Error::AmbiguousOption {
+            option: input.to_string(),
+            candidates: candidates.iter().map(|s| s.to_string()).collect(),
+        }),
+    }
+}
+
+/// Filter a list of options to just the elements that are similar to the given string
+pub fn filter_suggestions(input: &str, long_options: &[&str], prefix: &str) -> Vec<String> {
+    long_options
+        .iter()
+        .filter(|opt| strsim::jaro(input, opt) > 0.7)
+        .map(|o| format!("{prefix}{o}"))
+        .collect()
+}
+
 #[cfg(test)]
 mod test {
     use std::ffi::OsStr;
