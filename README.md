@@ -41,16 +41,16 @@ For more information on these traits, see their respective documentation:
 Below is a minimal example of a full CLI application using this library.
 
 ```rust
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 #[derive(Arguments)]
 enum Arg {
     // The doc strings below will be part of the `--help` text
     // First we define a simple flag:
-    /// Do not transform input text to uppercase
-    #[arg("-n", "--no-caps")]
-    NoCaps,
-     
+    /// Transform input text to uppercase
+    #[arg("-c", "--caps")]
+    Caps,
+    
     // This option takes a value:    
     /// Add exclamation marks to output
     #[arg("-e N", "--exclaim=N")]
@@ -62,10 +62,8 @@ enum Arg {
     Text(String),
 }
 
-#[derive(Initial)]
+#[derive(Default)]
 struct Settings {
-    // We can change the default value with the field attribute.
-    #[initial(true)]
     caps: bool,
     exclamation_marks: u8,
     text: String,
@@ -76,7 +74,7 @@ struct Settings {
 impl Options<Arg> for Settings {
     fn apply(&mut self, arg: Arg) {
         match arg {
-            Arg::NoCaps => self.caps = false,
+            Arg::Caps => self.caps = true,
             Arg::ExclamationMarks(n) => self.exclamation_marks += n,
             Arg::Text(s) => {
                 if self.text.is_empty() {
@@ -91,7 +89,7 @@ impl Options<Arg> for Settings {
 }
 
 fn run(args: &'static [&'static str]) -> String {
-    let s = Settings::parse(args);
+    let s = Settings::default().parse(args);
     let mut output = if s.caps {
         s.text.to_uppercase()
     } else {
@@ -104,24 +102,20 @@ fn run(args: &'static [&'static str]) -> String {
 }
 
 // The first argument is the binary name. In this example it's ignored.
-assert_eq!(run(&["shout", "hello"]), "HELLO");
-assert_eq!(run(&["shout", "-e3", "hello"]), "HELLO!!!");
-assert_eq!(run(&["shout", "-e", "3", "hello"]), "HELLO!!!");
-assert_eq!(run(&["shout", "--no-caps", "hello"]), "hello");
-assert_eq!(run(&["shout", "-e3", "-n", "hello"]), "hello!!!");
-assert_eq!(run(&["shout", "-e3", "hello", "world"]), "HELLO WORLD!!!");
+assert_eq!(run(&["shout", "hello"]), "hello");
+assert_eq!(run(&["shout", "-e3", "hello"]), "hello!!!");
+assert_eq!(run(&["shout", "-e", "3", "hello"]), "hello!!!");
+assert_eq!(run(&["shout", "--caps", "hello"]), "HELLO");
+assert_eq!(run(&["shout", "-e3", "-c", "hello"]), "HELLO!!!");
+assert_eq!(run(&["shout", "-e3", "-c", "hello", "world"]), "HELLO WORLD!!!");
 ```
 
-## Additional functionality
+## Value parsing
 
-To make it easier to implement [`Arguments`] and [`Options`], there are
-two additional traits:
-
-- [`Initial`] is an alternative to the [`Default`] trait from the standard
-  library, with a richer derive macro.
-- [`Value`] allows for easy parsing from `OsStr` to any type
-  implementing [`Value`]. This crate also provides a derive macro for
-  this trait.
+To make it easier to implement [`Arguments`] and [`Options`], there is the
+[`Value`] trait, which allows for easy parsing from `OsStr` to any type
+implementing [`Value`]. This crate also provides a derive macro for
+this trait.
 
 ## Examples
 

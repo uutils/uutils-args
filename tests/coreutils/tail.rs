@@ -1,6 +1,6 @@
 use std::{ffi::OsString, path::PathBuf};
 
-use uutils_args::{Arguments, Initial, Options, Value};
+use uutils_args::{Arguments, Options, Value};
 
 // This format is way to specific to implement using a library. Basically, any
 // deviation should be return `None` to indicate that we're not using the
@@ -100,7 +100,7 @@ where
         mode,
         follow,
         inputs: vec![input.into().into()],
-        ..Settings::initial()
+        ..Settings::default()
     })
 }
 
@@ -228,7 +228,7 @@ pub enum Mode {
     Lines,
 }
 
-#[derive(Initial)]
+#[derive(Default)]
 struct Settings {
     follow: Option<FollowMode>,
     max_unchanged_stats: u32,
@@ -280,7 +280,7 @@ where
 {
     match parse_deprecated(iter.clone()) {
         Some(s) => Ok(s),
-        None => Settings::try_parse(iter),
+        None => Settings::default().try_parse(iter),
     }
 }
 

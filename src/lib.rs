@@ -160,21 +160,6 @@ impl<T: Arguments> ArgumentIter<T> {
     }
 }
 
-/// An alternative for the [`Default`] trait, with a more feature
-/// packed derive macro.
-///
-/// The `Initial` trait is used by `Options` to construct the initial
-/// state of the options before any arguments are parsed.
-///
-/// The [derive macro](derive@Initial) supports setting the initial
-/// value per field and parsing the initial values from environment
-/// variables. Otherwise, it will be equivalent to the derive macro
-/// for the [`Default`] trait.
-pub trait Initial: Sized {
-    /// Create the initial state of `Self`
-    fn initial() -> Self;
-}
-
 /// Defines the app settings by consuming [`Arguments`].
 ///
 /// When implementing this trait, only two things need to be provided:
@@ -184,35 +169,34 @@ pub trait Initial: Sized {
 ///   type onto the options.
 ///
 /// By default, the [`Options::parse`] method will
-/// 1. create a new instance of `Self` using [`Initial::initial`],
-/// 2. repeatedly call [`ArgumentIter::next_arg`] and call [`Options::apply`]
+/// 1. repeatedly call [`ArgumentIter::next_arg`] and call [`Options::apply`]
 ///    on the result until the arguments are exhausted,
-/// 3. and finally call [`Arguments::check_missing`].
-pub trait Options<Arg: Arguments>: Sized + Initial {
+/// 2. and finally call [`Arguments::check_missing`] to check whether all
+///    required arguments were given.
+pub trait Options<Arg: Arguments>: Sized {
     /// Apply a single argument to the options.
     fn apply(&mut self, arg: Arg);
 
-    /// Parse an iterator of arguments into
-    fn parse<I>(args: I) -> Self
+    /// Parse an iterator of arguments into the options
+    fn parse<I>(self, args: I) -> Self
     where
         I: IntoIterator + 'static,
         I::Item: Into<OsString>,
     {
-        exit_if_err(Self::try_parse(args), Arg::EXIT_CODE)
+        exit_if_err(self.try_parse(args), Arg::EXIT_CODE)
     }
 
-    fn try_parse<I>(args: I) -> Result<Self, Error>
+    fn try_parse<I>(mut self, args: I) -> Result<Self, Error>
     where
         I: IntoIterator + 'static,
         I::Item: Into<OsString>,
     {
-        let mut _self = Self::initial();
         let mut iter = Arg::parse(args);
         while let Some(arg) = iter.next_arg()? {
-            _self.apply(arg);
+            self.apply(arg);
         }
         Arg::check_missing(iter.positional_idx)?;
-        Ok(_self)
+        Ok(self)
     }
 }
 

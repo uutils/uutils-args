@@ -1,4 +1,4 @@
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 #[test]
 fn one_flag() {
@@ -8,7 +8,7 @@ fn one_flag() {
         Foo,
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: bool,
     }
@@ -21,7 +21,7 @@ fn one_flag() {
         }
     }
 
-    let settings = Settings::parse(["test", "-f"]);
+    let settings = Settings::default().parse(["test", "-f"]);
     assert!(settings.foo);
 }
 
@@ -35,7 +35,7 @@ fn two_flags() {
         B,
     }
 
-    #[derive(Initial, PartialEq, Eq, Debug)]
+    #[derive(Default, PartialEq, Eq, Debug)]
     struct Settings {
         a: bool,
         b: bool,
@@ -51,16 +51,19 @@ fn two_flags() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "-a"]),
+        Settings::default().parse(["test", "-a"]),
         Settings { a: true, b: false }
     );
-    assert_eq!(Settings::parse(["test"]), Settings { a: false, b: false });
     assert_eq!(
-        Settings::parse(["test", "-b"]),
+        Settings::default().parse(["test"]),
+        Settings { a: false, b: false }
+    );
+    assert_eq!(
+        Settings::default().parse(["test", "-b"]),
         Settings { a: false, b: true }
     );
     assert_eq!(
-        Settings::parse(["test", "-a", "-b"]),
+        Settings::default().parse(["test", "-a", "-b"]),
         Settings { a: true, b: true }
     );
 }
@@ -73,7 +76,7 @@ fn long_and_short_flag() {
         Foo,
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: bool,
     }
@@ -84,9 +87,9 @@ fn long_and_short_flag() {
         }
     }
 
-    assert!(!Settings::parse(["test"]).foo);
-    assert!(Settings::parse(["test", "--foo"]).foo);
-    assert!(Settings::parse(["test", "-f"]).foo);
+    assert!(!Settings::default().parse(["test"]).foo);
+    assert!(Settings::default().parse(["test", "--foo"]).foo);
+    assert!(Settings::default().parse(["test", "-f"]).foo);
 }
 
 #[test]
@@ -97,7 +100,7 @@ fn short_alias() {
         Foo,
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: bool,
     }
@@ -108,7 +111,7 @@ fn short_alias() {
         }
     }
 
-    assert!(Settings::parse(["test", "-b"]).foo);
+    assert!(Settings::default().parse(["test", "-b"]).foo);
 }
 
 #[test]
@@ -119,7 +122,7 @@ fn long_alias() {
         Foo,
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: bool,
     }
@@ -130,7 +133,7 @@ fn long_alias() {
         }
     }
 
-    assert!(Settings::parse(["test", "--bar"]).foo);
+    assert!(Settings::default().parse(["test", "--bar"]).foo);
 }
 
 #[test]
@@ -143,7 +146,7 @@ fn short_and_long_alias() {
         Bar,
     }
 
-    #[derive(Initial, PartialEq, Eq, Debug)]
+    #[derive(Default, PartialEq, Eq, Debug)]
     struct Settings {
         foo: bool,
         bar: bool,
@@ -168,10 +171,10 @@ fn short_and_long_alias() {
         bar: true,
     };
 
-    assert_eq!(Settings::parse(["test", "--bar"]), foo_true);
-    assert_eq!(Settings::parse(["test", "-b"]), foo_true);
-    assert_eq!(Settings::parse(["test", "--foo"]), bar_true);
-    assert_eq!(Settings::parse(["test", "-f"]), bar_true);
+    assert_eq!(Settings::default().parse(["test", "--bar"]), foo_true);
+    assert_eq!(Settings::default().parse(["test", "-b"]), foo_true);
+    assert_eq!(Settings::default().parse(["test", "--foo"]), bar_true);
+    assert_eq!(Settings::default().parse(["test", "-f"]), bar_true);
 }
 
 #[test]
@@ -186,7 +189,7 @@ fn xyz_map_to_abc() {
         Z,
     }
 
-    #[derive(Initial, PartialEq, Eq, Debug)]
+    #[derive(Default, PartialEq, Eq, Debug)]
     struct Settings {
         a: bool,
         b: bool,
@@ -214,7 +217,7 @@ fn xyz_map_to_abc() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "-x"]),
+        Settings::default().parse(["test", "-x"]),
         Settings {
             a: true,
             b: true,
@@ -223,7 +226,7 @@ fn xyz_map_to_abc() {
     );
 
     assert_eq!(
-        Settings::parse(["test", "-y"]),
+        Settings::default().parse(["test", "-y"]),
         Settings {
             a: false,
             b: true,
@@ -232,7 +235,7 @@ fn xyz_map_to_abc() {
     );
 
     assert_eq!(
-        Settings::parse(["test", "-xy"]),
+        Settings::default().parse(["test", "-xy"]),
         Settings {
             a: true,
             b: true,
@@ -241,7 +244,7 @@ fn xyz_map_to_abc() {
     );
 
     assert_eq!(
-        Settings::parse(["test", "-z"]),
+        Settings::default().parse(["test", "-z"]),
         Settings {
             a: true,
             b: true,
@@ -260,7 +263,7 @@ fn non_rust_ident() {
         Super,
     }
 
-    #[derive(Initial, PartialEq, Eq, Debug)]
+    #[derive(Default, PartialEq, Eq, Debug)]
     struct Settings {
         a: bool,
         b: bool,
@@ -276,7 +279,7 @@ fn non_rust_ident() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "--foo-bar", "--super"]),
+        Settings::default().parse(["test", "--foo-bar", "--super"]),
         Settings { a: true, b: true }
     )
 }
@@ -288,7 +291,7 @@ fn number_flag() {
         #[arg("-1")]
         One,
     }
-    #[derive(Initial, PartialEq, Eq, Debug)]
+    #[derive(Default, PartialEq, Eq, Debug)]
     struct Settings {
         one: bool,
     }
@@ -299,7 +302,7 @@ fn number_flag() {
         }
     }
 
-    assert!(Settings::parse(["test", "-1"]).one)
+    assert!(Settings::default().parse(["test", "-1"]).one)
 }
 
 #[test]
@@ -312,7 +315,7 @@ fn false_bool() {
         B,
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: bool,
     }
@@ -326,12 +329,12 @@ fn false_bool() {
         }
     }
 
-    assert!(Settings::parse(["test", "-a"]).foo);
-    assert!(!Settings::parse(["test", "-b"]).foo);
-    assert!(!Settings::parse(["test", "-ab"]).foo);
-    assert!(Settings::parse(["test", "-ba"]).foo);
-    assert!(!Settings::parse(["test", "-a", "-b"]).foo);
-    assert!(Settings::parse(["test", "-b", "-a"]).foo);
+    assert!(Settings::default().parse(["test", "-a"]).foo);
+    assert!(!Settings::default().parse(["test", "-b"]).foo);
+    assert!(!Settings::default().parse(["test", "-ab"]).foo);
+    assert!(Settings::default().parse(["test", "-ba"]).foo);
+    assert!(!Settings::default().parse(["test", "-a", "-b"]).foo);
+    assert!(Settings::default().parse(["test", "-b", "-a"]).foo);
 }
 
 #[test]
@@ -342,7 +345,7 @@ fn verbosity() {
         Verbosity,
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         verbosity: u8,
     }
@@ -353,9 +356,9 @@ fn verbosity() {
         }
     }
 
-    assert_eq!(Settings::parse(["test", "-v"]).verbosity, 1);
-    assert_eq!(Settings::parse(["test", "-vv"]).verbosity, 2);
-    assert_eq!(Settings::parse(["test", "-vvv"]).verbosity, 3);
+    assert_eq!(Settings::default().parse(["test", "-v"]).verbosity, 1);
+    assert_eq!(Settings::default().parse(["test", "-vv"]).verbosity, 2);
+    assert_eq!(Settings::default().parse(["test", "-vvv"]).verbosity, 3);
 }
 
 #[test]
@@ -370,7 +373,7 @@ fn infer_long_args() {
         Author,
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         all: bool,
         almost_all: bool,
@@ -387,10 +390,10 @@ fn infer_long_args() {
         }
     }
 
-    assert!(Settings::parse(["test", "--all"]).all);
-    assert!(Settings::parse(["test", "--alm"]).almost_all);
-    assert!(Settings::parse(["test", "--au"]).author);
-    assert!(Settings::try_parse(["test", "--a"]).is_err());
+    assert!(Settings::default().parse(["test", "--all"]).all);
+    assert!(Settings::default().parse(["test", "--alm"]).almost_all);
+    assert!(Settings::default().parse(["test", "--au"]).author);
+    assert!(Settings::default().try_parse(["test", "--a"]).is_err());
 }
 
 #[test]
@@ -413,7 +416,7 @@ fn enum_flag() {
         Baz,
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: SomeEnum,
     }
@@ -428,7 +431,13 @@ fn enum_flag() {
         }
     }
 
-    assert_eq!(Settings::parse(["test"]).foo, SomeEnum::Foo);
-    assert_eq!(Settings::parse(["test", "--bar"]).foo, SomeEnum::Bar);
-    assert_eq!(Settings::parse(["test", "--baz"]).foo, SomeEnum::Baz,);
+    assert_eq!(Settings::default().parse(["test"]).foo, SomeEnum::Foo);
+    assert_eq!(
+        Settings::default().parse(["test", "--bar"]).foo,
+        SomeEnum::Bar
+    );
+    assert_eq!(
+        Settings::default().parse(["test", "--baz"]).foo,
+        SomeEnum::Baz,
+    );
 }

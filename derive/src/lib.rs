@@ -6,7 +6,6 @@ mod attributes;
 mod flags;
 mod help;
 mod help_parser;
-mod initial;
 
 use argument::{
     free_handling, long_handling, parse_argument, parse_arguments_attr, positional_handling,
@@ -18,11 +17,6 @@ use help::{help_handling, help_string, version_handling};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data::Enum, DeriveInput};
-
-#[proc_macro_derive(Initial, attributes(initial))]
-pub fn initial(input: TokenStream) -> TokenStream {
-    initial::initial(input)
-}
 
 #[proc_macro_derive(Arguments, attributes(arg, arguments))]
 pub fn arguments(input: TokenStream) -> TokenStream {

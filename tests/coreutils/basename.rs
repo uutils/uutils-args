@@ -1,4 +1,4 @@
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -15,7 +15,7 @@ enum Arg {
     Names(Vec<String>),
 }
 
-#[derive(Initial)]
+#[derive(Default)]
 struct Settings {
     multiple: bool,
     suffix: String,
@@ -38,7 +38,7 @@ impl Options<Arg> for Settings {
 }
 
 fn parse(args: &'static [&'static str]) -> Settings {
-    let mut settings = Settings::parse(args);
+    let mut settings = Settings::default().parse(args);
     if !settings.multiple {
         assert_eq!(settings.names.len(), 2);
         settings.suffix = settings.names.pop().unwrap();

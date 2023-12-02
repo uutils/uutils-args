@@ -1,4 +1,4 @@
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 fn parse_minus(s: &str) -> Option<&str> {
     let num = s.strip_prefix('-')?;
@@ -27,7 +27,7 @@ enum Arg {
     Plus(isize),
 }
 
-#[derive(Initial)]
+#[derive(Default)]
 struct Settings {
     n1: usize,
     n2: isize,
@@ -43,8 +43,8 @@ impl Options<Arg> for Settings {
 }
 
 fn main() {
-    assert_eq!(Settings::parse(["test", "-10"]).n1, 10usize);
-    assert!(Settings::try_parse(["test", "--10"]).is_err());
-    assert_eq!(Settings::parse(["test", "+10"]).n2, 10isize);
-    assert_eq!(Settings::parse(["test", "+-10"]).n2, -10isize);
+    assert_eq!(Settings::default().parse(["test", "-10"]).n1, 10usize);
+    assert!(Settings::default().try_parse(["test", "--10"]).is_err());
+    assert_eq!(Settings::default().parse(["test", "+10"]).n2, 10isize);
+    assert_eq!(Settings::default().parse(["test", "+-10"]).n2, -10isize);
 }

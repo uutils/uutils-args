@@ -50,7 +50,7 @@ enum Delimiters {
     Both,
 }
 
-#[derive(Initial)]
+#[derive(Default)]
 struct Settings {
     repeats_only: bool,
     uniques_only: bool,
