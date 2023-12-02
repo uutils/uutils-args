@@ -5,8 +5,8 @@ edition = "2021"
 authors = ["Terts Diepraam"]
 license = "MIT"
 
-homepage = "https://github.com/tertsdiepraam/uutils-args"
-repository = "https://github.com/tertsdiepraam/uutils-args"
+homepage = "https://github.com/uutils/uutils-args"
+repository = "https://github.com/uutils/uutils-args"
 readme = "README.md"
 
 [dependencies]

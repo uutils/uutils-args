@@ -128,12 +128,12 @@ two additional traits:
 The following files contain examples of commands defined with
 `uutils_args`:
 
-- [hello world](https://github.com/tertsdiepraam/uutils-args/blob/main/examples/hello_world.rs)
-- [arch](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/arch.rs)
-- [b2sum](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/b2sum.rs)
-- [base32](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/base32.rs)
-- [basename](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/basename.rs)
-- [cat](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/cat.rs)
-- [echo](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/echo.rs)
-- [ls](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/ls.rs)
-- [mktemp](https://github.com/tertsdiepraam/uutils-args/blob/main/tests/coreutils/mktemp.rs)
+- [hello world](https://github.com/uutils/uutils-args/blob/main/examples/hello_world.rs)
+- [arch](https://github.com/uutils/uutils-args/blob/main/tests/coreutils/arch.rs)
+- [b2sum](https://github.com/uutils/uutils-args/blob/main/tests/coreutils/b2sum.rs)
+- [base32](https://github.com/uutils/uutils-args/blob/main/tests/coreutils/base32.rs)
+- [basename](https://github.com/uutils/uutils-args/blob/main/tests/coreutils/basename.rs)
+- [cat](https://github.com/uutils/uutils-args/blob/main/tests/coreutils/cat.rs)
+- [echo](https://github.com/uutils/uutils-args/blob/main/tests/coreutils/echo.rs)
+- [ls](https://github.com/uutils/uutils-args/blob/main/tests/coreutils/ls.rs)
+- [mktemp](https://github.com/uutils/uutils-args/blob/main/tests/coreutils/mktemp.rs)
