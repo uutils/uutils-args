@@ -1,3 +1,6 @@
+// For the full copyright and license information, please view the LICENSE
+// file that was distributed with this source code.
+
 use crate::error::Error;
 use std::{
     ffi::{OsStr, OsString},
