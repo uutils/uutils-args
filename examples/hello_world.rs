@@ -8,15 +8,15 @@ enum Arg {
     /// Just to show off, I can do multiple paragraphs and wrap text!
     ///
     /// # Also headings!
-    #[option("-n NAME", "--name=NAME", "name=NAME")]
+    #[arg("-n NAME", "--name=NAME", "name=NAME")]
     Name(String),
 
     /// The **number of times** to `greet`
-    #[option("-c N", "--count=N")]
+    #[arg("-c N", "--count=N")]
     Count(u8),
 
     /// This argument is hidden
-    #[option("--hidden", hidden)]
+    #[arg("--hidden", hidden)]
     Hidden,
 }
 

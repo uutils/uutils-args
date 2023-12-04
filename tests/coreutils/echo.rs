@@ -5,18 +5,18 @@ use uutils_args::{Arguments, Initial, Options};
 #[arguments(parse_echo_style)]
 enum Arg {
     /// Do not output trailing newline
-    #[option("-n")]
+    #[arg("-n")]
     NoNewline,
 
     /// Enable interpretation of backslash escapes
-    #[option("-e")]
+    #[arg("-e")]
     EnableEscape,
 
     /// Disable interpretation of backslash escapes
-    #[option("-E")]
+    #[arg("-E")]
     DisableEscape,
 
-    #[positional(last)]
+    #[arg("STRING", last)]
     String(Vec<OsString>),
 }
 

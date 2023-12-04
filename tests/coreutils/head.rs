@@ -84,22 +84,22 @@ where
 
 #[derive(Arguments)]
 enum Arg {
-    #[option("-c NUM", "--bytes=NUM")]
+    #[arg("-c NUM", "--bytes=NUM")]
     Bytes(SigNum),
 
-    #[option("-n NUM", "--lines=NUM")]
+    #[arg("-n NUM", "--lines=NUM")]
     Lines(SigNum),
 
-    #[option("-q", "--quiet", "--silent")]
+    #[arg("-q", "--quiet", "--silent")]
     Quiet,
 
-    #[option("-v", "--verbose")]
+    #[arg("-v", "--verbose")]
     Verbose,
 
-    #[option("-z", "--zero-terminated")]
+    #[arg("-z", "--zero-terminated")]
     Zero,
 
-    #[positional(..)]
+    #[arg("FILES", ..)]
     File(PathBuf),
 }
 

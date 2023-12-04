@@ -14,7 +14,7 @@ use crate::{
 use proc_macro2::TokenStream;
 use quote::quote;
 
-pub(crate) fn help_handling(help_flags: &Flags) -> TokenStream {
+pub fn help_handling(help_flags: &Flags) -> TokenStream {
     if help_flags.is_empty() {
         return quote!();
     }
@@ -28,7 +28,7 @@ pub(crate) fn help_handling(help_flags: &Flags) -> TokenStream {
     )
 }
 
-pub(crate) fn help_string(
+pub fn help_string(
     args: &[Argument],
     help_flags: &Flags,
     version_flags: &Flags,
@@ -144,7 +144,7 @@ fn read_help_file(file: &str) -> (String, String, String) {
     )
 }
 
-pub(crate) fn version_handling(version_flags: &Flags) -> TokenStream {
+pub fn version_handling(version_flags: &Flags) -> TokenStream {
     if version_flags.is_empty() {
         return quote!();
     }

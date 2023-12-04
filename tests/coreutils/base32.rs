@@ -4,16 +4,16 @@ use uutils_args::{Arguments, Initial, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
-    #[option("-d", "--decode")]
+    #[arg("-d", "--decode")]
     Decode,
 
-    #[option("-i", "--ignore-garbage")]
+    #[arg("-i", "--ignore-garbage")]
     IgnoreGarbage,
 
-    #[option("-w COLS", "--wrap=COLS")]
+    #[arg("-w COLS", "--wrap=COLS")]
     Wrap(usize),
 
-    #[positional(..=1)]
+    #[arg("FILE", ..=1)]
     File(PathBuf),
 }
 

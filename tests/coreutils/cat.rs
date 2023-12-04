@@ -12,34 +12,34 @@ enum NumberingMode {
 
 #[derive(Clone, Arguments)]
 enum Arg {
-    #[option("-A", "--show-all")]
+    #[arg("-A", "--show-all")]
     ShowAll,
 
-    #[option("-b", "--number-nonblank")]
+    #[arg("-b", "--number-nonblank")]
     NumberNonblank,
 
-    #[option("-e")]
+    #[arg("-e")]
     ShowNonPrintingEnds,
 
-    #[option("-E")]
+    #[arg("-E")]
     ShowEnds,
 
-    #[option("-n", "--number")]
+    #[arg("-n", "--number")]
     Number,
 
-    #[option("-s", "--squeeze-blank")]
+    #[arg("-s", "--squeeze-blank")]
     SqueezeBlank,
 
-    #[option("-t")]
+    #[arg("-t")]
     ShowNonPrintingTabs,
 
-    #[option("-T", "--show-tabs")]
+    #[arg("-T", "--show-tabs")]
     ShowTabs,
 
-    #[option("-v", "--show-nonprinting")]
+    #[arg("-v", "--show-nonprinting")]
     ShowNonPrinting,
 
-    #[positional(..)]
+    #[arg("FILES", ..)]
     File(PathBuf),
 }
 

@@ -24,7 +24,7 @@ pub fn initial(input: TokenStream) -> TokenStream {
     initial::initial(input)
 }
 
-#[proc_macro_derive(Arguments, attributes(flag, option, positional, free, arguments))]
+#[proc_macro_derive(Arguments, attributes(arg, arguments))]
 pub fn arguments(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 

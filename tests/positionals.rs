@@ -4,7 +4,7 @@ use uutils_args::{Arguments, Initial, Options};
 fn one_positional() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[positional(1)]
+        #[arg("FILE", 1)]
         File1(String),
     }
 
@@ -29,9 +29,9 @@ fn one_positional() {
 fn two_positionals() {
     #[derive(Arguments)]
     enum Arg {
-        #[positional(1)]
+        #[arg("FOO", 1)]
         Foo(String),
-        #[positional(1)]
+        #[arg("BAR", 1)]
         Bar(String),
     }
 
@@ -61,7 +61,7 @@ fn two_positionals() {
 fn optional_positional() {
     #[derive(Arguments)]
     enum Arg {
-        #[positional(0..=1)]
+        #[arg("FOO", 0..=1)]
         Foo(String),
     }
 
@@ -86,7 +86,7 @@ fn optional_positional() {
 fn collect_positional() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[positional(..)]
+        #[arg("FOO", ..)]
         Foo(String),
     }
 
@@ -111,7 +111,7 @@ fn collect_positional() {
 fn last1() {
     #[derive(Arguments)]
     enum Arg {
-        #[positional(last, ..)]
+        #[arg("FOO", last, ..)]
         Foo(Vec<String>),
     }
 
@@ -134,10 +134,10 @@ fn last1() {
 fn last2() {
     #[derive(Arguments, Clone)]
     enum Arg {
-        #[option("-a")]
+        #[arg("-a")]
         A,
 
-        #[positional(last, ..)]
+        #[arg("FOO", last, ..)]
         Foo(Vec<String>),
     }
 

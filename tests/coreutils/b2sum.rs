@@ -3,31 +3,31 @@ use uutils_args::{Arguments, Initial, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
-    #[option("-b", "--binary")]
+    #[arg("-b", "--binary")]
     Binary,
 
-    #[option("-c", "--check")]
+    #[arg("-c", "--check")]
     Check,
 
-    #[option("--tag")]
+    #[arg("--tag")]
     Tag,
 
-    #[option("-t", "--text")]
+    #[arg("-t", "--text")]
     Text,
 
-    #[option("-q", "--quiet")]
+    #[arg("-q", "--quiet")]
     Quiet,
 
-    #[option("-s", "--status")]
+    #[arg("-s", "--status")]
     Status,
 
-    #[option("--strict")]
+    #[arg("--strict")]
     Strict,
 
-    #[option("-w", "--warn")]
+    #[arg("-w", "--warn")]
     Warn,
 
-    #[positional(..)]
+    #[arg("FILE", ..)]
     File(PathBuf),
 }
 

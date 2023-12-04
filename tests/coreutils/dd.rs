@@ -16,43 +16,43 @@ enum StatusLevel {
 // TODO: The bytes arguments should parse sizes
 #[derive(Arguments)]
 enum Arg {
-    #[option("if=FILE")]
+    #[arg("if=FILE")]
     Infile(PathBuf),
 
-    #[option("of=FILE")]
+    #[arg("of=FILE")]
     Outfile(PathBuf),
 
-    #[option("ibs=BYTES")]
+    #[arg("ibs=BYTES")]
     Ibs(usize),
 
-    #[option("obs=BYTES")]
+    #[arg("obs=BYTES")]
     Obs(usize),
 
-    #[option("bs=BYTES")]
+    #[arg("bs=BYTES")]
     Bs(usize),
 
-    #[option("cbs=BYTES")]
+    #[arg("cbs=BYTES")]
     Cbs(usize),
 
-    #[option("skip=BYTES", "iseek=BYTES")]
+    #[arg("skip=BYTES", "iseek=BYTES")]
     Skip(u64),
 
-    #[option("seek=BYTES", "oseek=BYTES")]
+    #[arg("seek=BYTES", "oseek=BYTES")]
     Seek(u64),
 
-    #[option("count=N")]
+    #[arg("count=N")]
     Count(usize),
 
-    #[option("status=LEVEL")]
+    #[arg("status=LEVEL")]
     Status(StatusLevel),
 
-    #[option("conv=CONVERSIONS")]
+    #[arg("conv=CONVERSIONS")]
     Conv(String),
 
-    #[option("iflag=FLAGS")]
+    #[arg("iflag=FLAGS")]
     Iflag(String),
 
-    #[option("oflag=FLAGS")]
+    #[arg("oflag=FLAGS")]
     Oflag(String),
 }
 

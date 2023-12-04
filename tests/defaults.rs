@@ -4,7 +4,7 @@ use uutils_args::{Arguments, Initial, Options};
 fn true_default() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("--foo")]
+        #[arg("--foo")]
         Foo,
     }
 
@@ -28,7 +28,7 @@ fn true_default() {
 fn env_var_string() {
     #[derive(Arguments)]
     enum Arg {
-        #[option("--foo=MSG")]
+        #[arg("--foo=MSG")]
         Foo(String),
     }
 
