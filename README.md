@@ -22,7 +22,7 @@ mimic the behaviour of the GNU coreutils. There are other applications
 that have similar behaviour, which are C application that use `getopt`
 and `getopt_long`. If you want to mimic that behaviour exactly, this
 is the library for you. If you want to write basically anything else,
-you should probably pick another argument parser (example: [clap](https://github.com/clap-rs/clap).
+you should probably pick another argument parser (for example: [clap](https://github.com/clap-rs/clap)).
 
 ## Getting Started
 
