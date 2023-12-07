@@ -146,17 +146,17 @@ enum Arg {
     Author,
 
     #[arg("--time=WORD")]
-    #[arg("-c", default = Time::Change)]
-    #[arg("-u", default = Time::Access)]
+    #[arg("-c", value = Time::Change)]
+    #[arg("-u", value = Time::Access)]
     Time(Time),
 
     // === Sorting ==
     /// Sort by WORD
     #[arg("--sort=WORD")]
-    #[arg("-t", default = Sort::Time, help = "Sort by time")]
-    #[arg("-U", default = Sort::None, help = "Do not sort")]
-    #[arg("-v", default = Sort::Version, help = "Sort by version")]
-    #[arg("-X", default = Sort::Extension, help = "Sort by extension")]
+    #[arg("-t", value = Sort::Time, help = "Sort by time")]
+    #[arg("-U", value = Sort::None, help = "Do not sort")]
+    #[arg("-v", value = Sort::Version, help = "Sort by version")]
+    #[arg("-X", value = Sort::Extension, help = "Sort by extension")]
     Sort(Sort),
 
     // === Miscellaneous ===
@@ -200,10 +200,10 @@ enum Arg {
     // === Format ===
     /// Set format
     #[arg("--format=FORMAT")]
-    #[arg("-l", "--long", default = Format::Long, help = "Use long format")]
-    #[arg("-C", default = Format::Columns, help = "Use columns format")]
-    #[arg("-x", default = Format::Across, help = "Use across format")]
-    #[arg("-m", default = Format::Commas, help = "Use comma format")]
+    #[arg("-l", "--long", value = Format::Long, help = "Use long format")]
+    #[arg("-C", value = Format::Columns, help = "Use columns format")]
+    #[arg("-x", value = Format::Across, help = "Use across format")]
+    #[arg("-m", value = Format::Commas, help = "Use comma format")]
     Format(Format),
 
     /// Show single column
@@ -221,12 +221,12 @@ enum Arg {
 
     // === Indicator style ===
     #[arg("--indicator-style=STYLE")]
-    #[arg("-p", default = IndicatorStyle::Slash, help = "Append slash to directories")]
-    #[arg("--file-type", default = IndicatorStyle::FileType, help = "Add indicators for file types")]
+    #[arg("-p", value = IndicatorStyle::Slash, help = "Append slash to directories")]
+    #[arg("--file-type", value = IndicatorStyle::FileType, help = "Add indicators for file types")]
     IndicatorStyle(IndicatorStyle),
 
     /// Classify items
-    #[arg("-F", "--classify[=WHEN]", default = When::Always)]
+    #[arg("-F", "--classify[=WHEN]", value = When::Always)]
     IndicatorStyleClassify(When),
 
     // === Dereference ===
@@ -254,13 +254,13 @@ enum Arg {
 
     // === Quoting style ===
     #[arg("--quoting-style=STYLE")]
-    #[arg("-N", "--literal", default = QuotingStyle::Literal)]
-    #[arg("-h", "--escape", default = QuotingStyle::Escape)]
-    #[arg("-Q", "--quote-name", default = todo!())]
+    #[arg("-N", "--literal", value = QuotingStyle::Literal)]
+    #[arg("-h", "--escape", value = QuotingStyle::Escape)]
+    #[arg("-Q", "--quote-name", value = todo!())]
     QuotingStyle(QuotingStyle),
 
     /// Set the color
-    #[arg("--color[=WHEN]", default = When::Always)]
+    #[arg("--color[=WHEN]", value = When::Always)]
     Color(When),
 
     /// Print control characters as ?
