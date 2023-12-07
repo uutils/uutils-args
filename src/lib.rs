@@ -14,6 +14,7 @@ pub use value::{Value, ValueError, ValueResult};
 
 use std::{
     ffi::{OsStr, OsString},
+    io::Write,
     marker::PhantomData,
 };
 
@@ -314,6 +315,40 @@ pub fn filter_suggestions(input: &str, long_options: &[&str], prefix: &str) -> V
         .filter(|opt| strsim::jaro(input, opt) > 0.7)
         .map(|o| format!("{prefix}{o}"))
         .collect()
+}
+
+pub fn print_flags(
+    mut w: impl Write,
+    indent_size: usize,
+    width: usize,
+    options: impl IntoIterator<Item = (&'static str, &'static str)>,
+) -> std::io::Result<()> {
+    let indent = " ".repeat(indent_size);
+    writeln!(w, "\nOptions:")?;
+    for (flags, help_string) in options {
+        let mut help_lines = help_string.lines();
+        write!(w, "{}{}", &indent, &flags)?;
+
+        if flags.len() <= width {
+            let line = match help_lines.next() {
+                Some(line) => line,
+                None => {
+                    writeln!(w)?;
+                    continue;
+                }
+            };
+            let help_indent = " ".repeat(width - flags.len() + 2);
+            writeln!(w, "{}{}", help_indent, line)?;
+        } else {
+            writeln!(w)?;
+        }
+
+        let help_indent = " ".repeat(width + indent_size + 2);
+        for line in help_lines {
+            writeln!(w, "{}{}", help_indent, line)?;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

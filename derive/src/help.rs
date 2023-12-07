@@ -75,36 +75,7 @@ pub fn help_string(
     }
 
     let options = if !options.is_empty() {
-        let options = quote!([#(#options),*]);
-        quote!(
-            writeln!(w, "\nOptions:")?;
-            for (flags, help_string) in #options {
-                let indent = " ".repeat(#indent);
-
-                let mut help_lines = help_string.lines();
-                write!(w, "{}", &indent)?;
-                write!(w, "{}", &flags)?;
-
-                if flags.len() <= #width {
-                    let line = match help_lines.next() {
-                        Some(line) => line,
-                        None => {
-                            writeln!(w)?;
-                            continue;
-                        },
-                    };
-                    let help_indent = " ".repeat(#width-flags.len()+2);
-                    writeln!(w, "{}{}", help_indent, line)?;
-                } else {
-                    writeln!(w, "\n")?;
-                }
-
-                let help_indent = " ".repeat(#width+#indent+2);
-                for line in help_lines {
-                    writeln!(w, "{}{}", help_indent, line)?;
-                }
-            }
-        )
+        quote!(::uutils_args::print_flags(&mut w, #indent, #width, [#(#options),*])?;)
     } else {
         quote!()
     };
