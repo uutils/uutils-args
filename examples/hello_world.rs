@@ -3,15 +3,11 @@ use uutils_args::{Arguments, Options};
 #[derive(Arguments)]
 #[arguments(file = "examples/hello_world_help.md")]
 enum Arg {
-    /// The *name* to **greet**
-    ///
-    /// Just to show off, I can do multiple paragraphs and wrap text!
-    ///
-    /// # Also headings!
+    /// The name to greet
     #[arg("-n NAME", "--name=NAME", "name=NAME")]
     Name(String),
 
-    /// The **number of times** to `greet`
+    /// The number of times to greet
     #[arg("-c N", "--count=N")]
     Count(u8),
 

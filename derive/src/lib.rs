@@ -3,6 +3,7 @@
 
 mod argument;
 mod attributes;
+mod complete;
 mod flags;
 mod help;
 mod help_parser;
@@ -44,6 +45,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         &arguments_attr.version_flags,
         &arguments_attr.file,
     );
+    let completion = complete::complete(&arguments);
     let help = help_handling(&arguments_attr.help_flags);
     let version = version_handling(&arguments_attr.version_flags);
     let version_string = quote!(format!(
@@ -74,7 +76,6 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             ) -> Result<Option<uutils_args::Argument<Self>>, uutils_args::Error> {
                 use uutils_args::{Value, lexopt, Error, Argument};
 
-                // #number_argment
                 #free
 
                 let arg = match { #next_arg } {
@@ -103,6 +104,12 @@ pub fn arguments(input: TokenStream) -> TokenStream {
 
             fn version() -> String {
                 #version_string
+            }
+
+            #[cfg(feature = "complete")]
+            fn complete() -> ::uutils_args_complete::Command {
+                use ::uutils_args_complete::{Command, Arg, ValueHint};
+                #completion
             }
         }
     );

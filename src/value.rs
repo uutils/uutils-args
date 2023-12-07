@@ -6,6 +6,8 @@ use std::{
     ffi::{OsStr, OsString},
     path::PathBuf,
 };
+#[cfg(feature = "complete")]
+use uutils_args_complete::ValueHint;
 
 pub type ValueResult<T> = Result<T, Box<dyn std::error::Error + Send + Sync + 'static>>;
 
@@ -51,6 +53,11 @@ impl std::fmt::Display for ValueError {
 /// If an error is returned, it will be wrapped in [`Error::ParsingFailed`]
 pub trait Value: Sized {
     fn from_value(value: &OsStr) -> ValueResult<Self>;
+
+    #[cfg(feature = "complete")]
+    fn value_hint() -> ValueHint {
+        ValueHint::Unknown
+    }
 }
 
 impl Value for OsString {
@@ -62,6 +69,11 @@ impl Value for OsString {
 impl Value for PathBuf {
     fn from_value(value: &OsStr) -> ValueResult<Self> {
         Ok(PathBuf::from(value))
+    }
+
+    #[cfg(feature = "complete")]
+    fn value_hint() -> ValueHint {
+        ValueHint::AnyPath
     }
 }
 
@@ -80,6 +92,11 @@ where
 {
     fn from_value(value: &OsStr) -> ValueResult<Self> {
         Ok(Some(T::from_value(value)?))
+    }
+
+    #[cfg(feature = "complete")]
+    fn value_hint() -> uutils_args_complete::ValueHint {
+        T::value_hint()
     }
 }
 
