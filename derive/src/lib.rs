@@ -109,6 +109,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             #[cfg(feature = "complete")]
             fn complete() -> ::uutils_args_complete::Command {
                 use ::uutils_args_complete::{Command, Arg, ValueHint};
+                use ::uutils_args::Value;
                 #completion
             }
         }
@@ -131,6 +132,7 @@ pub fn value(input: TokenStream) -> TokenStream {
     let mut options = Vec::new();
 
     let mut match_arms = vec![];
+    let mut all_keys = Vec::new();
     for variant in data.variants {
         let variant_name = variant.ident.to_string();
         let attrs = variant.attrs.clone();
@@ -147,6 +149,7 @@ pub fn value(input: TokenStream) -> TokenStream {
                 keys
             };
 
+            all_keys.extend(keys.clone());
             options.push(quote!(&[#(#keys),*]));
 
             let stmt = if let Some(v) = value {
@@ -194,6 +197,16 @@ pub fn value(input: TokenStream) -> TokenStream {
                     #(#match_arms),*,
                     _ => unreachable!("Should be caught by (None, []) case above.")
                 })
+            }
+
+            #[cfg(feature = "complete")]
+            fn value_hint() -> ::uutils_args_complete::ValueHint {
+                ::uutils_args_complete::ValueHint::Strings(
+                    [#(#all_keys),*]
+                        .into_iter()
+                        .map(ToString::to_string)
+                        .collect()
+                )
             }
         }
     );

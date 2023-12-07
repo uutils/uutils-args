@@ -11,7 +11,7 @@ pub struct Flags {
     pub dd_style: Vec<(String, String)>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Value {
     No,
     Optional(String),

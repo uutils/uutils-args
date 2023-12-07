@@ -11,7 +11,13 @@ use quote::quote;
 pub fn complete(args: &[Argument]) -> TokenStream {
     let mut arg_specs = Vec::new();
 
-    for Argument { help, arg_type, .. } in args {
+    for Argument {
+        help,
+        field,
+        arg_type,
+        ..
+    } in args
+    {
         let ArgType::Option {
             flags,
             hidden: false,
@@ -25,21 +31,29 @@ pub fn complete(args: &[Argument]) -> TokenStream {
         if short.is_empty() && long.is_empty() {
             continue;
         }
+
         let short: Vec<_> = short
             .iter()
             .map(|Flag { flag, .. }| quote!(String::from(#flag)))
             .collect();
+
         let long: Vec<_> = long
             .iter()
             .map(|Flag { flag, .. }| quote!(String::from(#flag)))
             .collect();
+
+        let hint = if let Some(ty) = field {
+            quote!(Some(<#ty>::value_hint()))
+        } else {
+            quote!(None)
+        };
 
         arg_specs.push(quote!(
             Arg {
                 short: vec![#(#short),*],
                 long: vec![#(#long),*],
                 help: String::from(#help),
-                value: None,
+                value: #hint,
             }
         ))
     }

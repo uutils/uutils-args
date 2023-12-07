@@ -30,6 +30,7 @@ fn render_value_hint(value: &ValueHint) -> String {
             let joined = s.join(", ");
             format!(" -a {{ {joined} }}")
         }
+        ValueHint::Unknown => String::new(),
         _ => todo!(),
     }
 }
