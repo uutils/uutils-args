@@ -27,18 +27,21 @@ pub fn render(c: &Command) -> String {
 fn render_value_hint(value: &ValueHint) -> String {
     match value {
         ValueHint::Strings(s) => {
-            let joined = s.join(", ");
-            format!(" -a {{ {joined} }}")
+            let joined = s.join(" ");
+            format!(" -f -a \"{joined}\"")
         }
-        ValueHint::Unknown => String::new(),
-        _ => todo!(),
+        ValueHint::AnyPath | ValueHint::FilePath | ValueHint::ExecutablePath => String::from(" -F"),
+        ValueHint::DirPath => " -f -a \"(__fish_complete_directories)\"".into(),
+        ValueHint::Unknown => " -f".into(),
+        ValueHint::Username => " -f -a \"(__fish_complete_users)\"".into(),
+        ValueHint::Hostname => " -f -a \"(__fish_print_hostnames)\"".into(),
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::render;
-    use crate::{Arg, Command};
+    use crate::{Arg, Command, ValueHint};
 
     #[test]
     fn short() {
@@ -64,5 +67,40 @@ mod test {
             }],
         };
         assert_eq!(render(&c), "complete -c test -l all -d 'some flag'\n",)
+    }
+
+    #[test]
+    fn value_hints() {
+        let args = [
+            (
+                ValueHint::Strings(vec!["all".into(), "none".into()]),
+                "-f -a \"all none\"",
+            ),
+            (ValueHint::Unknown, "-f"),
+            (ValueHint::AnyPath, "-F"),
+            (ValueHint::FilePath, "-F"),
+            (
+                ValueHint::DirPath,
+                "-f -a \"(__fish_complete_directories)\"",
+            ),
+            (ValueHint::ExecutablePath, "-F"),
+            (ValueHint::Username, "-f -a \"(__fish_complete_users)\""),
+            (ValueHint::Hostname, "-f -a \"(__fish_print_hostnames)\""),
+        ];
+        for (hint, expected) in args {
+            let c = Command {
+                name: "test".into(),
+                args: vec![Arg {
+                    short: vec!["a".into()],
+                    long: vec![],
+                    help: "some flag".into(),
+                    value: Some(hint),
+                }],
+            };
+            assert_eq!(
+                render(&c),
+                format!("complete -c test -s a -d 'some flag' {expected}\n")
+            )
+        }
     }
 }

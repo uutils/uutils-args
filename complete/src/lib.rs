@@ -16,19 +16,16 @@ pub struct Arg {
     pub value: Option<ValueHint>,
 }
 
+// Modelled after claps ValueHint
 pub enum ValueHint {
     Strings(Vec<String>),
     Unknown,
-    // Other,
     AnyPath,
-    // FilePath,
-    // DirPath,
-    // ExecutablePath,
-    // CommandName,
-    // CommandString,
-    // CommandWithArguments,
-    // Username,
-    // Hostname,
+    FilePath,
+    DirPath,
+    ExecutablePath,
+    Username,
+    Hostname,
 }
 
 pub fn render(c: &Command, shell: &str) -> String {
