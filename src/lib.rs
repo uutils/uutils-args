@@ -204,7 +204,7 @@ pub trait Options<Arg: Arguments>: Sized {
         // incorrectly.
         #[cfg(feature = "parse-is-complete")]
         {
-            print_completion::<_, Self, Arg>(args.into_iter());
+            print_complete::<_, Self, Arg>(args.into_iter());
             std::process::exit(0);
         }
 
@@ -249,7 +249,7 @@ pub fn __echo_style_positional(p: &mut lexopt::Parser, short_args: &[char]) -> O
 }
 
 #[cfg(feature = "parse-is-complete")]
-fn print_completion<I, O: Options<Arg>, Arg: Arguments>(mut args: I)
+fn print_complete<I, O: Options<Arg>, Arg: Arguments>(mut args: I)
 where
     I: Iterator + 'static,
     I::Item: Into<OsString>,
