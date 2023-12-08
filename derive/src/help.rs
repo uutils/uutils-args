@@ -99,7 +99,7 @@ pub fn help_string(
     )
 }
 
-fn read_help_file(file: &str) -> (String, String, String) {
+pub fn read_help_file(file: &str) -> (String, String, String) {
     let path = Path::new(file);
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let mut location = PathBuf::from(manifest_dir);

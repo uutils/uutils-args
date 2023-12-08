@@ -3,6 +3,7 @@
 
 use crate::{Command, ValueHint};
 
+/// Create completion script for `fish`
 pub fn render(c: &Command) -> String {
     let mut out = String::new();
     let name = &c.name;
@@ -52,6 +53,7 @@ mod test {
                 help: "some flag".into(),
                 ..Arg::default()
             }],
+            ..Command::default()
         };
         assert_eq!(render(&c), "complete -c test -s a -d 'some flag'\n",)
     }
@@ -65,6 +67,7 @@ mod test {
                 help: "some flag".into(),
                 ..Arg::default()
             }],
+            ..Command::default()
         };
         assert_eq!(render(&c), "complete -c test -l all -d 'some flag'\n",)
     }
@@ -96,6 +99,7 @@ mod test {
                     help: "some flag".into(),
                     value: Some(hint),
                 }],
+                ..Command::default()
             };
             assert_eq!(
                 render(&c),

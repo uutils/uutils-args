@@ -45,7 +45,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         &arguments_attr.version_flags,
         &arguments_attr.file,
     );
-    let complete_command = complete::complete(&arguments);
+    let complete_command = complete::complete(&arguments, &arguments_attr.file);
     let help = help_handling(&arguments_attr.help_flags);
     let version = version_handling(&arguments_attr.version_flags);
     let version_string = quote!(format!(

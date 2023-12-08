@@ -8,8 +8,14 @@ use crate::{
 use proc_macro2::TokenStream;
 use quote::quote;
 
-pub fn complete(args: &[Argument]) -> TokenStream {
+pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
     let mut arg_specs = Vec::new();
+
+    let (summary, _usage, after_options) = if let Some(file) = file {
+        crate::help::read_help_file(file)
+    } else {
+        ("".into(), "{} [OPTIONS] [ARGUMENTS]".into(), "".into())
+    };
 
     for Argument {
         help,
@@ -60,6 +66,9 @@ pub fn complete(args: &[Argument]) -> TokenStream {
 
     quote!(Command {
         name: String::from(option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_PKG_NAME"))),
+        summary: String::from(#summary),
+        after_options: String::from(#after_options),
+        version: String::from(env!("CARGO_PKG_VERSION")),
         args: vec![#(#arg_specs),*]
     })
 }

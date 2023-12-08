@@ -1,8 +1,9 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use crate::{Command, Arg};
+use crate::{Arg, Command};
 
+/// Create completion script for `zsh`
 pub fn render(c: &Command) -> String {
     template(&c.name, &render_args(&c.args))
 }
@@ -13,14 +14,10 @@ fn render_args(args: &[Arg]) -> String {
     for arg in args {
         let help = &arg.help;
         for short in &arg.short {
-            out.push_str(
-                &format!("{indent}'-{short}[{help}]' \\\n")
-            );
+            out.push_str(&format!("{indent}'-{short}[{help}]' \\\n"));
         }
         for long in &arg.long {
-            out.push_str(
-                &format!("{indent}'--{long}[{help}]' \\\n")
-            );
+            out.push_str(&format!("{indent}'--{long}[{help}]' \\\n"));
         }
     }
     out
