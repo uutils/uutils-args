@@ -1,6 +1,6 @@
 use std::ffi::OsStr;
 
-use uutils_args::{Arguments, Initial, Options, Value, ValueResult};
+use uutils_args::{Arguments, Options, Value, ValueResult};
 
 #[test]
 fn string_option() {
@@ -10,7 +10,7 @@ fn string_option() {
         Message(String),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         message: String,
     }
@@ -22,7 +22,9 @@ fn string_option() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "--message=hello"]).message,
+        Settings::default()
+            .parse(["test", "--message=hello"])
+            .message,
         "hello"
     );
 }
@@ -46,7 +48,7 @@ fn enum_option() {
         Format(Format),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         format: Format,
     }
@@ -58,12 +60,14 @@ fn enum_option() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "--format=bar"]).format,
+        Settings::default().parse(["test", "--format=bar"]).format,
         Format::Bar
     );
 
     assert_eq!(
-        Settings::parse(["test", "--format", "baz"]).format,
+        Settings::default()
+            .parse(["test", "--format", "baz"])
+            .format,
         Format::Baz
     );
 }
@@ -85,7 +89,7 @@ fn enum_option_with_fields() {
         Indent(Indent),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         indent: Indent,
     }
@@ -97,11 +101,11 @@ fn enum_option_with_fields() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "-i=thin"]).indent,
+        Settings::default().parse(["test", "-i=thin"]).indent,
         Indent::Spaces(4)
     );
     assert_eq!(
-        Settings::parse(["test", "-i=wide"]).indent,
+        Settings::default().parse(["test", "-i=wide"]).indent,
         Indent::Spaces(8)
     );
 }
@@ -134,7 +138,7 @@ fn enum_with_complex_from_value() {
         Indent(Indent),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         indent: Indent,
     }
@@ -145,8 +149,14 @@ fn enum_with_complex_from_value() {
         }
     }
 
-    assert_eq!(Settings::parse(["test", "-i=tabs"]).indent, Indent::Tabs);
-    assert_eq!(Settings::parse(["test", "-i=4"]).indent, Indent::Spaces(4));
+    assert_eq!(
+        Settings::default().parse(["test", "-i=tabs"]).indent,
+        Indent::Tabs
+    );
+    assert_eq!(
+        Settings::default().parse(["test", "-i=4"]).indent,
+        Indent::Spaces(4)
+    );
 }
 
 #[test]
@@ -168,9 +178,8 @@ fn color() {
         Color(Option<Color>),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
-        #[initial(Color::Auto)]
         color: Color,
     }
 
@@ -181,20 +190,29 @@ fn color() {
     }
 
     assert_eq!(
-        Settings::parse(["test", "--color=yes"]).color,
+        Settings::default().parse(["test", "--color=yes"]).color,
         Color::Always
     );
     assert_eq!(
-        Settings::parse(["test", "--color=always"]).color,
+        Settings::default().parse(["test", "--color=always"]).color,
         Color::Always
     );
-    assert_eq!(Settings::parse(["test", "--color=no"]).color, Color::Never);
     assert_eq!(
-        Settings::parse(["test", "--color=never"]).color,
+        Settings::default().parse(["test", "--color=no"]).color,
         Color::Never
     );
-    assert_eq!(Settings::parse(["test", "--color=auto"]).color, Color::Auto);
-    assert_eq!(Settings::parse(["test", "--color"]).color, Color::Always)
+    assert_eq!(
+        Settings::default().parse(["test", "--color=never"]).color,
+        Color::Never
+    );
+    assert_eq!(
+        Settings::default().parse(["test", "--color=auto"]).color,
+        Color::Auto
+    );
+    assert_eq!(
+        Settings::default().parse(["test", "--color"]).color,
+        Color::Always
+    )
 }
 
 #[test]
@@ -209,7 +227,7 @@ fn actions() {
         Receive,
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         last_message: String,
         send: bool,
@@ -229,7 +247,7 @@ fn actions() {
         }
     }
 
-    let settings = Settings::parse(["test", "-m=Hello", "-m=World", "--send"]);
+    let settings = Settings::default().parse(["test", "-m=Hello", "-m=World", "--send"]);
     assert_eq!(settings.messages, vec!["Hello", "World"]);
     assert_eq!(settings.last_message, "World");
     assert!(settings.send);
@@ -243,7 +261,7 @@ fn width() {
         Width(u64),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         width: Option<u64>,
     }
@@ -257,8 +275,8 @@ fn width() {
         }
     }
 
-    assert_eq!(Settings::parse(["test", "-w=0"]).width, None);
-    assert_eq!(Settings::parse(["test", "-w=1"]).width, Some(1));
+    assert_eq!(Settings::default().parse(["test", "-w=0"]).width, None);
+    assert_eq!(Settings::default().parse(["test", "-w=1"]).width, Some(1));
 }
 
 #[test]
@@ -287,7 +305,7 @@ fn integers() {
         I128(i128),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         n: i128,
     }
@@ -309,17 +327,17 @@ fn integers() {
         }
     }
 
-    assert_eq!(Settings::parse(["test", "--u8=5"]).n, 5);
-    assert_eq!(Settings::parse(["test", "--u16=5"]).n, 5);
-    assert_eq!(Settings::parse(["test", "--u32=5"]).n, 5);
-    assert_eq!(Settings::parse(["test", "--u64=5"]).n, 5);
-    assert_eq!(Settings::parse(["test", "--u128=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--u8=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--u16=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--u32=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--u64=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--u128=5"]).n, 5);
 
-    assert_eq!(Settings::parse(["test", "--i8=5"]).n, 5);
-    assert_eq!(Settings::parse(["test", "--i16=5"]).n, 5);
-    assert_eq!(Settings::parse(["test", "--i32=5"]).n, 5);
-    assert_eq!(Settings::parse(["test", "--i64=5"]).n, 5);
-    assert_eq!(Settings::parse(["test", "--i128=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--i8=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--i16=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--i32=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--i64=5"]).n, 5);
+    assert_eq!(Settings::default().parse(["test", "--i128=5"]).n, 5);
 }
 
 #[test]
@@ -344,7 +362,7 @@ fn ls_classify() {
         Classify(When),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         classify: When,
     }
@@ -355,17 +373,22 @@ fn ls_classify() {
         }
     }
 
-    assert_eq!(Settings::parse(["test"]).classify, When::Auto);
+    assert_eq!(Settings::default().parse(["test"]).classify, When::Auto);
     assert_eq!(
-        Settings::parse(["test", "--classify=never"]).classify,
+        Settings::default()
+            .parse(["test", "--classify=never"])
+            .classify,
         When::Never,
     );
     assert_eq!(
-        Settings::parse(["test", "--classify"]).classify,
+        Settings::default().parse(["test", "--classify"]).classify,
         When::Always,
     );
-    assert_eq!(Settings::parse(["test", "-F"]).classify, When::Always,);
-    assert!(Settings::try_parse(["test", "-Falways"]).is_err());
+    assert_eq!(
+        Settings::default().parse(["test", "-F"]).classify,
+        When::Always,
+    );
+    assert!(Settings::default().try_parse(["test", "-Falways"]).is_err());
 }
 
 #[test]
@@ -379,7 +402,7 @@ fn mktemp_tmpdir() {
         TmpDir(String),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         tmpdir: Option<String>,
     }
@@ -390,16 +413,16 @@ fn mktemp_tmpdir() {
         }
     }
 
-    let settings = Settings::parse(["test", "-p", "X"]);
+    let settings = Settings::default().parse(["test", "-p", "X"]);
     assert_eq!(settings.tmpdir.unwrap(), "X");
 
-    let settings = Settings::parse(["test", "--tmpdir=X"]);
+    let settings = Settings::default().parse(["test", "--tmpdir=X"]);
     assert_eq!(settings.tmpdir.unwrap(), "X");
 
-    let settings = Settings::parse(["test", "--tmpdir"]);
+    let settings = Settings::default().parse(["test", "--tmpdir"]);
     assert_eq!(settings.tmpdir.unwrap(), "/tmp");
 
-    assert!(Settings::try_parse(["test", "-p"]).is_err());
+    assert!(Settings::default().try_parse(["test", "-p"]).is_err());
 }
 
 #[test]
@@ -452,7 +475,7 @@ fn deprecated() {
         Plus(isize),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         n1: usize,
         n2: isize,
@@ -467,8 +490,8 @@ fn deprecated() {
         }
     }
 
-    assert_eq!(Settings::parse(["test", "-10"]).n1, 10usize);
-    assert!(Settings::try_parse(["test", "--10"]).is_err());
-    assert_eq!(Settings::parse(["test", "+10"]).n2, 10isize);
-    assert_eq!(Settings::parse(["test", "+-10"]).n2, -10isize);
+    assert_eq!(Settings::default().parse(["test", "-10"]).n1, 10usize);
+    assert!(Settings::default().try_parse(["test", "--10"]).is_err());
+    assert_eq!(Settings::default().parse(["test", "+10"]).n2, 10isize);
+    assert_eq!(Settings::default().parse(["test", "+-10"]).n2, -10isize);
 }

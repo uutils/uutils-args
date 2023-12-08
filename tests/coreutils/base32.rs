@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -17,13 +17,22 @@ enum Arg {
     File(PathBuf),
 }
 
-#[derive(Initial)]
 struct Settings {
     decode: bool,
     ignore_garbage: bool,
-    #[initial(Some(76))]
     wrap: Option<usize>,
     file: Option<PathBuf>,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            wrap: Some(76),
+            decode: Default::default(),
+            ignore_garbage: Default::default(),
+            file: Default::default(),
+        }
+    }
 }
 
 impl Options<Arg> for Settings {
@@ -40,8 +49,14 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn wrap() {
-    assert_eq!(Settings::parse(["base32"]).wrap, Some(76));
-    assert_eq!(Settings::parse(["base32", "-w0"]).wrap, None);
-    assert_eq!(Settings::parse(["base32", "-w100"]).wrap, Some(100));
-    assert_eq!(Settings::parse(["base32", "--wrap=100"]).wrap, Some(100));
+    assert_eq!(Settings::default().parse(["base32"]).wrap, Some(76));
+    assert_eq!(Settings::default().parse(["base32", "-w0"]).wrap, None);
+    assert_eq!(
+        Settings::default().parse(["base32", "-w100"]).wrap,
+        Some(100)
+    );
+    assert_eq!(
+        Settings::default().parse(["base32", "--wrap=100"]).wrap,
+        Some(100)
+    );
 }

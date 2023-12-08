@@ -1,4 +1,4 @@
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 #[derive(Arguments)]
 #[arguments(file = "examples/hello_world_help.md")]
@@ -20,10 +20,8 @@ enum Arg {
     Hidden,
 }
 
-#[derive(Initial)]
 struct Settings {
     name: String,
-    #[initial(1)]
     count: u8,
 }
 
@@ -38,7 +36,12 @@ impl Options<Arg> for Settings {
 }
 
 fn main() -> Result<(), uutils_args::Error> {
-    let settings = Settings::parse(std::env::args_os());
+    let settings = Settings {
+        name: String::new(),
+        count: 1,
+    }
+    .parse(std::env::args_os());
+
     for _ in 0..settings.count {
         println!("Hello, {}!", settings.name);
     }

@@ -1,5 +1,5 @@
 use std::ffi::OsString;
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 #[derive(Arguments)]
 #[arguments(parse_echo_style)]
@@ -20,7 +20,7 @@ enum Arg {
     String(Vec<OsString>),
 }
 
-#[derive(Initial)]
+#[derive(Default)]
 struct Settings {
     trailing_newline: bool,
     escape: bool,
@@ -43,16 +43,16 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn double_hyphen() {
-    let s = Settings::parse(["echo", "--"]);
+    let s = Settings::default().parse(["echo", "--"]);
     assert_eq!(s.strings, vec![OsString::from("--")]);
 
-    let s = Settings::parse(["echo", "--", "-n"]);
+    let s = Settings::default().parse(["echo", "--", "-n"]);
     assert_eq!(s.strings, vec![OsString::from("--"), OsString::from("-n")]);
 }
 
 #[test]
 #[ignore]
 fn nonexistent_options_are_values() {
-    let s = Settings::parse(["echo", "-f"]);
+    let s = Settings::default().parse(["echo", "-f"]);
     assert_eq!(s.strings, vec![OsString::from("-f")]);
 }

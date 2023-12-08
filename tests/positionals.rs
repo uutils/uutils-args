@@ -1,4 +1,4 @@
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 #[test]
 fn one_positional() {
@@ -8,7 +8,7 @@ fn one_positional() {
         File1(String),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         file1: String,
     }
@@ -19,10 +19,10 @@ fn one_positional() {
         }
     }
 
-    let settings = Settings::parse(["test", "foo"]);
+    let settings = Settings::default().parse(["test", "foo"]);
     assert_eq!(settings.file1, "foo");
 
-    assert!(Settings::try_parse(["test"]).is_err());
+    assert!(Settings::default().try_parse(["test"]).is_err());
 }
 
 #[test]
@@ -35,7 +35,7 @@ fn two_positionals() {
         Bar(String),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: String,
         bar: String,
@@ -50,11 +50,11 @@ fn two_positionals() {
         }
     }
 
-    let settings = Settings::parse(["test", "a", "b"]);
+    let settings = Settings::default().parse(["test", "a", "b"]);
     assert_eq!(settings.foo, "a");
     assert_eq!(settings.bar, "b");
 
-    assert!(Settings::try_parse(["test"]).is_err());
+    assert!(Settings::default().try_parse(["test"]).is_err());
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn optional_positional() {
         Foo(String),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: Option<String>,
     }
@@ -76,9 +76,9 @@ fn optional_positional() {
         }
     }
 
-    let settings = Settings::parse(["test"]);
+    let settings = Settings::default().parse(["test"]);
     assert_eq!(settings.foo, None);
-    let settings = Settings::parse(["test", "bar"]);
+    let settings = Settings::default().parse(["test", "bar"]);
     assert_eq!(settings.foo.unwrap(), "bar");
 }
 
@@ -90,7 +90,7 @@ fn collect_positional() {
         Foo(String),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: Vec<String>,
     }
@@ -101,9 +101,9 @@ fn collect_positional() {
         }
     }
 
-    let settings = Settings::parse(["test", "a", "b", "c"]);
+    let settings = Settings::default().parse(["test", "a", "b", "c"]);
     assert_eq!(settings.foo, vec!["a", "b", "c"]);
-    let settings = Settings::parse(["test"]);
+    let settings = Settings::default().parse(["test"]);
     assert_eq!(settings.foo, Vec::<String>::new());
 }
 
@@ -115,7 +115,7 @@ fn last1() {
         Foo(Vec<String>),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: Vec<String>,
     }
@@ -126,7 +126,7 @@ fn last1() {
         }
     }
 
-    let settings = Settings::parse(["test", "a", "-b", "c"]);
+    let settings = Settings::default().parse(["test", "a", "-b", "c"]);
     assert_eq!(settings.foo, vec!["a", "-b", "c"]);
 }
 
@@ -141,7 +141,7 @@ fn last2() {
         Foo(Vec<String>),
     }
 
-    #[derive(Initial)]
+    #[derive(Default)]
     struct Settings {
         foo: Vec<String>,
     }
@@ -155,9 +155,9 @@ fn last2() {
         }
     }
 
-    let settings = Settings::parse(["test", "-a"]);
+    let settings = Settings::default().parse(["test", "-a"]);
     assert_eq!(settings.foo, Vec::<String>::new());
 
-    let settings = Settings::parse(["test", "--", "-a"]);
+    let settings = Settings::default().parse(["test", "--", "-a"]);
     assert_eq!(settings.foo, vec!["-a"]);
 }

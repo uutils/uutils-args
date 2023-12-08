@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 #[derive(Default)]
 enum NumberingMode {
@@ -43,7 +43,7 @@ enum Arg {
     File(PathBuf),
 }
 
-#[derive(Initial)]
+#[derive(Default)]
 struct Settings {
     show_tabs: bool,
     show_ends: bool,
@@ -82,27 +82,27 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn show() {
-    let s = Settings::parse(["cat", "-v"]);
+    let s = Settings::default().parse(["cat", "-v"]);
     assert!(!s.show_ends && !s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-E"]);
+    let s = Settings::default().parse(["cat", "-E"]);
     assert!(s.show_ends && !s.show_tabs && !s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-T"]);
+    let s = Settings::default().parse(["cat", "-T"]);
     assert!(!s.show_ends && s.show_tabs && !s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-e"]);
+    let s = Settings::default().parse(["cat", "-e"]);
     assert!(s.show_ends && !s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-t"]);
+    let s = Settings::default().parse(["cat", "-t"]);
     assert!(!s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-A"]);
+    let s = Settings::default().parse(["cat", "-A"]);
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-te"]);
+    let s = Settings::default().parse(["cat", "-te"]);
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::parse(["cat", "-vET"]);
+    let s = Settings::default().parse(["cat", "-vET"]);
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 }

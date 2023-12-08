@@ -1,7 +1,7 @@
 // spell-checker:ignore noxfer infile outfile iseek oseek conv iflag oflag iflags oflags
 use std::path::PathBuf;
 
-use uutils_args::{Arguments, Initial, Options, Value};
+use uutils_args::{Arguments, Options, Value};
 
 #[derive(Value, Debug, PartialEq, Eq)]
 enum StatusLevel {
@@ -56,13 +56,11 @@ enum Arg {
     Oflag(String),
 }
 
-#[derive(Initial, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 struct Settings {
     infile: Option<PathBuf>,
     outfile: Option<PathBuf>,
-    #[initial(512)]
     ibs: usize,
-    #[initial(512)]
     obs: usize,
     skip: u64,
     seek: u64,
@@ -72,6 +70,25 @@ struct Settings {
     _oconv: Vec<String>,
     _oflags: Vec<String>,
     status: Option<StatusLevel>,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            ibs: 512,
+            obs: 512,
+            infile: Default::default(),
+            outfile: Default::default(),
+            skip: Default::default(),
+            seek: Default::default(),
+            count: Default::default(),
+            _iconv: Default::default(),
+            _iflags: Default::default(),
+            _oconv: Default::default(),
+            _oflags: Default::default(),
+            status: Default::default(),
+        }
+    }
 }
 
 impl Options<Arg> for Settings {
@@ -99,16 +116,19 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn empty() {
-    assert_eq!(Settings::try_parse(["dd"]).unwrap(), Settings::initial())
+    assert_eq!(
+        Settings::default().try_parse(["dd"]).unwrap(),
+        Settings::default()
+    )
 }
 
 #[test]
 fn infile() {
     assert_eq!(
-        Settings::try_parse(["dd", "if=hello"]).unwrap(),
+        Settings::default().try_parse(["dd", "if=hello"]).unwrap(),
         Settings {
             infile: Some(PathBuf::from("hello")),
-            ..Settings::initial()
+            ..Settings::default()
         }
     )
 }
@@ -116,10 +136,10 @@ fn infile() {
 #[test]
 fn outfile() {
     assert_eq!(
-        Settings::try_parse(["dd", "of=hello"]).unwrap(),
+        Settings::default().try_parse(["dd", "of=hello"]).unwrap(),
         Settings {
             outfile: Some(PathBuf::from("hello")),
-            ..Settings::initial()
+            ..Settings::default()
         }
     )
 }
@@ -127,35 +147,39 @@ fn outfile() {
 #[test]
 fn bs() {
     assert_eq!(
-        Settings::try_parse(["dd", "ibs=1"]).unwrap(),
+        Settings::default().try_parse(["dd", "ibs=1"]).unwrap(),
         Settings {
             ibs: 1,
             obs: 512,
-            ..Settings::initial()
+            ..Settings::default()
         }
     );
     assert_eq!(
-        Settings::try_parse(["dd", "obs=1"]).unwrap(),
+        Settings::default().try_parse(["dd", "obs=1"]).unwrap(),
         Settings {
             ibs: 512,
             obs: 1,
-            ..Settings::initial()
+            ..Settings::default()
         }
     );
     assert_eq!(
-        Settings::try_parse(["dd", "ibs=10", "obs=1"]).unwrap(),
+        Settings::default()
+            .try_parse(["dd", "ibs=10", "obs=1"])
+            .unwrap(),
         Settings {
             ibs: 10,
             obs: 1,
-            ..Settings::initial()
+            ..Settings::default()
         }
     );
     assert_eq!(
-        Settings::try_parse(["dd", "ibs=10", "bs=1"]).unwrap(),
+        Settings::default()
+            .try_parse(["dd", "ibs=10", "bs=1"])
+            .unwrap(),
         Settings {
             ibs: 1,
             obs: 1,
-            ..Settings::initial()
+            ..Settings::default()
         }
     )
 }

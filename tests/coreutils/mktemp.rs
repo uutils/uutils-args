@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use uutils_args::{Arguments, Initial, Options};
+use uutils_args::{Arguments, Options};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -26,7 +26,7 @@ enum Arg {
     Template(String),
 }
 
-#[derive(Default, Initial)]
+#[derive(Default)]
 struct Settings {
     directory: bool,
     dry_run: bool,
@@ -53,35 +53,35 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn suffix() {
-    let s = Settings::parse(["mktemp", "--suffix=hello"]);
+    let s = Settings::default().parse(["mktemp", "--suffix=hello"]);
     assert_eq!(s.suffix.unwrap(), "hello");
 
-    let s = Settings::parse(["mktemp", "--suffix="]);
+    let s = Settings::default().parse(["mktemp", "--suffix="]);
     assert_eq!(s.suffix.unwrap(), "");
 
-    let s = Settings::parse(["mktemp", "--suffix="]);
+    let s = Settings::default().parse(["mktemp", "--suffix="]);
     assert_eq!(s.suffix.unwrap(), "");
 
-    let s = Settings::parse(["mktemp"]);
+    let s = Settings::default().parse(["mktemp"]);
     assert_eq!(s.suffix, None);
 }
 
 #[test]
 fn tmpdir() {
-    let s = Settings::parse(["mktemp", "--tmpdir"]);
+    let s = Settings::default().parse(["mktemp", "--tmpdir"]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new("."));
 
-    let s = Settings::parse(["mktemp", "--tmpdir="]);
+    let s = Settings::default().parse(["mktemp", "--tmpdir="]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
 
-    let s = Settings::parse(["mktemp", "-p", "foo"]);
+    let s = Settings::default().parse(["mktemp", "-p", "foo"]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
 
-    let s = Settings::parse(["mktemp", "-pfoo"]);
+    let s = Settings::default().parse(["mktemp", "-pfoo"]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
 
-    let s = Settings::parse(["mktemp", "-p", ""]);
+    let s = Settings::default().parse(["mktemp", "-p", ""]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
 
-    assert!(Settings::try_parse(["mktemp", "-p"]).is_err());
+    assert!(Settings::default().try_parse(["mktemp", "-p"]).is_err());
 }
