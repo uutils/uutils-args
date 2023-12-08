@@ -31,7 +31,7 @@ pub enum ValueHint {
 pub fn render(c: &Command, shell: &str) -> String {
     match shell {
         "fish" => fish::render(c),
-        "sh" | "zsh" | "bash" | "csh" => panic!("shell '{shell}' completion is not supported yet!"),
+        "sh" | "zsh" | "bash" | "csh" | "elvish" | "powershell" => panic!("shell '{shell}' completion is not supported yet!"),
         _ => panic!("unknown shell '{shell}'!"),
     }
 }
