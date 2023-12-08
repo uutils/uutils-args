@@ -190,6 +190,7 @@ pub trait Options<Arg: Arguments>: Sized {
         exit_if_err(self.try_parse(args), Arg::EXIT_CODE)
     }
 
+    #[allow(unused_mut)]
     fn try_parse<I>(mut self, args: I) -> Result<Self, Error>
     where
         I: IntoIterator + 'static,
