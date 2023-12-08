@@ -2,6 +2,7 @@
 // file that was distributed with this source code.
 
 mod fish;
+mod zsh;
 
 pub struct Command {
     pub name: String,
@@ -31,7 +32,8 @@ pub enum ValueHint {
 pub fn render(c: &Command, shell: &str) -> String {
     match shell {
         "fish" => fish::render(c),
-        "sh" | "zsh" | "bash" | "csh" | "elvish" | "powershell" => panic!("shell '{shell}' completion is not supported yet!"),
+        "zsh" => zsh::render(c),
+        "sh" | "bash" | "csh" | "elvish" | "powershell" => panic!("shell '{shell}' completion is not supported yet!"),
         _ => panic!("unknown shell '{shell}'!"),
     }
 }
