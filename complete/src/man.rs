@@ -57,5 +57,12 @@ pub fn render(c: &Command) -> String {
         page.text(flags);
         page.text([roman(arg.help)]);
     }
+
+    page.control("SH", ["AUTHORS"]);
+    page.text([roman(c.authors)]);
+
+    page.control("SH", ["COPYRIGHT"]);
+    page.text([roman(format!("Copyright © {}.", &c.authors))]);
+    page.text([roman(format!("License: {}", &c.license))]);
     page.render()
 }
