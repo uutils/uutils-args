@@ -1,18 +1,18 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use crate::Command;
+use crate::{Command, Flag, Value};
 
 /// Render command to a markdown file for mdbook
 pub fn render(c: &Command) -> String {
     let mut out = String::new();
     out.push_str(&title(c));
     out.push_str(&additional(c));
-    out.push_str(&c.summary);
+    out.push_str(c.summary);
     out.push_str("\n\n");
     out.push_str(&options(c));
     out.push_str("\n\n");
-    out.push_str(&c.after_options);
+    out.push_str(c.after_options);
     out.push('\n');
     out
 }
@@ -40,12 +40,22 @@ fn options(c: &Command) -> String {
 
         let mut flags = Vec::new();
 
-        for long in &arg.long {
-            flags.push(format!("<code>--{long}</code>"));
+        for Flag { flag, value } in &arg.long {
+            let value_str = match value {
+                Value::Required(name) => format!("={name}"),
+                Value::Optional(name) => format!("[={name}]"),
+                Value::No => String::new(),
+            };
+            flags.push(format!("<code>--{flag}{value_str}</code>"));
         }
 
-        for short in &arg.short {
-            flags.push(format!("<code>-{short}</code>"))
+        for Flag { flag, value } in &arg.short {
+            let value_str = match value {
+                Value::Required(name) => format!(" {name}"),
+                Value::Optional(name) => format!("[{name}]"),
+                Value::No => String::new(),
+            };
+            flags.push(format!("<code>-{flag}{value_str}</code>"));
         }
 
         out.push_str(&flags.join(", "));

@@ -1,11 +1,11 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use crate::{Arg, Command};
+use crate::{Arg, Command, Flag};
 
 /// Create completion script for `zsh`
 pub fn render(c: &Command) -> String {
-    template(&c.name, &render_args(&c.args))
+    template(c.name, &render_args(&c.args))
 }
 
 fn render_args(args: &[Arg]) -> String {
@@ -13,11 +13,11 @@ fn render_args(args: &[Arg]) -> String {
     let indent = " ".repeat(8);
     for arg in args {
         let help = &arg.help;
-        for short in &arg.short {
-            out.push_str(&format!("{indent}'-{short}[{help}]' \\\n"));
+        for Flag { flag, .. } in &arg.short {
+            out.push_str(&format!("{indent}'-{flag}[{help}]' \\\n"));
         }
-        for long in &arg.long {
-            out.push_str(&format!("{indent}'--{long}[{help}]' \\\n"));
+        for Flag { flag, .. } in &arg.long {
+            out.push_str(&format!("{indent}'--{flag}[{help}]' \\\n"));
         }
     }
     out

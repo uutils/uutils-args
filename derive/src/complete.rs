@@ -3,7 +3,7 @@
 
 use crate::{
     argument::{ArgType, Argument},
-    flags::{Flag, Flags},
+    flags::{Flag, Flags, Value},
 };
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -40,12 +40,33 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
 
         let short: Vec<_> = short
             .iter()
-            .map(|Flag { flag, .. }| quote!(String::from(#flag)))
+            .map(|Flag { flag, value }| {
+                let flag = flag.to_string();
+                let value = match value {
+                    Value::No => quote!(::uutils_args_complete::Value::No),
+                    Value::Optional(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
+                    Value::Required(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
+                };
+                quote!(::uutils_args_complete::Flag {
+                    flag: #flag,
+                    value: #value
+                })
+            })
             .collect();
 
         let long: Vec<_> = long
             .iter()
-            .map(|Flag { flag, .. }| quote!(String::from(#flag)))
+            .map(|Flag { flag, value }| {
+                let value = match value {
+                    Value::No => quote!(::uutils_args_complete::Value::No),
+                    Value::Optional(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
+                    Value::Required(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
+                };
+                quote!(::uutils_args_complete::Flag {
+                    flag: #flag,
+                    value: #value
+                })
+            })
             .collect();
 
         let hint = if let Some(ty) = field {
@@ -55,20 +76,20 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
         };
 
         arg_specs.push(quote!(
-            Arg {
+            ::uutils_args_complete::Arg {
                 short: vec![#(#short),*],
                 long: vec![#(#long),*],
-                help: String::from(#help),
+                help: #help,
                 value: #hint,
             }
         ))
     }
 
-    quote!(Command {
-        name: String::from(option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_PKG_NAME"))),
-        summary: String::from(#summary),
-        after_options: String::from(#after_options),
-        version: String::from(env!("CARGO_PKG_VERSION")),
+    quote!(::uutils_args_complete::Command {
+        name: option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_PKG_NAME")),
+        summary: #summary,
+        after_options: #after_options,
+        version: env!("CARGO_PKG_VERSION"),
         args: vec![#(#arg_specs),*]
     })
 }

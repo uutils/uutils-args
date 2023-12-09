@@ -110,7 +110,7 @@ pub trait Arguments: Sized {
     }
 
     #[cfg(feature = "complete")]
-    fn complete() -> uutils_args_complete::Command;
+    fn complete() -> uutils_args_complete::Command<'static>;
 }
 
 /// An iterator over arguments.

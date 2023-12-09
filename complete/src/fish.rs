@@ -1,19 +1,22 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use crate::{Command, ValueHint};
+use crate::{Command, Flag, ValueHint};
 
 /// Create completion script for `fish`
+///
+/// Short and long options are combined into single `complete` calls, even if
+/// they differ in whether they take arguments or not.
 pub fn render(c: &Command) -> String {
     let mut out = String::new();
     let name = &c.name;
     for arg in &c.args {
         let mut line = format!("complete -c {name}");
-        for short in &arg.short {
-            line.push_str(&format!(" -s {short}"));
+        for Flag { flag, .. } in &arg.short {
+            line.push_str(&format!(" -s {flag}"));
         }
-        for long in &arg.long {
-            line.push_str(&format!(" -l {long}"));
+        for Flag { flag, .. } in &arg.long {
+            line.push_str(&format!(" -l {flag}"));
         }
         line.push_str(&format!(" -d '{}'", arg.help));
         if let Some(value) = &arg.value {
@@ -42,15 +45,18 @@ fn render_value_hint(value: &ValueHint) -> String {
 #[cfg(test)]
 mod test {
     use super::render;
-    use crate::{Arg, Command, ValueHint};
+    use crate::{Arg, Command, Flag, Value, ValueHint};
 
     #[test]
     fn short() {
         let c = Command {
-            name: "test".into(),
+            name: "test",
             args: vec![Arg {
-                short: vec!["a".into()],
-                help: "some flag".into(),
+                short: vec![Flag {
+                    flag: "a",
+                    value: Value::No,
+                }],
+                help: "some flag",
                 ..Arg::default()
             }],
             ..Command::default()
@@ -61,10 +67,13 @@ mod test {
     #[test]
     fn long() {
         let c = Command {
-            name: "test".into(),
+            name: "test",
             args: vec![Arg {
-                long: vec!["all".into()],
-                help: "some flag".into(),
+                long: vec![Flag {
+                    flag: "all",
+                    value: Value::No,
+                }],
+                help: "some flag",
                 ..Arg::default()
             }],
             ..Command::default()
@@ -92,11 +101,14 @@ mod test {
         ];
         for (hint, expected) in args {
             let c = Command {
-                name: "test".into(),
+                name: "test",
                 args: vec![Arg {
-                    short: vec!["a".into()],
+                    short: vec![Flag {
+                        flag: "a",
+                        value: Value::No,
+                    }],
                     long: vec![],
-                    help: "some flag".into(),
+                    help: "some flag",
                     value: Some(hint),
                 }],
                 ..Command::default()

@@ -107,8 +107,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             }
 
             #[cfg(feature = "complete")]
-            fn complete() -> ::uutils_args_complete::Command {
-                use ::uutils_args_complete::{Command, Arg, ValueHint};
+            fn complete() -> ::uutils_args_complete::Command<'static> {
                 use ::uutils_args::Value;
                 #complete_command
             }
