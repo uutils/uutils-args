@@ -28,6 +28,8 @@ pub struct Command<'a> {
     pub version: &'a str,
     pub after_options: &'a str,
     pub args: Vec<Arg<'a>>,
+    pub license: &'a str,
+    pub authors: &'a str,
 }
 
 /// Description of an argument

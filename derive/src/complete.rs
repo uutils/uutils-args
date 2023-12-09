@@ -90,6 +90,8 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
         summary: #summary,
         after_options: #after_options,
         version: env!("CARGO_PKG_VERSION"),
-        args: vec![#(#arg_specs),*]
+        args: vec![#(#arg_specs),*],
+        license: env!("CARGO_PKG_LICENSE"),
+        authors: env!("CARGO_PKG_AUTHORS"),
     })
 }
