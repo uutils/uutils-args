@@ -19,7 +19,7 @@ enum Arg {
     #[arg("-t")]
     TreatAsTemplate,
 
-    #[arg("-p DIR", "--tmpdir[=DIR]", default = ".".into())]
+    #[arg("-p DIR", "--tmpdir[=DIR]", value = ".".into())]
     TmpDir(PathBuf),
 
     #[arg("TEMPLATE", 0..=1)]

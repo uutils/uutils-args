@@ -79,7 +79,7 @@ pub fn parse_argument(v: Variant) -> Vec<Argument> {
             let mut arg_help = help.clone();
             let arg_type = match attribute {
                 ArgAttr::Option(opt) => {
-                    let default_expr = match opt.default {
+                    let default_expr = match opt.value {
                         Some(expr) => quote!(#expr),
                         None => quote!(Default::default()),
                     };

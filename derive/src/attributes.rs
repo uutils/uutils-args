@@ -100,7 +100,7 @@ impl ArgAttr {
 pub struct OptionAttr {
     pub flags: Flags,
     pub parser: Option<Expr>,
-    pub default: Option<Expr>,
+    pub value: Option<Expr>,
     pub hidden: bool,
     pub help: Option<String>,
 }
@@ -123,10 +123,10 @@ impl OptionAttr {
                     let p = s.parse::<Expr>()?;
                     option_attr.parser = Some(p);
                 }
-                "default" => {
+                "value" => {
                     s.parse::<Token![=]>()?;
                     let d = s.parse::<Expr>()?;
-                    option_attr.default = Some(d);
+                    option_attr.value = Some(d);
                 }
                 "hidden" => {
                     option_attr.hidden = true;

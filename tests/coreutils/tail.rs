@@ -109,7 +109,7 @@ enum Arg {
     #[arg("-c NUM", "--bytes=NUM")]
     Bytes(SigNum),
 
-    #[arg("-f", "--follow[=HOW]", default=FollowMode::Descriptor)]
+    #[arg("-f", "--follow[=HOW]", value = FollowMode::Descriptor)]
     Follow(FollowMode),
 
     #[arg("-F")]

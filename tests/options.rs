@@ -357,7 +357,7 @@ fn ls_classify() {
     enum Arg {
         #[arg(
             "-F", "--classify[=WHEN]",
-            default = When::Always,
+            value = When::Always,
         )]
         Classify(When),
     }
@@ -397,7 +397,7 @@ fn mktemp_tmpdir() {
     enum Arg {
         #[arg(
             "-p DIR", "--tmpdir[=DIR]",
-            default = String::from("/tmp"),
+            value = String::from("/tmp"),
         )]
         TmpDir(String),
     }
