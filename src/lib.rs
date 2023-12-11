@@ -108,6 +108,9 @@ pub trait Arguments: Sized {
         while iter.next_arg()?.is_some() {}
         Ok(())
     }
+
+    #[cfg(feature = "complete")]
+    fn complete() -> uutils_args_complete::Command<'static>;
 }
 
 /// An iterator over arguments.
@@ -187,17 +190,38 @@ pub trait Options<Arg: Arguments>: Sized {
         exit_if_err(self.try_parse(args), Arg::EXIT_CODE)
     }
 
+    #[allow(unused_mut)]
     fn try_parse<I>(mut self, args: I) -> Result<Self, Error>
     where
         I: IntoIterator + 'static,
         I::Item: Into<OsString>,
     {
-        let mut iter = Arg::parse(args);
-        while let Some(arg) = iter.next_arg()? {
-            self.apply(arg);
+        // Hacky but it works: if the parse-is-complete flag is active the
+        // parse function becomes the complete function so that no additional
+        // functionality is necessary for users to generate completions. It is
+        // important that we exit the program here, because the program does
+        // not expect us to print the completion here and therefore will behave
+        // incorrectly.
+        #[cfg(feature = "parse-is-complete")]
+        {
+            print_complete::<_, Self, Arg>(args.into_iter());
+            std::process::exit(0);
         }
-        Arg::check_missing(iter.positional_idx)?;
-        Ok(self)
+
+        #[cfg(not(feature = "parse-is-complete"))]
+        {
+            let mut iter = Arg::parse(args);
+            while let Some(arg) = iter.next_arg()? {
+                self.apply(arg);
+            }
+            Arg::check_missing(iter.positional_idx)?;
+            Ok(self)
+        }
+    }
+
+    #[cfg(feature = "complete")]
+    fn complete(shell: &str) -> String {
+        uutils_args_complete::render(&Arg::complete(), shell)
     }
 }
 
@@ -222,6 +246,22 @@ pub fn __echo_style_positional(p: &mut lexopt::Parser, short_args: &[char]) -> O
     } else {
         None
     }
+}
+
+#[cfg(feature = "parse-is-complete")]
+fn print_complete<I, O: Options<Arg>, Arg: Arguments>(mut args: I)
+where
+    I: Iterator + 'static,
+    I::Item: Into<OsString>,
+{
+    let _exec_name = args.next();
+    let shell = args
+        .next()
+        .expect("Need a shell argument for completion.")
+        .into();
+    let shell = shell.to_string_lossy();
+    assert!(args.next().is_none(), "completion only takes one argument");
+    println!("{}", O::complete(&shell));
 }
 
 fn is_echo_style_positional(s: &OsStr, short_args: &[char]) -> bool {

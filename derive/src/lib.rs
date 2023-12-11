@@ -3,6 +3,7 @@
 
 mod argument;
 mod attributes;
+mod complete;
 mod flags;
 mod help;
 mod help_parser;
@@ -44,6 +45,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         &arguments_attr.version_flags,
         &arguments_attr.file,
     );
+    let complete_command = complete::complete(&arguments, &arguments_attr.file);
     let help = help_handling(&arguments_attr.help_flags);
     let version = version_handling(&arguments_attr.version_flags);
     let version_string = quote!(format!(
@@ -74,7 +76,6 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             ) -> Result<Option<uutils_args::Argument<Self>>, uutils_args::Error> {
                 use uutils_args::{Value, lexopt, Error, Argument};
 
-                // #number_argment
                 #free
 
                 let arg = match { #next_arg } {
@@ -104,6 +105,12 @@ pub fn arguments(input: TokenStream) -> TokenStream {
             fn version() -> String {
                 #version_string
             }
+
+            #[cfg(feature = "complete")]
+            fn complete() -> ::uutils_args_complete::Command<'static> {
+                use ::uutils_args::Value;
+                #complete_command
+            }
         }
     );
 
@@ -124,6 +131,7 @@ pub fn value(input: TokenStream) -> TokenStream {
     let mut options = Vec::new();
 
     let mut match_arms = vec![];
+    let mut all_keys = Vec::new();
     for variant in data.variants {
         let variant_name = variant.ident.to_string();
         let attrs = variant.attrs.clone();
@@ -140,6 +148,7 @@ pub fn value(input: TokenStream) -> TokenStream {
                 keys
             };
 
+            all_keys.extend(keys.clone());
             options.push(quote!(&[#(#keys),*]));
 
             let stmt = if let Some(v) = value {
@@ -187,6 +196,16 @@ pub fn value(input: TokenStream) -> TokenStream {
                     #(#match_arms),*,
                     _ => unreachable!("Should be caught by (None, []) case above.")
                 })
+            }
+
+            #[cfg(feature = "complete")]
+            fn value_hint() -> ::uutils_args_complete::ValueHint {
+                ::uutils_args_complete::ValueHint::Strings(
+                    [#(#all_keys),*]
+                        .into_iter()
+                        .map(ToString::to_string)
+                        .collect()
+                )
             }
         }
     );

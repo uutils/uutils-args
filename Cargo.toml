@@ -11,10 +11,13 @@ readme = "README.md"
 
 [dependencies]
 uutils-args-derive = { version = "0.1.0", path = "derive" }
+uutils-args-complete = { version = "0.1.0", path = "complete", optional = true }
 strsim = "0.10.0"
 lexopt = "0.3.0"
 
+[features]
+parse-is-complete = ["complete"]
+complete = ["uutils-args-complete"]
+
 [workspace]
-members = [
-  "derive",
-]
+members = ["derive", "complete"]

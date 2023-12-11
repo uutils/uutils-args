@@ -14,6 +14,7 @@ use crate::{
 
 pub struct Argument {
     pub ident: Ident,
+    pub field: Option<syn::Type>,
     pub name: String,
     pub arg_type: ArgType,
     pub help: String,
@@ -105,6 +106,7 @@ pub fn parse_argument(v: Variant) -> Vec<Argument> {
             };
             Argument {
                 ident: ident.clone(),
+                field: field.clone(),
                 name: name.clone(),
                 arg_type,
                 help: arg_help,
