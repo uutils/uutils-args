@@ -14,7 +14,8 @@ decisions. Before diving in, let's lay out the design goals of this project.
   fewer features to support.
 - Use outside uutils is possible but not prioritized. Hence, configurability
   beyond the coreutils is not necessary.
-- Errors must be at least as good as GNU's, but may be different (hopefully improved).
+- Errors must be at least as good as GNU's, but may be different (hopefully
+  improved).
 
 ## Pages
 

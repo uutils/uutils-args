@@ -1,11 +1,15 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
+//! [Click here to check out the guide-level documentation](docs::guide)
 #![doc = include_str!("../README.md")]
 
 mod error;
 pub mod internal;
 mod value;
+
+#[cfg(doc)]
+pub mod docs;
 
 pub use lexopt;
 pub use uutils_args_derive::*;

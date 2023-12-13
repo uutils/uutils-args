@@ -111,7 +111,7 @@ uutils diverge.
 
 `clap`'s arguments are identified by strings. This leads to code like this:
 
-```rust
+```rust,ignore
 const OPT_NAME: &'static str = "name";
 
 // -- snip --
@@ -183,9 +183,10 @@ libraries.
   - Does not support a many-to-many relationship.
 - [`bpaf`](https://github.com/pacak/bpaf)
   - Extremely flexible, even supports `dd`-style.
-  - A different configuration between short and long options requires a workaround.
+  - A different configuration between short and long options requires a
+    workaround.
   - A many-to-many relation ship is possible, though not very ergonomic.
-  - For more information, see: https://github.com/uutils/uutils-args/issues/17
+  - For more information, see: <https://github.com/uutils/uutils-args/issues/17>
 - [`gumdrop`](https://github.com/murarth/gumdrop)
   - Does not handle invalid UTF-8.
   - Not configurable enough.

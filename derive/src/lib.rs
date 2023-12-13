@@ -18,6 +18,21 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data::Enum, DeriveInput};
 
+/// Derive `Arguments`
+///
+/// ## Argument specifications
+///
+/// | specification  | kind       | value    |
+/// | -------------- | ---------- | -------- |
+/// | `VAL`          | positional | n.a.     |
+/// | `-s`           | short      | none     |
+/// | `-s VAL`       | short      | required |
+/// | `-s[VAL]`      | short      | optional |
+/// | `--long`       | long       | none     |
+/// | `--long=VAL`   | long       | required |
+/// | `--long[=VAL]` | long       | optional |
+/// | `long=VAL`     | dd         | required |
+///
 #[proc_macro_derive(Arguments, attributes(arg, arguments))]
 pub fn arguments(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

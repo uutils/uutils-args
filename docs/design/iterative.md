@@ -64,10 +64,10 @@ struct Settings {
 > is always obvious where an argument is defined.
 
 As part of the `Options` derive, we get a `Settings::parse` method that returns
-a `Settings` from a `OsString` iterator. The implementation of
-this is defined by the `set` and `map` attributes. `map` just says: "if we
-encounter this value in the iterator set this value", using a match-like syntax
-(it expands to a match). And the `#[set(Arg::Name)]` is just short for
+a `Settings` from a `OsString` iterator. The implementation of this is defined
+by the `set` and `map` attributes. `map` just says: "if we encounter this value
+in the iterator set this value", using a match-like syntax (it expands to a
+match). And the `#[set(Arg::Name)]` is just short for
 `#[map(Arg::Name(name) => name)]`, because that is a commonly appearing pattern.
 
 Importantly, arguments can appear in the attributes for multiple fields. We
@@ -147,7 +147,9 @@ enum Arg {
 
 ## Options struct
 
-The options struct has just one fundamental attribute: `map`. It works much like a `match` expression (in fact, that's what it expands to). Furthermore, it's possible to define defaults on fields.
+The options struct has just one fundamental attribute: `map`. It works much like
+a `match` expression (in fact, that's what it expands to). Furthermore, it's
+possible to define defaults on fields.
 
 ```rust
 #[derive(Options, Default)]
@@ -180,7 +182,8 @@ struct Settings {
 }
 ```
 
-As a shorthand, there is also a `set` attribute. These fields behave identically:
+As a shorthand, there is also a `set` attribute. These fields behave
+identically:
 
 ```rust
 #[derive(Options, Default)]
@@ -195,7 +198,8 @@ struct Settings {
 
 ## `FromValue` enums
 
-We often want to map values to some enum, we can define this mapping by deriving `FromValue`:
+We often want to map values to some enum, we can define this mapping by deriving
+`FromValue`:
 
 ```rust
 #[derive(Default, FromValue)]
