@@ -75,7 +75,7 @@ pub fn help_string(
     }
 
     let options = if !options.is_empty() {
-        quote!(::uutils_args::print_flags(&mut w, #indent, #width, [#(#options),*])?;)
+        quote!(::uutils_args::internal::print_flags(&mut w, #indent, #width, [#(#options),*])?;)
     } else {
         quote!()
     };

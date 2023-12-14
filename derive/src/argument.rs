@@ -254,7 +254,7 @@ pub fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStream {
 
     quote!(
         let long_options: [&str; #num_opts] = [#(#options),*];
-        let long = ::uutils_args::infer_long_option(long, &long_options)?;
+        let long = ::uutils_args::internal::infer_long_option(long, &long_options)?;
 
         #help_check
 
@@ -284,7 +284,7 @@ pub fn free_handling(args: &[Argument]) -> TokenStream {
 
             if_expressions.push(quote!(
                 if let Some(inner) = #filter(arg) {
-                    let value = ::uutils_args::parse_value_for_option("", ::std::ffi::OsStr::new(inner))?;
+                    let value = ::uutils_args::internal::parse_value_for_option("", ::std::ffi::OsStr::new(inner))?;
                     let _ = raw.next();
                     return Ok(Some(Argument::Custom(Self::#ident(value))));
                 }
@@ -308,7 +308,7 @@ pub fn free_handling(args: &[Argument]) -> TokenStream {
             dd_args.push(prefix);
             dd_branches.push(quote!(
                 if prefix == #prefix {
-                    let value = ::uutils_args::parse_value_for_option("", ::std::ffi::OsStr::new(value))?;
+                    let value = ::uutils_args::internal::parse_value_for_option("", ::std::ffi::OsStr::new(value))?;
                     let _ = raw.next();
                     return Ok(Some(Argument::Custom(Self::#ident(value))));
                 }
@@ -321,7 +321,10 @@ pub fn free_handling(args: &[Argument]) -> TokenStream {
             if let Some((prefix, value)) = arg.split_once('=') {
                 #(#dd_branches)*
 
-                return Err(::uutils_args::Error::UnexpectedOption(prefix.to_string(), ::uutils_args::filter_suggestions(prefix, &[#(#dd_args),*], "")));
+                return Err(::uutils_args::Error::UnexpectedOption(
+                    prefix.to_string(),
+                    ::uutils_args::internal::filter_suggestions(prefix, &[#(#dd_args),*], "")
+                ));
             }
         ));
     }
@@ -410,19 +413,19 @@ fn default_value_expression(ident: &Ident, default_expr: &TokenStream) -> TokenS
 
 fn optional_value_expression(ident: &Ident, default_expr: &TokenStream) -> TokenStream {
     quote!(match parser.optional_value() {
-        Some(value) => Self::#ident(::uutils_args::parse_value_for_option(&option, &value)?),
+        Some(value) => Self::#ident(::uutils_args::internal::parse_value_for_option(&option, &value)?),
         None => Self::#ident(#default_expr),
     })
 }
 
 fn required_value_expression(ident: &Ident) -> TokenStream {
-    quote!(Self::#ident(::uutils_args::parse_value_for_option(&option, &parser.value()?)?))
+    quote!(Self::#ident(::uutils_args::internal::parse_value_for_option(&option, &parser.value()?)?))
 }
 
 fn positional_expression(ident: &Ident) -> TokenStream {
     // TODO: Add option name in this from_value call
     quote!(
-        Self::#ident(::uutils_args::parse_value_for_option("", &value)?)
+        Self::#ident(::uutils_args::internal::parse_value_for_option("", &value)?)
     )
 }
 
@@ -432,7 +435,7 @@ fn last_positional_expression(ident: &Ident) -> TokenStream {
         let raw_args = parser.raw_args()?;
         let collection = std::iter::once(value)
             .chain(raw_args)
-            .map(|v| ::uutils_args::parse_value_for_option("", &v))
+            .map(|v| ::uutils_args::internal::parse_value_for_option("", &v))
             .collect::<Result<_,_>>()?;
         Self::#ident(collection)
     })
