@@ -57,7 +57,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     // This is a bit of a hack to support `echo` and should probably not be
     // used in general.
     let next_arg = if arguments_attr.parse_echo_style {
-        quote!(if let Some(val) = uutils_args::__echo_style_positional(parser, &[#(#short_flags),*]) {
+        quote!(if let Some(val) = ::uutils_args::internal::echo_style_positional(parser, &[#(#short_flags),*]) {
             Some(lexopt::Arg::Value(val))
         } else {
             parser.next()?
