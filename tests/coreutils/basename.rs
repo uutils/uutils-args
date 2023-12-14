@@ -1,3 +1,5 @@
+use std::ffi::OsString;
+
 use uutils_args::{Arguments, Options};
 
 #[derive(Clone, Arguments)]
@@ -6,21 +8,18 @@ enum Arg {
     Multiple,
 
     #[arg("-s SUFFIX", "--suffix=SUFFIX")]
-    Suffix(String),
+    Suffix(OsString),
 
     #[arg("-z", "--zero")]
     Zero,
-
-    #[arg("NAMES", last, ..)]
-    Names(Vec<String>),
 }
 
 #[derive(Default)]
 struct Settings {
     multiple: bool,
-    suffix: String,
+    suffix: OsString,
     zero: bool,
-    names: Vec<String>,
+    names: Vec<OsString>,
 }
 
 impl Options<Arg> for Settings {
@@ -32,13 +31,13 @@ impl Options<Arg> for Settings {
                 self.suffix = s
             }
             Arg::Zero => self.zero = true,
-            Arg::Names(names) => self.names = names,
         }
     }
 }
 
 fn parse(args: &[&str]) -> Settings {
-    let mut settings = Settings::default().parse(args);
+    let (mut settings, operands) = Settings::default().parse(args);
+    settings.names = operands;
     if !settings.multiple {
         assert_eq!(settings.names.len(), 2);
         settings.suffix = settings.names.pop().unwrap();

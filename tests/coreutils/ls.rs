@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use uutils_args::{Arguments, Options, Value};
 
 #[derive(Default, Debug, PartialEq, Eq, Value)]
@@ -276,9 +275,6 @@ enum Arg {
 
     #[arg("--group-directories-first")]
     GroupDirectoriesFirst,
-
-    #[arg("FILES", ..)]
-    File(PathBuf),
 }
 
 fn default_terminal_size() -> u16 {
@@ -305,7 +301,6 @@ fn default_terminal_size() -> u16 {
 #[derive(Debug, PartialEq, Eq)]
 struct Settings {
     format: Format,
-    files: Vec<PathBuf>,
     sort: Sort,
     recursive: bool,
     reverse: bool,
@@ -340,7 +335,6 @@ impl Default for Settings {
             eol: '\n',
             width: default_terminal_size(),
             format: Default::default(),
-            files: Default::default(),
             sort: Default::default(),
             recursive: Default::default(),
             reverse: Default::default(),
@@ -422,7 +416,6 @@ impl Options<Arg> for Settings {
                 // TODO: Zero changes more than just this
             }
             Arg::GroupDirectoriesFirst => self.group_directories_first = true,
-            Arg::File(f) => self.files.push(f),
         }
     }
 }
@@ -430,10 +423,9 @@ impl Options<Arg> for Settings {
 #[test]
 fn default() {
     assert_eq!(
-        Settings::default().parse(["ls"]),
+        Settings::default().parse(["ls"]).0,
         Settings {
             format: Format::Columns,
-            files: Vec::new(),
             sort: Sort::Name,
             recursive: false,
             reverse: false,
@@ -462,87 +454,87 @@ fn default() {
 
 #[test]
 fn color() {
-    let s = Settings::default().parse(["ls", "--color"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--color"]);
     assert!(s.color);
 
-    let s = Settings::default().parse(["ls", "--color=always"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--color=always"]);
     assert!(s.color);
 
-    let s = Settings::default().parse(["ls", "--color=never"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--color=never"]);
     assert!(!s.color);
 }
 
 #[test]
 fn format() {
-    let s = Settings::default().parse(["ls", "-l"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-l"]);
     assert_eq!(s.format, Format::Long);
 
-    let s = Settings::default().parse(["ls", "-m"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-m"]);
     assert_eq!(s.format, Format::Commas);
 
-    let s = Settings::default().parse(["ls", "--format=across"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--format=across"]);
     assert_eq!(s.format, Format::Across);
 
-    let s = Settings::default().parse(["ls", "--format=acr"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--format=acr"]);
     assert_eq!(s.format, Format::Across);
 
-    let s = Settings::default().parse(["ls", "-o"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-o"]);
     assert_eq!(s.format, Format::Long);
     assert!(s.long_no_group && !s.long_no_owner && !s.long_numeric_uid_gid);
 
-    let s = Settings::default().parse(["ls", "-g"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-g"]);
     assert_eq!(s.format, Format::Long);
     assert!(!s.long_no_group && s.long_no_owner && !s.long_numeric_uid_gid);
 
-    let s = Settings::default().parse(["ls", "-n"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-n"]);
     assert_eq!(s.format, Format::Long);
     assert!(!s.long_no_group && !s.long_no_owner && s.long_numeric_uid_gid);
 
-    let s = Settings::default().parse(["ls", "-og"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-og"]);
     assert_eq!(s.format, Format::Long);
     assert!(s.long_no_group && s.long_no_owner && !s.long_numeric_uid_gid);
 
-    let s = Settings::default().parse(["ls", "-on"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-on"]);
     assert_eq!(s.format, Format::Long);
     assert!(s.long_no_group && !s.long_no_owner && s.long_numeric_uid_gid);
 
-    let s = Settings::default().parse(["ls", "-onCl"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-onCl"]);
     assert_eq!(s.format, Format::Long);
     assert!(s.long_no_group && !s.long_no_owner && s.long_numeric_uid_gid);
 }
 
 #[test]
 fn time() {
-    let s = Settings::default().parse(["ls", "--time=access"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--time=access"]);
     assert_eq!(s.time, Time::Access);
 
-    let s = Settings::default().parse(["ls", "--time=a"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--time=a"]);
     assert_eq!(s.time, Time::Access);
 }
 
 #[test]
 fn classify() {
-    let s = Settings::default().parse(["ls", "--indicator-style=classify"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--indicator-style=classify"]);
     assert_eq!(s.indicator_style, IndicatorStyle::Classify);
 
-    let s = Settings::default().parse(["ls", "--classify"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--classify"]);
     assert_eq!(s.indicator_style, IndicatorStyle::Classify);
 
-    let s = Settings::default().parse(["ls", "--classify=always"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--classify=always"]);
     assert_eq!(s.indicator_style, IndicatorStyle::Classify);
 
-    let s = Settings::default().parse(["ls", "--classify=none"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--classify=none"]);
     assert_eq!(s.indicator_style, IndicatorStyle::None);
 
-    let s = Settings::default().parse(["ls", "-F"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-F"]);
     assert_eq!(s.indicator_style, IndicatorStyle::Classify);
 }
 
 #[test]
 fn sort() {
-    let s = Settings::default().parse(["ls", "--sort=time"]);
+    let (s, _operands) = Settings::default().parse(["ls", "--sort=time"]);
     assert_eq!(s.sort, Sort::Time);
 
-    let s = Settings::default().parse(["ls", "-X"]);
+    let (s, _operands) = Settings::default().parse(["ls", "-X"]);
     assert_eq!(s.sort, Sort::Extension);
 }

@@ -5,10 +5,10 @@ use uutils_args::{Arguments, Initial, Options, Value};
 enum Arg {
     #[option("-f N", "--skip-fields=n")]
     SkipFields(usize),
-    
+
     #[option("-s N", "--skip-chars=N")]
     SkipChars(usize),
-    
+
     #[option("-c", "--count")]
     Count,
 
@@ -69,16 +69,16 @@ impl Options<Arg> for Settings {
         match arg {
             Arg::SkipFields(n) => {
                 self.skip_fields = Some(n);
-            },
+            }
             Arg::SkipChars(n) => {
                 self.slice_start = Some(n);
-            },
+            }
             Arg::Count => {
                 self.show_counts = true;
-            },
+            }
             Arg::IgnoreCase => {
                 self.ignore_case = true;
-            },
+            }
             Arg::Repeated => {
                 self.repeats_only = true;
             }
@@ -86,20 +86,20 @@ impl Options<Arg> for Settings {
                 self.repeats_only = true;
                 self.all_repeated = true;
                 self.delimiters = d;
-            },
+            }
             Arg::Group(d) => {
                 self.all_repeated = true;
                 self.delimiters = d;
-            },
+            }
             Arg::Unique => {
                 self.uniques_only = true;
-            },
+            }
             Arg::CheckChars(n) => {
                 self.slice_stop = Some(n);
             }
             Arg::ZeroTerminated => {
                 self.zero_terminated = true;
-            },
+            }
         }
     }
 }

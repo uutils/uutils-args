@@ -12,5 +12,4 @@ fn no_args() {
 fn one_arg_fails() {
     assert!(Arg::try_check(["arch", "-f"]).is_err());
     assert!(Arg::try_check(["arch", "--foo"]).is_err());
-    assert!(Arg::try_check(["arch", "foo"]).is_err());
 }

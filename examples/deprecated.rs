@@ -43,8 +43,8 @@ impl Options<Arg> for Settings {
 }
 
 fn main() {
-    assert_eq!(Settings::default().parse(["test", "-10"]).n1, 10usize);
+    assert_eq!(Settings::default().parse(["test", "-10"]).0.n1, 10usize);
     assert!(Settings::default().try_parse(["test", "--10"]).is_err());
-    assert_eq!(Settings::default().parse(["test", "+10"]).n2, 10isize);
-    assert_eq!(Settings::default().parse(["test", "+-10"]).n2, -10isize);
+    assert_eq!(Settings::default().parse(["test", "+10"]).0.n2, 10isize);
+    assert_eq!(Settings::default().parse(["test", "+-10"]).0.n2, -10isize);
 }

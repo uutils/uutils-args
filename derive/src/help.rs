@@ -51,7 +51,6 @@ pub fn help_string(
             }
             // Hidden arguments should not show up in --help
             ArgType::Option { hidden: true, .. } => {}
-            ArgType::Positional { .. } => {}
             // TODO: Free arguments should show up in help
             ArgType::Free { .. } => {}
         }
