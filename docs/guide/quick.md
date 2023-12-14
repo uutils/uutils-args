@@ -22,8 +22,7 @@ enum Arg {
     Force,
 }
 
-// Note: Debug, PartialEq and Eq are only necessary for assert_eq! below.
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default)]
 struct Settings {
     force: bool
 }
@@ -36,8 +35,8 @@ impl Options<Arg> for Settings {
     }
 }
 
-assert_eq!(Settings::default().parse(["test"]), Settings { force: false });
-assert_eq!(Settings::default().parse(["test", "-f"]), Settings { force: true });
+assert!(!Settings::default().parse(["test"]).force);
+assert!(Settings::default().parse(["test", "-f"]).force);
 ```
 
 ## Two overriding flags
@@ -55,8 +54,7 @@ enum Arg {
     NoForce,
 }
 
-// Note: Debug, PartialEq and Eq are only necessary for assert_eq! below.
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default)]
 struct Settings {
     force: bool
 }
@@ -70,9 +68,9 @@ impl Options<Arg> for Settings {
     }
 }
 
-assert_eq!(Settings::default().parse(["test"]), Settings { force: false });
-assert_eq!(Settings::default().parse(["test", "-f"]), Settings { force: true });
-assert_eq!(Settings::default().parse(["test", "-F"]), Settings { force: false });
+assert!(!Settings::default().parse(["test"]).force);
+assert!(Settings::default().parse(["test", "-f"]).force);
+assert!(!Settings::default().parse(["test", "-f", "-F"]).force);
 ```
 
 ## Help strings
@@ -108,8 +106,7 @@ enum Arg {
     Name(OsString),
 }
 #
-# // Note: Debug, PartialEq and Eq are only necessary for assert_eq! below.
-# #[derive(Default, Debug, PartialEq, Eq)]
+# #[derive(Default)]
 # struct Settings {
 #     name: OsString
 # }
@@ -123,12 +120,12 @@ enum Arg {
 # }
 #
 # assert_eq!(
-#     Settings::default().parse(["test"]),
-#     Settings { name: OsString::new() }
+#     Settings::default().parse(["test"]).name,
+#     OsString::new(),
 # );
 # assert_eq!(
-#     Settings::default().parse(["test", "--name=John"]),
-#     Settings { name: OsString::from("John")}
+#     Settings::default().parse(["test", "--name=John"]).name,
+#     OsString::from("John"),
 # );
 ```
 
@@ -160,12 +157,12 @@ enum Arg {
 # }
 #
 # assert_eq!(
-#     Settings::default().parse(["test", "--name"]),
-#     Settings { name: OsString::from("anonymous")}
+#     Settings::default().parse(["test", "--name"]).name,
+#     OsString::from("anonymous"),
 # );
 # assert_eq!(
-#     Settings::default().parse(["test", "--name=John"]),
-#     Settings { name: OsString::from("John")}
+#     Settings::default().parse(["test", "--name=John"]).name,
+#     OsString::from("John"),
 # );
 ```
 
@@ -183,7 +180,7 @@ enum Arg {
     Force(bool),
 }
 #
-# #[derive(Default, Debug, PartialEq, Eq)]
+# #[derive(Default)]
 # struct Settings {
 #     force: bool
 # }
@@ -196,9 +193,9 @@ enum Arg {
 #     }
 # }
 #
-# assert_eq!(Settings::default().parse(["test"]), Settings { force: false });
-# assert_eq!(Settings::default().parse(["test", "-f"]), Settings { force: true });
-# assert_eq!(Settings::default().parse(["test", "-F"]), Settings { force: false });
+# assert!(!Settings::default().parse(["test"]).force);
+# assert!(Settings::default().parse(["test", "-f"]).force);
+# assert!(!Settings::default().parse(["test", "-F"]).force);
 ```
 
 This is particularly interesting for defining "shortcut" arguments. For example, `ls` takes a `--sort=WORD` argument, that defines how the files should be sorted. But it also has shorthands like `-t`, which is the same as `--sort=time`. All of these can be implemented on one variant:
@@ -218,7 +215,7 @@ enum Arg {
     Sort(String),
 }
 #
-# #[derive(Default, Debug, PartialEq, Eq)]
+# #[derive(Default)]
 # struct Settings {
 #     sort: String
 # }
@@ -231,9 +228,9 @@ enum Arg {
 #     }
 # }
 #
-# assert_eq!(Settings::default().parse(["test"]), Settings { sort: String::new() });
-# assert_eq!(Settings::default().parse(["test", "--sort=time"]), Settings { sort: String::from("time") });
-# assert_eq!(Settings::default().parse(["test", "-t"]), Settings { sort: String::from("time") });
+# assert_eq!(Settings::default().parse(["test"]).sort, String::new());
+# assert_eq!(Settings::default().parse(["test", "--sort=time"]).sort, String::from("time"));
+# assert_eq!(Settings::default().parse(["test", "-t"]).sort, String::from("time"));
 ```
 
 ## Positional arguments
@@ -264,15 +261,15 @@ impl Options<Arg> for Settings {
 }
 #
 # assert_eq!(
-#     Settings::default().parse(["test"]),
-#     Settings { files: Vec::new() }
+#     Settings::default().parse(["test"]).files,
+#     Vec::<PathBuf>::new(),
 # );
 # assert_eq!(
-#    Settings::default().parse(["test", "foo"]),
-#    Settings { files: vec![PathBuf::from("foo")] }
+#    Settings::default().parse(["test", "foo"]).files,
+#    vec![PathBuf::from("foo")],
 # );
 # assert_eq!(
-#     Settings::default().parse(["test", "foo", "bar"]),
-#     Settings { files: vec!["foo".into(), "bar".into()] }
+#     Settings::default().parse(["test", "foo", "bar"]).files,
+#     vec![PathBuf::from("foo"), PathBuf::from("bar")],
 # );
 ```
