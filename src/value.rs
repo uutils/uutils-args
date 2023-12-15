@@ -1,7 +1,7 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use crate::error::Error;
+use crate::error::{Error, ErrorKind};
 use std::{
     ffi::{OsStr, OsString},
     path::PathBuf,
@@ -50,7 +50,7 @@ impl std::fmt::Display for ValueError {
 
 /// Defines how a type should be parsed from an argument.
 ///
-/// If an error is returned, it will be wrapped in [`Error::ParsingFailed`]
+/// If an error is returned, it will be wrapped in [`ErrorKind::ParsingFailed`]
 pub trait Value: Sized {
     fn from_value(value: &OsStr) -> ValueResult<Self>;
 
@@ -81,7 +81,11 @@ impl Value for String {
     fn from_value(value: &OsStr) -> ValueResult<Self> {
         match value.to_str() {
             Some(s) => Ok(s.into()),
-            None => Err(Error::NonUnicodeValue(value.into()).into()),
+            None => Err(Error {
+                exit_code: 1,
+                kind: ErrorKind::NonUnicodeValue(value.into()),
+            }
+            .into()),
         }
     }
 }

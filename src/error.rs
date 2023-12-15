@@ -7,8 +7,13 @@ use std::{
     fmt::{Debug, Display},
 };
 
+pub struct Error {
+    pub exit_code: i32,
+    pub kind: ErrorKind,
+}
+
 /// Errors that can occur while parsing arguments.
-pub enum Error {
+pub enum ErrorKind {
     /// There was an option that required an option, but none was given.
     MissingValue {
         option: Option<String>,
@@ -51,13 +56,19 @@ pub enum Error {
     IoError(std::io::Error),
 }
 
-impl From<std::io::Error> for Error {
+impl From<std::io::Error> for ErrorKind {
     fn from(value: std::io::Error) -> Self {
-        Error::IoError(value)
+        ErrorKind::IoError(value)
     }
 }
 
 impl StdError for Error {}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.kind.fmt(f)
+    }
+}
 
 impl Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -65,39 +76,39 @@ impl Debug for Error {
     }
 }
 
-impl Display for Error {
+impl Display for ErrorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "error: ")?;
         match self {
-            Error::MissingValue { option } => match option {
+            ErrorKind::MissingValue { option } => match option {
                 Some(option) => write!(f, "Missing value for '{option}'."),
                 None => write!(f, "Missing value"),
             },
-            Error::MissingPositionalArguments(args) => {
+            ErrorKind::MissingPositionalArguments(args) => {
                 write!(f, "Missing values for the following positional arguments:")?;
                 for arg in args {
                     write!(f, "  - {arg}")?;
                 }
                 Ok(())
             }
-            Error::UnexpectedOption(opt, suggestions) => {
+            ErrorKind::UnexpectedOption(opt, suggestions) => {
                 write!(f, "Found an invalid option '{opt}'.")?;
                 if !suggestions.is_empty() {
                     write!(f, "\nDid you mean: {}", suggestions.join(", "))?;
                 }
                 Ok(())
             }
-            Error::UnexpectedArgument(arg) => {
+            ErrorKind::UnexpectedArgument(arg) => {
                 write!(f, "Found an invalid argument '{}'.", arg.to_string_lossy())
             }
-            Error::UnexpectedValue { option, value } => {
+            ErrorKind::UnexpectedValue { option, value } => {
                 write!(
                     f,
                     "Got an unexpected value '{}' for option '{option}'.",
                     value.to_string_lossy(),
                 )
             }
-            Error::ParsingFailed {
+            ErrorKind::ParsingFailed {
                 option,
                 value,
                 error,
@@ -110,7 +121,7 @@ impl Display for Error {
                     write!(f, "Invalid value '{value}' for '{option}': {error}")
                 }
             }
-            Error::AmbiguousOption { option, candidates } => {
+            ErrorKind::AmbiguousOption { option, candidates } => {
                 write!(
                     f,
                     "Option '{option}' is ambiguous. The following candidates match:"
@@ -120,16 +131,16 @@ impl Display for Error {
                 }
                 Ok(())
             }
-            Error::NonUnicodeValue(x) => {
+            ErrorKind::NonUnicodeValue(x) => {
                 write!(f, "Invalid unicode value found: {}", x.to_string_lossy())
             }
-            Error::IoError(x) => std::fmt::Display::fmt(x, f),
+            ErrorKind::IoError(x) => std::fmt::Display::fmt(x, f),
         }
     }
 }
 
-impl From<lexopt::Error> for Error {
-    fn from(other: lexopt::Error) -> Error {
+impl From<lexopt::Error> for ErrorKind {
+    fn from(other: lexopt::Error) -> ErrorKind {
         match other {
             lexopt::Error::MissingValue { option } => Self::MissingValue { option },
             lexopt::Error::UnexpectedOption(s) => Self::UnexpectedOption(s, Vec::new()),
