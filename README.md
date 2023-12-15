@@ -88,7 +88,7 @@ impl Options<Arg> for Settings {
     }
 }
 
-fn run(args: &'static [&'static str]) -> String {
+fn run(args: &[&str]) -> String {
     let s = Settings::default().parse(args);
     let mut output = if s.caps {
         s.text.to_uppercase()
