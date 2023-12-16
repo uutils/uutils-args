@@ -37,7 +37,7 @@ impl Options<Arg> for Settings {
     }
 }
 
-fn parse(args: &'static [&'static str]) -> Settings {
+fn parse(args: &[&str]) -> Settings {
     let mut settings = Settings::default().parse(args);
     if !settings.multiple {
         assert_eq!(settings.names.len(), 2);

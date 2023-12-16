@@ -50,7 +50,7 @@ pub trait Arguments: Sized {
     /// [`ArgumentIter<Self>`](ArgumentIter).
     fn parse<I>(args: I) -> ArgumentIter<Self>
     where
-        I: IntoIterator + 'static,
+        I: IntoIterator,
         I::Item: Into<OsString>,
     {
         ArgumentIter::<Self>::from_args(args)
@@ -86,7 +86,7 @@ pub trait Arguments: Sized {
     /// exit if `--help` or `--version` are passed and if any errors are found.
     fn check<I>(args: I)
     where
-        I: IntoIterator + 'static,
+        I: IntoIterator,
         I::Item: Into<OsString>,
     {
         exit_if_err(Self::try_check(args), Self::EXIT_CODE)
@@ -98,7 +98,7 @@ pub trait Arguments: Sized {
     /// exit if `--help` or `--version` are passed.
     fn try_check<I>(args: I) -> Result<(), Error>
     where
-        I: IntoIterator + 'static,
+        I: IntoIterator,
         I::Item: Into<OsString>,
     {
         let mut iter = Self::parse(args);
@@ -124,7 +124,7 @@ pub struct ArgumentIter<T: Arguments> {
 impl<T: Arguments> ArgumentIter<T> {
     fn from_args<I>(args: I) -> Self
     where
-        I: IntoIterator + 'static,
+        I: IntoIterator,
         I::Item: Into<OsString>,
     {
         Self {
@@ -181,7 +181,7 @@ pub trait Options<Arg: Arguments>: Sized {
     /// Parse an iterator of arguments into the options
     fn parse<I>(self, args: I) -> Self
     where
-        I: IntoIterator + 'static,
+        I: IntoIterator,
         I::Item: Into<OsString>,
     {
         exit_if_err(self.try_parse(args), Arg::EXIT_CODE)
@@ -190,7 +190,7 @@ pub trait Options<Arg: Arguments>: Sized {
     #[allow(unused_mut)]
     fn try_parse<I>(mut self, args: I) -> Result<Self, Error>
     where
-        I: IntoIterator + 'static,
+        I: IntoIterator,
         I::Item: Into<OsString>,
     {
         // Hacky but it works: if the parse-is-complete flag is active the
@@ -225,7 +225,7 @@ pub trait Options<Arg: Arguments>: Sized {
 #[cfg(feature = "parse-is-complete")]
 fn print_complete<I, O: Options<Arg>, Arg: Arguments>(mut args: I)
 where
-    I: Iterator + 'static,
+    I: Iterator,
     I::Item: Into<OsString>,
 {
     let _exec_name = args.next();

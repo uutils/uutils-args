@@ -10,7 +10,7 @@ use uutils_args::{Arguments, Options, Value};
 // optional at compile time. As the GNU docs explain, it's very error-prone.
 fn parse_deprecated<I>(iter: I) -> Option<Settings>
 where
-    I: IntoIterator + Clone + 'static,
+    I: IntoIterator + Clone,
     I::Item: Into<OsString>,
 {
     let mut iter = iter.into_iter();
@@ -275,7 +275,7 @@ impl Options<Arg> for Settings {
 
 fn parse_tail<I>(iter: I) -> Result<Settings, uutils_args::Error>
 where
-    I: IntoIterator + Clone + 'static,
+    I: IntoIterator + Clone,
     I::Item: Into<OsString>,
 {
     match parse_deprecated(iter.clone()) {
