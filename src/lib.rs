@@ -10,7 +10,7 @@ mod value;
 pub use lexopt;
 pub use uutils_args_derive::*;
 
-pub use error::Error;
+pub use error::{Error, ErrorKind};
 pub use value::{Value, ValueError, ValueResult};
 
 use std::{ffi::OsString, marker::PhantomData};
@@ -24,12 +24,12 @@ pub enum Argument<T: Arguments> {
     Custom(T),
 }
 
-fn exit_if_err<T>(res: Result<T, Error>, exit_code: i32) -> T {
+fn exit_if_err<T>(res: Result<T, Error>) -> T {
     match res {
         Ok(v) => v,
         Err(err) => {
             eprintln!("{err}");
-            std::process::exit(exit_code);
+            std::process::exit(err.exit_code);
         }
     }
 }
@@ -62,7 +62,7 @@ pub trait Arguments: Sized {
     fn next_arg(
         parser: &mut lexopt::Parser,
         positional_idx: &mut usize,
-    ) -> Result<Option<Argument<Self>>, Error>;
+    ) -> Result<Option<Argument<Self>>, ErrorKind>;
 
     /// Check for any required arguments that have not been found.
     ///
@@ -89,7 +89,7 @@ pub trait Arguments: Sized {
         I: IntoIterator,
         I::Item: Into<OsString>,
     {
-        exit_if_err(Self::try_check(args), Self::EXIT_CODE)
+        exit_if_err(Self::try_check(args))
     }
 
     /// Check all arguments immediately and return any errors.
@@ -135,10 +135,15 @@ impl<T: Arguments> ArgumentIter<T> {
     }
 
     pub fn next_arg(&mut self) -> Result<Option<T>, Error> {
-        if let Some(arg) = T::next_arg(&mut self.parser, &mut self.positional_idx)? {
+        if let Some(arg) =
+            T::next_arg(&mut self.parser, &mut self.positional_idx).map_err(|kind| Error {
+                exit_code: T::EXIT_CODE,
+                kind,
+            })?
+        {
             match arg {
                 Argument::Help => {
-                    self.help()?;
+                    self.help().unwrap();
                     std::process::exit(0);
                 }
                 Argument::Version => {
@@ -184,7 +189,7 @@ pub trait Options<Arg: Arguments>: Sized {
         I: IntoIterator,
         I::Item: Into<OsString>,
     {
-        exit_if_err(self.try_parse(args), Arg::EXIT_CODE)
+        exit_if_err(self.try_parse(args))
     }
 
     #[allow(unused_mut)]

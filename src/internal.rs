@@ -10,7 +10,8 @@
 //! Yet, they should be properly documented to make macro-expanded code
 //! readable.
 
-use super::{Error, Value};
+use crate::error::ErrorKind;
+use crate::value::Value;
 use std::{
     ffi::{OsStr, OsString},
     io::Write,
@@ -64,8 +65,8 @@ pub fn parse_prefix<T: Value>(parser: &mut lexopt::Parser, prefix: &'static str)
 }
 
 /// Parse a value and wrap the error into an `Error::ParsingFailed`
-pub fn parse_value_for_option<T: Value>(opt: &str, v: &OsStr) -> Result<T, Error> {
-    T::from_value(v).map_err(|e| Error::ParsingFailed {
+pub fn parse_value_for_option<T: Value>(opt: &str, v: &OsStr) -> Result<T, ErrorKind> {
+    T::from_value(v).map_err(|e| ErrorKind::ParsingFailed {
         option: opt.into(),
         value: v.to_string_lossy().to_string(),
         error: e,
@@ -76,7 +77,7 @@ pub fn parse_value_for_option<T: Value>(opt: &str, v: &OsStr) -> Result<T, Error
 pub fn infer_long_option<'a>(
     input: &'a str,
     long_options: &'a [&'a str],
-) -> Result<&'a str, Error> {
+) -> Result<&'a str, ErrorKind> {
     let mut candidates = Vec::new();
     let mut exact_match = None;
     for opt in long_options {
@@ -91,11 +92,11 @@ pub fn infer_long_option<'a>(
     match (exact_match, &candidates[..]) {
         (Some(opt), _) => Ok(*opt),
         (None, [opt]) => Ok(**opt),
-        (None, []) => Err(Error::UnexpectedOption(
+        (None, []) => Err(ErrorKind::UnexpectedOption(
             format!("--{input}"),
             filter_suggestions(input, long_options, "--"),
         )),
-        (None, _) => Err(Error::AmbiguousOption {
+        (None, _) => Err(ErrorKind::AmbiguousOption {
             option: input.to_string(),
             candidates: candidates.iter().map(|s| s.to_string()).collect(),
         }),
