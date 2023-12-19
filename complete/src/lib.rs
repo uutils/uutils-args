@@ -16,6 +16,7 @@
 mod fish;
 mod man;
 mod md;
+mod nu;
 mod zsh;
 
 /// A description of a CLI command
@@ -72,6 +73,7 @@ pub fn render(c: &Command, shell: &str) -> String {
         "md" => md::render(c),
         "fish" => fish::render(c),
         "zsh" => zsh::render(c),
+        "nu" | "nushell" => nu::render(c),
         "man" => man::render(c),
         "sh" | "bash" | "csh" | "elvish" | "powershell" => panic!("shell '{shell}' completion is not implemented yet!"),
         _ => panic!("unknown option '{shell}'! Expected one of: \"md\", \"fish\", \"zsh\", \"man\", \"sh\", \"bash\", \"csh\", \"elvish\", \"powershell\""),
