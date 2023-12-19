@@ -82,7 +82,7 @@ pub trait Arguments: Sized {
     /// Print the help string for this command.
     ///
     /// The `bin_name` specifies the name that executable was called with.
-    fn help(bin_name: &str) -> std::io::Result<()>;
+    fn help(bin_name: &str) -> String;
 
     /// Get the version string for this command.
     fn version() -> String;
@@ -132,7 +132,7 @@ impl<T: Arguments> ArgumentIter<T> {
         })? {
             match arg {
                 Argument::Help => {
-                    T::help(self.parser.bin_name().unwrap()).unwrap();
+                    print!("{}", T::help(self.parser.bin_name().unwrap()));
                     std::process::exit(0);
                 }
                 Argument::Version => {

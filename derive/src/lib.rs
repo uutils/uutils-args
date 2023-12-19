@@ -95,7 +95,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 }
             }
 
-            fn help(bin_name: &str) -> ::std::io::Result<()> {
+            fn help(bin_name: &str) -> String {
                 #help_string
             }
 

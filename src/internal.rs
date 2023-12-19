@@ -14,7 +14,7 @@ use crate::error::ErrorKind;
 use crate::value::Value;
 use std::{
     ffi::{OsStr, OsString},
-    io::Write,
+    fmt::Write,
 };
 
 /// Parses an echo-style positional argument
@@ -118,33 +118,32 @@ pub fn print_flags(
     indent_size: usize,
     width: usize,
     options: impl IntoIterator<Item = (&'static str, &'static str)>,
-) -> std::io::Result<()> {
+) {
     let indent = " ".repeat(indent_size);
-    writeln!(w, "\nOptions:")?;
+    writeln!(w, "\nOptions:").unwrap();
     for (flags, help_string) in options {
         let mut help_lines = help_string.lines();
-        write!(w, "{}{}", &indent, &flags)?;
+        write!(w, "{}{}", &indent, &flags).unwrap();
 
         if flags.len() <= width {
             let line = match help_lines.next() {
                 Some(line) => line,
                 None => {
-                    writeln!(w)?;
+                    writeln!(w).unwrap();
                     continue;
                 }
             };
             let help_indent = " ".repeat(width - flags.len() + 2);
-            writeln!(w, "{}{}", help_indent, line)?;
+            writeln!(w, "{}{}", help_indent, line).unwrap();
         } else {
-            writeln!(w)?;
+            writeln!(w).unwrap();
         }
 
         let help_indent = " ".repeat(width + indent_size + 2);
         for line in help_lines {
-            writeln!(w, "{}{}", help_indent, line)?;
+            writeln!(w, "{}{}", help_indent, line).unwrap();
         }
     }
-    Ok(())
 }
 
 #[cfg(test)]
