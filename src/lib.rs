@@ -21,6 +21,7 @@ use std::{ffi::OsString, marker::PhantomData};
 pub enum Argument<T: Arguments> {
     Help,
     Version,
+    Positional(OsString),
     Custom(T),
 }
 
@@ -59,18 +60,7 @@ pub trait Arguments: Sized {
     /// Parse the next argument from the lexopt parser.
     ///
     /// This method is called by [`ArgumentIter::next_arg`].
-    fn next_arg(
-        parser: &mut lexopt::Parser,
-        positional_idx: &mut usize,
-    ) -> Result<Option<Argument<Self>>, ErrorKind>;
-
-    /// Check for any required arguments that have not been found.
-    ///
-    /// If any missing arguments are found, the appropriate error is returned.
-    /// The `positional_idx` parameter specifies how many positional arguments
-    /// have been passed so far. This method is called at the end of
-    /// [`Options::parse`] and [`Options::try_parse`].
-    fn check_missing(positional_idx: usize) -> Result<(), Error>;
+    fn next_arg(parser: &mut lexopt::Parser) -> Result<Option<Argument<Self>>, ErrorKind>;
 
     /// Print the help string for this command.
     ///
@@ -117,7 +107,7 @@ pub trait Arguments: Sized {
 /// [`Options::try_parse`].
 pub struct ArgumentIter<T: Arguments> {
     parser: lexopt::Parser,
-    pub positional_idx: usize,
+    positional_arguments: Vec<OsString>,
     t: PhantomData<T>,
 }
 
@@ -129,18 +119,16 @@ impl<T: Arguments> ArgumentIter<T> {
     {
         Self {
             parser: lexopt::Parser::from_iter(args),
-            positional_idx: 0,
+            positional_arguments: Vec::new(),
             t: PhantomData,
         }
     }
 
     pub fn next_arg(&mut self) -> Result<Option<T>, Error> {
-        if let Some(arg) =
-            T::next_arg(&mut self.parser, &mut self.positional_idx).map_err(|kind| Error {
-                exit_code: T::EXIT_CODE,
-                kind,
-            })?
-        {
+        while let Some(arg) = T::next_arg(&mut self.parser).map_err(|kind| Error {
+            exit_code: T::EXIT_CODE,
+            kind,
+        })? {
             match arg {
                 Argument::Help => {
                     self.help().unwrap();
@@ -150,11 +138,17 @@ impl<T: Arguments> ArgumentIter<T> {
                     print!("{}", self.version());
                     std::process::exit(0);
                 }
-                Argument::Custom(arg) => Ok(Some(arg)),
+                Argument::Positional(arg) => {
+                    self.positional_arguments.push(arg);
+                }
+                Argument::Custom(arg) => return Ok(Some(arg)),
             }
-        } else {
-            Ok(None)
         }
+        Ok(None)
+    }
+
+    fn get_positional_arguments(self) -> Vec<OsString> {
+        self.positional_arguments
     }
 
     fn help(&self) -> std::io::Result<()> {
@@ -176,15 +170,13 @@ impl<T: Arguments> ArgumentIter<T> {
 ///
 /// By default, the [`Options::parse`] method will
 /// 1. repeatedly call [`ArgumentIter::next_arg`] and call [`Options::apply`]
-///    on the result until the arguments are exhausted,
-/// 2. and finally call [`Arguments::check_missing`] to check whether all
-///    required arguments were given.
+///    on the result until the arguments are exhausted.
 pub trait Options<Arg: Arguments>: Sized {
     /// Apply a single argument to the options.
     fn apply(&mut self, arg: Arg);
 
     /// Parse an iterator of arguments into the options
-    fn parse<I>(self, args: I) -> Self
+    fn parse<I>(self, args: I) -> (Self, Vec<OsString>)
     where
         I: IntoIterator,
         I::Item: Into<OsString>,
@@ -193,7 +185,7 @@ pub trait Options<Arg: Arguments>: Sized {
     }
 
     #[allow(unused_mut)]
-    fn try_parse<I>(mut self, args: I) -> Result<Self, Error>
+    fn try_parse<I>(mut self, args: I) -> Result<(Self, Vec<OsString>), Error>
     where
         I: IntoIterator,
         I::Item: Into<OsString>,
@@ -216,8 +208,7 @@ pub trait Options<Arg: Arguments>: Sized {
             while let Some(arg) = iter.next_arg()? {
                 self.apply(arg);
             }
-            Arg::check_missing(iter.positional_idx)?;
-            Ok(self)
+            Ok((self, iter.get_positional_arguments()))
         }
     }
 

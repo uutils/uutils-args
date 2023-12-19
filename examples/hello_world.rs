@@ -32,7 +32,7 @@ impl Options<Arg> for Settings {
 }
 
 fn main() -> Result<(), uutils_args::Error> {
-    let settings = Settings {
+    let (settings, _operands) = Settings {
         name: String::new(),
         count: 1,
     }

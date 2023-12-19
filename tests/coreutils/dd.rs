@@ -116,16 +116,13 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn empty() {
-    assert_eq!(
-        Settings::default().try_parse(["dd"]).unwrap(),
-        Settings::default()
-    )
+    assert_eq!(Settings::default().parse(["dd"]).0, Settings::default())
 }
 
 #[test]
 fn infile() {
     assert_eq!(
-        Settings::default().try_parse(["dd", "if=hello"]).unwrap(),
+        Settings::default().parse(["dd", "if=hello"]).0,
         Settings {
             infile: Some(PathBuf::from("hello")),
             ..Settings::default()
@@ -136,7 +133,7 @@ fn infile() {
 #[test]
 fn outfile() {
     assert_eq!(
-        Settings::default().try_parse(["dd", "of=hello"]).unwrap(),
+        Settings::default().parse(["dd", "of=hello"]).0,
         Settings {
             outfile: Some(PathBuf::from("hello")),
             ..Settings::default()
@@ -147,7 +144,7 @@ fn outfile() {
 #[test]
 fn bs() {
     assert_eq!(
-        Settings::default().try_parse(["dd", "ibs=1"]).unwrap(),
+        Settings::default().parse(["dd", "ibs=1"]).0,
         Settings {
             ibs: 1,
             obs: 512,
@@ -155,7 +152,7 @@ fn bs() {
         }
     );
     assert_eq!(
-        Settings::default().try_parse(["dd", "obs=1"]).unwrap(),
+        Settings::default().parse(["dd", "obs=1"]).0,
         Settings {
             ibs: 512,
             obs: 1,
@@ -163,9 +160,7 @@ fn bs() {
         }
     );
     assert_eq!(
-        Settings::default()
-            .try_parse(["dd", "ibs=10", "obs=1"])
-            .unwrap(),
+        Settings::default().parse(["dd", "ibs=10", "obs=1"]).0,
         Settings {
             ibs: 10,
             obs: 1,
@@ -173,9 +168,7 @@ fn bs() {
         }
     );
     assert_eq!(
-        Settings::default()
-            .try_parse(["dd", "ibs=10", "bs=1"])
-            .unwrap(),
+        Settings::default().parse(["dd", "ibs=10", "bs=1"]).0,
         Settings {
             ibs: 1,
             obs: 1,

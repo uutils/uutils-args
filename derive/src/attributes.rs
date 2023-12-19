@@ -1,11 +1,8 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use std::ops::RangeInclusive;
-
 use syn::{
-    meta::ParseNestedMeta, parse::ParseStream, Attribute, Expr, ExprLit, ExprRange, Ident, Lit,
-    LitInt, LitStr, RangeLimits, Token,
+    meta::ParseNestedMeta, parse::ParseStream, Attribute, Expr, Ident, LitInt, LitStr, Token,
 };
 
 use crate::flags::Flags;
@@ -69,7 +66,6 @@ impl ArgumentsAttr {
 
 pub enum ArgAttr {
     Option(OptionAttr),
-    Positional(PositionalAttr),
     Free(FreeAttr),
 }
 
@@ -84,7 +80,7 @@ impl ArgAttr {
                 if v.starts_with('-') || v.contains('=') {
                     OptionAttr::from_args(v, s).map(Self::Option)
                 } else {
-                    PositionalAttr::from_args(v, s).map(Self::Positional)
+                    panic!("Could not determine type of argument");
                 }
             } else if let Ok(v) = s.parse::<syn::Ident>() {
                 FreeAttr::from_args(v, s).map(Self::Free)
@@ -167,82 +163,6 @@ impl FreeAttr {
         })?;
 
         Ok(free_attr)
-    }
-}
-
-pub struct PositionalAttr {
-    pub num_args: RangeInclusive<usize>,
-    pub last: bool,
-}
-
-impl Default for PositionalAttr {
-    fn default() -> Self {
-        Self {
-            num_args: 1..=1,
-            last: false,
-        }
-    }
-}
-
-impl PositionalAttr {
-    pub fn from_args(_first_value: String, s: ParseStream) -> syn::Result<Self> {
-        let mut positional_attr = Self::default();
-        parse_args(s, |s| {
-            if (s.peek(LitInt) && s.peek2(Token![..])) || s.peek(Token![..]) {
-                let range = s.parse::<ExprRange>()?;
-                // We're dealing with a range
-                let from = match range.start.as_deref() {
-                    Some(Expr::Lit(ExprLit {
-                        lit: Lit::Int(i), ..
-                    })) => i.base10_parse::<usize>().unwrap(),
-                    None => 0,
-                    _ => panic!("Range must consist of usize"),
-                };
-
-                let inclusive = matches!(range.limits, RangeLimits::Closed(_));
-                let to = match range.end.as_deref() {
-                    Some(Expr::Lit(ExprLit {
-                        lit: Lit::Int(i), ..
-                    })) => {
-                        let n = i.base10_parse::<usize>().unwrap();
-                        if inclusive {
-                            Some(n)
-                        } else {
-                            Some(n - 1)
-                        }
-                    }
-                    None => None,
-                    _ => panic!("Range must consist of usize"),
-                };
-
-                positional_attr.num_args = match to {
-                    Some(to) => from..=to,
-                    None => from..=usize::MAX,
-                };
-                return Ok(());
-            }
-
-            if let Ok(int) = s.parse::<LitInt>() {
-                let suffix = int.suffix();
-                // FIXME: should be a proper error instead of assert!
-                assert!(
-                    suffix.is_empty() || suffix == "usize",
-                    "The position index must be usize"
-                );
-                let n = int.base10_parse::<usize>().unwrap();
-                positional_attr.num_args = n..=n;
-                return Ok(());
-            }
-
-            let ident = s.parse::<Ident>()?;
-            match ident.to_string().as_str() {
-                "last" => positional_attr.last = true,
-                _ => return Err(s.error("unrecognized keyword in value attribute")),
-            }
-            Ok(())
-        })?;
-
-        Ok(positional_attr)
     }
 }
 

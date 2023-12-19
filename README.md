@@ -7,13 +7,13 @@ behaviour that aligns with GNU coreutils.
 
 ## Features
 
- - A derive macro for declarative argument definition.
- - Automatic help generation.
- - Positional and optional arguments.
- - Automatically parsing values into Rust types.
- - Define a custom exit code on errors.
- - Automatically accept unambiguous abbreviations of long options.
- - Handles invalid UTF-8 gracefully.
+- A derive macro for declarative argument definition.
+- Automatic help generation.
+- Positional and optional arguments.
+- Automatically parsing values into Rust types.
+- Define a custom exit code on errors.
+- Automatically accept unambiguous abbreviations of long options.
+- Handles invalid UTF-8 gracefully.
 
 ## When you should not use this library
 
@@ -50,16 +50,11 @@ enum Arg {
     /// Transform input text to uppercase
     #[arg("-c", "--caps")]
     Caps,
-    
-    // This option takes a value:    
+
+    // This option takes a value:
     /// Add exclamation marks to output
     #[arg("-e N", "--exclaim=N")]
     ExclamationMarks(u8),
-
-    // This is a positional argument, the range specifies that
-    // at least one positional argument must be passed.
-    #[arg("TEXT", 1..)]
-    Text(String),
 }
 
 #[derive(Default)]
@@ -76,24 +71,17 @@ impl Options<Arg> for Settings {
         match arg {
             Arg::Caps => self.caps = true,
             Arg::ExclamationMarks(n) => self.exclamation_marks += n,
-            Arg::Text(s) => {
-                if self.text.is_empty() {
-                    self.text.push_str(&s);
-                } else {
-                    self.text.push(' ');
-                    self.text.push_str(&s);
-                }
-            }
         }
     }
 }
 
 fn run(args: &[&str]) -> String {
-    let s = Settings::default().parse(args);
+    let (s, operands) = Settings::default().parse(args);
+    let text = operands.iter().map(|s| s.to_string_lossy()).collect::<Vec<_>>().join(" ");
     let mut output = if s.caps {
-        s.text.to_uppercase()
+        text.to_uppercase()
     } else {
-        s.text
+        text
     };
     for i in 0..s.exclamation_marks {
         output.push('!');

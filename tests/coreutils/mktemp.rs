@@ -21,9 +21,6 @@ enum Arg {
 
     #[arg("-p DIR", "--tmpdir[=DIR]", value = ".".into())]
     TmpDir(PathBuf),
-
-    #[arg("TEMPLATE", 0..=1)]
-    Template(String),
 }
 
 #[derive(Default)]
@@ -34,7 +31,6 @@ struct Settings {
     tmp_dir: Option<PathBuf>,
     suffix: Option<String>,
     treat_as_template: bool,
-    template: String,
 }
 
 impl Options<Arg> for Settings {
@@ -46,41 +42,40 @@ impl Options<Arg> for Settings {
             Arg::Suffix(s) => self.suffix = Some(s),
             Arg::TreatAsTemplate => self.treat_as_template = true,
             Arg::TmpDir(dir) => self.tmp_dir = Some(dir),
-            Arg::Template(s) => self.template = s,
         }
     }
 }
 
 #[test]
 fn suffix() {
-    let s = Settings::default().parse(["mktemp", "--suffix=hello"]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix=hello"]);
     assert_eq!(s.suffix.unwrap(), "hello");
 
-    let s = Settings::default().parse(["mktemp", "--suffix="]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix="]);
     assert_eq!(s.suffix.unwrap(), "");
 
-    let s = Settings::default().parse(["mktemp", "--suffix="]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix="]);
     assert_eq!(s.suffix.unwrap(), "");
 
-    let s = Settings::default().parse(["mktemp"]);
+    let (s, _operands) = Settings::default().parse(["mktemp"]);
     assert_eq!(s.suffix, None);
 }
 
 #[test]
 fn tmpdir() {
-    let s = Settings::default().parse(["mktemp", "--tmpdir"]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "--tmpdir"]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new("."));
 
-    let s = Settings::default().parse(["mktemp", "--tmpdir="]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "--tmpdir="]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
 
-    let s = Settings::default().parse(["mktemp", "-p", "foo"]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "-p", "foo"]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
 
-    let s = Settings::default().parse(["mktemp", "-pfoo"]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "-pfoo"]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
 
-    let s = Settings::default().parse(["mktemp", "-p", ""]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "-p", ""]);
     assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
 
     assert!(Settings::default().try_parse(["mktemp", "-p"]).is_err());

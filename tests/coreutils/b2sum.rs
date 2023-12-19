@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::ffi::OsString;
 use uutils_args::{Arguments, Options};
 
 #[derive(Clone, Arguments)]
@@ -26,9 +26,6 @@ enum Arg {
 
     #[arg("-w", "--warn")]
     Warn,
-
-    #[arg("FILE", ..)]
-    File(PathBuf),
 }
 
 #[derive(Default, Debug, PartialEq, Eq)]
@@ -46,7 +43,6 @@ struct Settings {
     tag: bool,
     check_output: CheckOutput,
     strict: bool,
-    files: Vec<PathBuf>,
 }
 
 impl Options<Arg> for Settings {
@@ -60,58 +56,68 @@ impl Options<Arg> for Settings {
             Arg::Status => self.check_output = CheckOutput::Status,
             Arg::Strict => self.strict = true,
             Arg::Warn => self.check_output = CheckOutput::Warn,
-            Arg::File(f) => self.files.push(f),
         }
     }
 }
 
 #[test]
 fn binary() {
-    assert!(!Settings::default().parse(["b2sum"]).binary);
-    assert!(!Settings::default().parse(["b2sum", "--text"]).binary);
-    assert!(!Settings::default().parse(["b2sum", "-t"]).binary);
+    assert!(!Settings::default().parse(["b2sum"]).0.binary);
+    assert!(!Settings::default().parse(["b2sum", "--text"]).0.binary);
+    assert!(!Settings::default().parse(["b2sum", "-t"]).0.binary);
     assert!(
         !Settings::default()
             .parse(["b2sum", "--binary", "--text"])
+            .0
             .binary
     );
-    assert!(!Settings::default().parse(["b2sum", "-b", "-t"]).binary);
+    assert!(!Settings::default().parse(["b2sum", "-b", "-t"]).0.binary);
 
-    assert!(Settings::default().parse(["b2sum", "--binary"]).binary);
-    assert!(Settings::default().parse(["b2sum", "-b"]).binary);
+    assert!(Settings::default().parse(["b2sum", "--binary"]).0.binary);
+    assert!(Settings::default().parse(["b2sum", "-b"]).0.binary);
     assert!(
         Settings::default()
             .parse(["b2sum", "--text", "--binary"])
+            .0
             .binary
     );
-    assert!(Settings::default().parse(["b2sum", "-t", "-b"]).binary);
+    assert!(Settings::default().parse(["b2sum", "-t", "-b"]).0.binary);
 }
 
 #[test]
 fn check_output() {
     assert_eq!(
-        Settings::default().parse(["b2sum", "--warn"]).check_output,
+        Settings::default()
+            .parse(["b2sum", "--warn"])
+            .0
+            .check_output,
         CheckOutput::Warn
     );
     assert_eq!(
-        Settings::default().parse(["b2sum", "--quiet"]).check_output,
+        Settings::default()
+            .parse(["b2sum", "--quiet"])
+            .0
+            .check_output,
         CheckOutput::Quiet
     );
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--status"])
+            .0
             .check_output,
         CheckOutput::Status
     );
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--status", "--warn"])
+            .0
             .check_output,
         CheckOutput::Warn
     );
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--status", "--warn"])
+            .0
             .check_output,
         CheckOutput::Warn
     );
@@ -119,6 +125,7 @@ fn check_output() {
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--warn", "--quiet"])
+            .0
             .check_output,
         CheckOutput::Quiet
     );
@@ -126,6 +133,7 @@ fn check_output() {
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--quiet", "--status"])
+            .0
             .check_output,
         CheckOutput::Status
     );
@@ -134,7 +142,7 @@ fn check_output() {
 #[test]
 fn files() {
     assert_eq!(
-        Settings::default().parse(["b2sum", "foo", "bar"]).files,
-        vec![Path::new("foo"), Path::new("bar")]
+        Settings::default().parse(["b2sum", "foo", "bar"]).1,
+        vec![OsString::from("foo"), OsString::from("bar")]
     );
 }

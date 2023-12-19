@@ -1,8 +1,6 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use std::ops::RangeInclusive;
-
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Attribute, Fields, FieldsUnnamed, Ident, Meta, Variant};
@@ -26,10 +24,6 @@ pub enum ArgType {
         hidden: bool,
         takes_value: bool,
         default: TokenStream,
-    },
-    Positional {
-        num_args: RangeInclusive<usize>,
-        last: bool,
     },
     Free {
         filters: Vec<syn::Ident>,
@@ -93,13 +87,6 @@ pub fn parse_argument(v: Variant) -> Vec<Argument> {
                         hidden: opt.hidden,
                     }
                 }
-                ArgAttr::Positional(pos) => {
-                    assert!(field.is_some(), "Positional arguments must have a field");
-                    ArgType::Positional {
-                        num_args: pos.num_args,
-                        last: pos.last,
-                    }
-                }
                 ArgAttr::Free(free) => ArgType::Free {
                     filters: free.filters,
                 },
@@ -157,7 +144,6 @@ pub fn short_handling(args: &[Argument]) -> (TokenStream, Vec<char>) {
                 ref default,
                 hidden: _,
             } => (flags, takes_value, default),
-            ArgType::Positional { .. } => continue,
             ArgType::Free { .. } => continue,
         };
 
@@ -207,7 +193,6 @@ pub fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStream {
                 ref default,
                 hidden: _,
             } => (flags, takes_value, default),
-            ArgType::Positional { .. } => continue,
             ArgType::Free { .. } => continue,
         };
 
@@ -275,7 +260,6 @@ pub fn free_handling(args: &[Argument]) -> TokenStream {
     for arg @ Argument { arg_type, .. } in args {
         let filters = match arg_type {
             ArgType::Free { filters } => filters,
-            ArgType::Positional { .. } => continue,
             ArgType::Option { .. } => continue,
         };
 
@@ -299,7 +283,6 @@ pub fn free_handling(args: &[Argument]) -> TokenStream {
         let flags = match arg_type {
             ArgType::Option { flags, .. } => flags,
             ArgType::Free { .. } => continue,
-            ArgType::Positional { .. } => continue,
         };
 
         for (prefix, _) in &flags.dd_style {
@@ -338,74 +321,6 @@ pub fn free_handling(args: &[Argument]) -> TokenStream {
     )
 }
 
-pub fn positional_handling(args: &[Argument]) -> (TokenStream, TokenStream) {
-    let mut match_arms = Vec::new();
-    // The largest index of the previous argument, so the the argument after this should
-    // belong to the next argument.
-    let mut last_index = 0;
-
-    // The minimum number of arguments needed to not return a missing argument error.
-    let mut minimum_needed = 0;
-    let mut missing_argument_checks = vec![];
-
-    for arg @ Argument { name, arg_type, .. } in args {
-        let (num_args, last) = match arg_type {
-            ArgType::Positional { num_args, last } => (num_args, last),
-            ArgType::Option { .. } => continue,
-            ArgType::Free { .. } => continue,
-        };
-
-        if *num_args.start() > 0 {
-            minimum_needed = last_index + num_args.start();
-            missing_argument_checks.push(quote!(if positional_idx < #minimum_needed {
-                missing.push(#name);
-            }));
-        }
-
-        last_index += num_args.end();
-
-        let expr = if *last {
-            last_positional_expression(&arg.ident)
-        } else {
-            positional_expression(&arg.ident)
-        };
-        match_arms.push(quote!(0..=#last_index => { #expr }));
-    }
-
-    let value_handling = quote!(
-        *positional_idx += 1;
-        Ok(Some(Argument::Custom(
-            match positional_idx {
-                #(#match_arms)*
-                _ => return Err(lexopt::Arg::Value(value).unexpected().into()),
-            }
-        )))
-    );
-
-    let missing_argument_checks = quote!(
-        // We have the minimum number of required arguments overall.
-        // So we don't need to check the others.
-        if positional_idx >= #minimum_needed {
-            return Ok(());
-        }
-
-        let mut missing: Vec<&str> = vec![];
-        #(#missing_argument_checks)*
-        if !missing.is_empty() {
-            Err(uutils_args::Error {
-                exit_code: Self::EXIT_CODE,
-                kind: uutils_args::ErrorKind::MissingPositionalArguments(
-                    missing.iter().map(ToString::to_string).collect::<Vec<String>>()
-                )
-            })
-        } else {
-            Ok(())
-        }
-    );
-
-    (value_handling, missing_argument_checks)
-}
-
 fn no_value_expression(ident: &Ident) -> TokenStream {
     quote!(Self::#ident)
 }
@@ -423,23 +338,4 @@ fn optional_value_expression(ident: &Ident, default_expr: &TokenStream) -> Token
 
 fn required_value_expression(ident: &Ident) -> TokenStream {
     quote!(Self::#ident(::uutils_args::internal::parse_value_for_option(&option, &parser.value()?)?))
-}
-
-fn positional_expression(ident: &Ident) -> TokenStream {
-    // TODO: Add option name in this from_value call
-    quote!(
-        Self::#ident(::uutils_args::internal::parse_value_for_option("", &value)?)
-    )
-}
-
-fn last_positional_expression(ident: &Ident) -> TokenStream {
-    // TODO: Add option name in this from_value call
-    quote!({
-        let raw_args = parser.raw_args()?;
-        let collection = std::iter::once(value)
-            .chain(raw_args)
-            .map(|v| ::uutils_args::internal::parse_value_for_option("", &v))
-            .collect::<Result<_,_>>()?;
-        Self::#ident(collection)
-    })
 }

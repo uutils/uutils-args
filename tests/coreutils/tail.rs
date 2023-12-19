@@ -8,7 +8,7 @@ use uutils_args::{Arguments, Options, Value};
 // from this function are not relevant, so we can just return an `Option`.
 // Once this gets into uutils, I highly recommend that we make this format
 // optional at compile time. As the GNU docs explain, it's very error-prone.
-fn parse_deprecated<I>(iter: I) -> Option<Settings>
+fn parse_deprecated<I>(iter: I) -> Option<(Settings, Vec<OsString>)>
 where
     I: IntoIterator + Clone,
     I::Item: Into<OsString>,
@@ -95,13 +95,15 @@ where
         return None;
     }
 
-    Some(Settings {
-        number: sig(num),
-        mode,
-        follow,
-        inputs: vec![input.into().into()],
-        ..Settings::default()
-    })
+    Some((
+        Settings {
+            number: sig(num),
+            mode,
+            follow,
+            ..Settings::default()
+        },
+        vec![input.into()],
+    ))
 }
 
 #[derive(Arguments)]
@@ -141,9 +143,6 @@ enum Arg {
 
     #[arg("---presume-input-pipe", hidden)]
     PresumeInputPipe,
-
-    #[arg("FILES", ..)]
-    File(PathBuf),
 }
 
 // We need both negative and positive 0
@@ -267,13 +266,12 @@ impl Options<Arg> for Settings {
             Arg::SleepInterval(n) => self.sleep_sec = n,
             Arg::Verbose => self.verbose = true,
             Arg::Zero => self.zero = true,
-            Arg::File(input) => self.inputs.push(input),
             Arg::PresumeInputPipe => self.presume_input_pipe = true,
         }
     }
 }
 
-fn parse_tail<I>(iter: I) -> Result<Settings, uutils_args::Error>
+fn parse_tail<I>(iter: I) -> Result<(Settings, Vec<OsString>), uutils_args::Error>
 where
     I: IntoIterator + Clone,
     I::Item: Into<OsString>,
@@ -286,23 +284,23 @@ where
 
 #[test]
 fn shorthand() {
-    let s = parse_tail(["tail", "-20", "some_file"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-20", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
     assert_eq!(s.mode, Mode::Lines);
     assert_eq!(s.follow, None);
 
-    let s = parse_tail(["tail", "+20", "some_file"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "+20", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(20));
     assert_eq!(s.mode, Mode::Lines);
     assert_eq!(s.follow, None);
 
-    let s = parse_tail(["tail", "-100cf", "some_file"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-100cf", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(100));
     assert_eq!(s.mode, Mode::Bytes);
     assert_eq!(s.follow, Some(FollowMode::Descriptor));
 
     // Corner case where the shorthand does not apply
-    let s = parse_tail(["tail", "-c", "42"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-c", "42"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(42));
     assert_eq!(s.mode, Mode::Bytes);
     assert_eq!(s.inputs, Vec::<PathBuf>::new());
@@ -310,34 +308,34 @@ fn shorthand() {
 
 #[test]
 fn standard_input() {
-    let s = parse_tail(["tail", "-"]).unwrap();
-    assert_eq!(s.inputs, vec![PathBuf::from("-")])
+    let (_s, operands) = parse_tail(["tail", "-"]).unwrap();
+    assert_eq!(operands, vec![PathBuf::from("-")])
 }
 
 #[test]
 fn normal_format() {
-    let s = parse_tail(["tail", "-c", "20", "some_file"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-c", "20", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
     assert_eq!(s.mode, Mode::Bytes);
 }
 
 #[test]
 fn signum() {
-    let s = parse_tail(["tail", "-n", "20"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-n", "20"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
-    let s = parse_tail(["tail", "-n", "-20"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-n", "-20"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
-    let s = parse_tail(["tail", "-n", "+20"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-n", "+20"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(20));
 
-    let s = parse_tail(["tail", "-n", "20b"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-n", "20b"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20 * 512));
-    let s = parse_tail(["tail", "-n", "+20b"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-n", "+20b"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(20 * 512));
 
-    let s = parse_tail(["tail", "-n", "b"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-n", "b"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(512));
-    let s = parse_tail(["tail", "-n", "+b"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-n", "+b"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(512));
 
     assert!(parse_tail(["tail", "-n", "20invalid_suffix"]).is_err());
@@ -346,35 +344,35 @@ fn signum() {
 #[test]
 fn follow_mode() {
     // Sanity check: should be None initially
-    let s = parse_tail(["tail"]).unwrap();
+    let (s, _operands) = parse_tail(["tail"]).unwrap();
     assert_eq!(s.follow, None);
 
-    let s = parse_tail(["tail", "--follow"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "--follow"]).unwrap();
     assert_eq!(s.follow, Some(FollowMode::Descriptor));
 
-    let s = parse_tail(["tail", "-f"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-f"]).unwrap();
     assert_eq!(s.follow, Some(FollowMode::Descriptor));
 
-    let s = parse_tail(["tail", "--follow=descriptor"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "--follow=descriptor"]).unwrap();
     assert_eq!(s.follow, Some(FollowMode::Descriptor));
 
-    let s = parse_tail(["tail", "--follow=des"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "--follow=des"]).unwrap();
     assert_eq!(s.follow, Some(FollowMode::Descriptor));
 
-    let s = parse_tail(["tail", "--follow=d"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "--follow=d"]).unwrap();
     assert_eq!(s.follow, Some(FollowMode::Descriptor));
 
-    let s = parse_tail(["tail", "--follow=name"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "--follow=name"]).unwrap();
     assert_eq!(s.follow, Some(FollowMode::Name));
 
-    let s = parse_tail(["tail", "--follow=na"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "--follow=na"]).unwrap();
     assert_eq!(s.follow, Some(FollowMode::Name));
 
-    let s = parse_tail(["tail", "--follow=n"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "--follow=n"]).unwrap();
     assert_eq!(s.follow, Some(FollowMode::Name));
 
     assert!(parse_tail(["tail", "--follow="]).is_err());
 
-    let s = parse_tail(["tail", "-F"]).unwrap();
+    let (s, _operands) = parse_tail(["tail", "-F"]).unwrap();
     assert_eq!(s.follow, Some(FollowMode::Name));
 }

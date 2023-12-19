@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use uutils_args::{Arguments, Options};
 
 #[derive(Default)]
@@ -38,9 +36,6 @@ enum Arg {
 
     #[arg("-v", "--show-nonprinting")]
     ShowNonPrinting,
-
-    #[arg("FILES", ..)]
-    File(PathBuf),
 }
 
 #[derive(Default)]
@@ -50,7 +45,6 @@ struct Settings {
     show_nonprinting: bool,
     number: NumberingMode,
     squeeze_blank: bool,
-    files: Vec<PathBuf>,
 }
 
 impl Options<Arg> for Settings {
@@ -75,34 +69,33 @@ impl Options<Arg> for Settings {
             Arg::Number => self.number = NumberingMode::All,
             Arg::NumberNonblank => self.number = NumberingMode::NonEmpty,
             Arg::SqueezeBlank => self.squeeze_blank = true,
-            Arg::File(f) => self.files.push(f),
         }
     }
 }
 
 #[test]
 fn show() {
-    let s = Settings::default().parse(["cat", "-v"]);
+    let (s, _) = Settings::default().parse(["cat", "-v"]);
     assert!(!s.show_ends && !s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::default().parse(["cat", "-E"]);
+    let (s, _) = Settings::default().parse(["cat", "-E"]);
     assert!(s.show_ends && !s.show_tabs && !s.show_nonprinting);
 
-    let s = Settings::default().parse(["cat", "-T"]);
+    let (s, _) = Settings::default().parse(["cat", "-T"]);
     assert!(!s.show_ends && s.show_tabs && !s.show_nonprinting);
 
-    let s = Settings::default().parse(["cat", "-e"]);
+    let (s, _) = Settings::default().parse(["cat", "-e"]);
     assert!(s.show_ends && !s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::default().parse(["cat", "-t"]);
+    let (s, _) = Settings::default().parse(["cat", "-t"]);
     assert!(!s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::default().parse(["cat", "-A"]);
+    let (s, _) = Settings::default().parse(["cat", "-A"]);
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::default().parse(["cat", "-te"]);
+    let (s, _) = Settings::default().parse(["cat", "-te"]);
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let s = Settings::default().parse(["cat", "-vET"]);
+    let (s, _) = Settings::default().parse(["cat", "-vET"]);
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 }

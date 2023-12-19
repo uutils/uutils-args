@@ -9,8 +9,7 @@ mod help;
 mod help_parser;
 
 use argument::{
-    free_handling, long_handling, parse_argument, parse_arguments_attr, positional_handling,
-    short_handling,
+    free_handling, long_handling, parse_argument, parse_arguments_attr, short_handling,
 };
 use attributes::ValueAttr;
 use help::{help_handling, help_string, version_handling};
@@ -36,9 +35,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     let exit_code = arguments_attr.exit_code;
     let (short, short_flags) = short_handling(&arguments);
     let long = long_handling(&arguments, &arguments_attr.help_flags);
-    // let number_argument = number_handling(&arguments);
     let free = free_handling(&arguments);
-    let (positional, missing_argument_checks) = positional_handling(&arguments);
     let help_string = help_string(
         &arguments,
         &arguments_attr.help_flags,
@@ -72,9 +69,9 @@ pub fn arguments(input: TokenStream) -> TokenStream {
 
             #[allow(unreachable_code)]
             fn next_arg(
-                parser: &mut uutils_args::lexopt::Parser, positional_idx: &mut usize
+                parser: &mut ::uutils_args::lexopt::Parser
             ) -> Result<Option<::uutils_args::Argument<Self>>, ::uutils_args::ErrorKind> {
-                use uutils_args::{Value, lexopt, Error, Argument};
+                use ::uutils_args::{Value, lexopt, Error, Argument};
 
                 #free
 
@@ -90,12 +87,8 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 match arg {
                     lexopt::Arg::Short(short) => { #short },
                     lexopt::Arg::Long(long) => { #long },
-                    lexopt::Arg::Value(value) => { #positional },
+                    lexopt::Arg::Value(value) => { Ok(Some(::uutils_args::Argument::Positional(value))) },
                 }
-            }
-
-            fn check_missing(positional_idx: usize) -> Result<(), uutils_args::Error> {
-                #missing_argument_checks
             }
 
             fn help(bin_name: &str) -> ::std::io::Result<()> {
