@@ -76,7 +76,7 @@ impl Options<Arg> for Settings {
 }
 
 fn run(args: &[&str]) -> String {
-    let (s, operands) = Settings::default().parse(args);
+    let (s, operands) = Settings::default().parse(args).unwrap();
     let text = operands.iter().map(|s| s.to_string_lossy()).collect::<Vec<_>>().join(" ");
     let mut output = if s.caps {
         text.to_uppercase()

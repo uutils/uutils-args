@@ -39,16 +39,16 @@ impl Options<Arg> for Settings {
 #[test]
 #[ignore = "needs to be fixed after positional argument refactor"]
 fn double_hyphen() {
-    let (_, operands) = Settings::default().parse(["echo", "--"]);
+    let (_, operands) = Settings::default().parse(["echo", "--"]).unwrap();
     assert_eq!(operands, vec![OsString::from("--")]);
 
-    let (_, operands) = Settings::default().parse(["echo", "--", "-n"]);
+    let (_, operands) = Settings::default().parse(["echo", "--", "-n"]).unwrap();
     assert_eq!(operands, vec![OsString::from("--"), OsString::from("-n")]);
 }
 
 #[test]
 #[ignore]
 fn nonexistent_options_are_values() {
-    let (_, operands) = Settings::default().parse(["echo", "-f"]);
+    let (_, operands) = Settings::default().parse(["echo", "-f"]).unwrap();
     assert_eq!(operands, vec![OsString::from("-f")]);
 }

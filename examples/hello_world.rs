@@ -36,7 +36,8 @@ fn main() -> Result<(), uutils_args::Error> {
         name: String::new(),
         count: 1,
     }
-    .parse(std::env::args_os());
+    .parse(std::env::args_os())
+    .unwrap();
 
     for _ in 0..settings.count {
         println!("Hello, {}!", settings.name);

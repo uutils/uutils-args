@@ -38,5 +38,5 @@ impl Options<Arg> for Settings {
 }
 
 fn main() {
-    Settings.parse(std::env::args_os());
+    Settings.parse(std::env::args_os()).unwrap();
 }

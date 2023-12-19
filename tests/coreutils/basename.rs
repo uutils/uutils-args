@@ -36,7 +36,7 @@ impl Options<Arg> for Settings {
 }
 
 fn parse(args: &[&str]) -> Settings {
-    let (mut settings, operands) = Settings::default().parse(args);
+    let (mut settings, operands) = Settings::default().parse(args).unwrap();
     settings.names = operands;
     if !settings.multiple {
         assert_eq!(settings.names.len(), 2);

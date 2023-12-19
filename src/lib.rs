@@ -67,16 +67,6 @@ pub enum Argument<T: Arguments> {
     Custom(T),
 }
 
-fn exit_if_err<T>(res: Result<T, Error>) -> T {
-    match res {
-        Ok(v) => v,
-        Err(err) => {
-            eprintln!("{err}");
-            std::process::exit(err.exit_code);
-        }
-    }
-}
-
 /// Defines how the arguments are parsed.
 ///
 /// If a type `T` implements this trait, we can construct an `ArgumentIter<T>`,
@@ -112,23 +102,11 @@ pub trait Arguments: Sized {
     /// Get the version string for this command.
     fn version() -> String;
 
-    /// Check all arguments immediately and exit on errors.
-    ///
-    /// This is useful if you want to validate the arguments. This method will
-    /// exit if `--help` or `--version` are passed and if any errors are found.
-    fn check<I>(args: I)
-    where
-        I: IntoIterator,
-        I::Item: Into<OsString>,
-    {
-        exit_if_err(Self::try_check(args))
-    }
-
     /// Check all arguments immediately and return any errors.
     ///
     /// This is useful if you want to validate the arguments. This method will
     /// exit if `--help` or `--version` are passed.
-    fn try_check<I>(args: I) -> Result<(), Error>
+    fn check<I>(args: I) -> Result<(), Error>
     where
         I: IntoIterator,
         I::Item: Into<OsString>,
@@ -145,8 +123,7 @@ pub trait Arguments: Sized {
 /// An iterator over arguments.
 ///
 /// Can be constructed by calling [`Arguments::parse`]. Usually, this method
-/// won't be used directly, but is used internally in [`Options::parse`] and
-/// [`Options::try_parse`].
+/// won't be used directly, but is used internally in [`Options::parse`].
 pub struct ArgumentIter<T: Arguments> {
     parser: lexopt::Parser,
     positional_arguments: Vec<OsString>,
@@ -218,16 +195,8 @@ pub trait Options<Arg: Arguments>: Sized {
     fn apply(&mut self, arg: Arg);
 
     /// Parse an iterator of arguments into the options
-    fn parse<I>(self, args: I) -> (Self, Vec<OsString>)
-    where
-        I: IntoIterator,
-        I::Item: Into<OsString>,
-    {
-        exit_if_err(self.try_parse(args))
-    }
-
     #[allow(unused_mut)]
-    fn try_parse<I>(mut self, args: I) -> Result<(Self, Vec<OsString>), Error>
+    fn parse<I>(mut self, args: I) -> Result<(Self, Vec<OsString>), Error>
     where
         I: IntoIterator,
         I::Item: Into<OsString>,
