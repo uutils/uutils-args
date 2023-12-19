@@ -13,8 +13,11 @@ We can create arguments by annotating a variant of an `enum` deriving [`Argument
 
 To represent the program configuration we create a struct called `Settings`, which implements `Options<Arg>`. When an argument is encountered, we _apply_ it to the `Settings` struct. In this case, we set the `force` field of `Settings` to `true` if `Arg::Force` is parsed.
 
+Any arguments that are not flags are returned as well as part of the tuple returned by `parse`. These do not have special treatment in this library.
+
 ```rust
 use uutils_args::{Arguments, Options};
+use std::ffi::OsString;
 
 #[derive(Arguments)]
 enum Arg {
@@ -35,8 +38,16 @@ impl Options<Arg> for Settings {
     }
 }
 
-assert!(!Settings::default().parse(["test"]).force);
-assert!(Settings::default().parse(["test", "-f"]).force);
+let (settings, operands) = Settings::default().parse(["test"]);
+assert!(!settings.force);
+assert_eq!(operands, Vec::<OsString>::new());
+
+let (settings, operands) = Settings::default().parse(["test", "-f"]);
+assert!(settings.force);
+
+let (settings, operands) = Settings::default().parse(["test", "foo"]);
+assert!(!settings.force);
+assert_eq!(operands, vec![OsString::from("foo")]);
 ```
 
 ## Two overriding flags
@@ -45,6 +56,7 @@ Of course, we can define multiple flags. If these arguments change the same fiel
 
 ```rust
 use uutils_args::{Arguments, Options};
+use std::ffi::OsString;
 
 #[derive(Arguments)]
 enum Arg {
@@ -68,9 +80,18 @@ impl Options<Arg> for Settings {
     }
 }
 
-assert!(!Settings::default().parse(["test"]).force);
-assert!(Settings::default().parse(["test", "-f"]).force);
-assert!(!Settings::default().parse(["test", "-f", "-F"]).force);
+let (settings, operands) = Settings::default().parse(["test"]);
+assert!(!settings.force);
+assert_eq!(operands, Vec::<OsString>::new());
+
+let (settings, operands) = Settings::default().parse(["test", "-f", "some-operand"]);
+assert!(settings.force);
+
+assert_eq!(operands, vec!["some-operand"]);
+let (settings, operands) = Settings::default().parse(["test", "-f", "-F", "some-other-operand"]);
+assert!(!settings.force);
+
+assert_eq!(operands, vec!["some-other-operand"]);
 ```
 
 ## Help strings
@@ -120,11 +141,11 @@ enum Arg {
 # }
 #
 # assert_eq!(
-#     Settings::default().parse(["test"]).name,
+#     Settings::default().parse(["test"]).0.name,
 #     OsString::new(),
 # );
 # assert_eq!(
-#     Settings::default().parse(["test", "--name=John"]).name,
+#     Settings::default().parse(["test", "--name=John"]).0.name,
 #     OsString::from("John"),
 # );
 ```
@@ -157,11 +178,11 @@ enum Arg {
 # }
 #
 # assert_eq!(
-#     Settings::default().parse(["test", "--name"]).name,
+#     Settings::default().parse(["test", "--name"]).0.name,
 #     OsString::from("anonymous"),
 # );
 # assert_eq!(
-#     Settings::default().parse(["test", "--name=John"]).name,
+#     Settings::default().parse(["test", "--name=John"]).0.name,
 #     OsString::from("John"),
 # );
 ```
@@ -193,9 +214,9 @@ enum Arg {
 #     }
 # }
 #
-# assert!(!Settings::default().parse(["test"]).force);
-# assert!(Settings::default().parse(["test", "-f"]).force);
-# assert!(!Settings::default().parse(["test", "-F"]).force);
+# assert!(!Settings::default().parse(["test"]).0.force);
+# assert!(Settings::default().parse(["test", "-f"]).0.force);
+# assert!(!Settings::default().parse(["test", "-F"]).0.force);
 ```
 
 This is particularly interesting for defining "shortcut" arguments. For example, `ls` takes a `--sort=WORD` argument, that defines how the files should be sorted. But it also has shorthands like `-t`, which is the same as `--sort=time`. All of these can be implemented on one variant:
@@ -228,48 +249,7 @@ enum Arg {
 #     }
 # }
 #
-# assert_eq!(Settings::default().parse(["test"]).sort, String::new());
-# assert_eq!(Settings::default().parse(["test", "--sort=time"]).sort, String::from("time"));
-# assert_eq!(Settings::default().parse(["test", "-t"]).sort, String::from("time"));
-```
-
-## Positional arguments
-
-Finally, at the end of this whirlwind tour, we get to positional arguments. Here's a simple positional argument:
-
-```rust
-use uutils_args::{Arguments, Options};
-use std::path::PathBuf;
-
-#[derive(Arguments)]
-enum Arg {
-    #[arg("FILES", ..)]
-    File(PathBuf)
-}
-
-#[derive(Default, Debug, PartialEq, Eq)]
-struct Settings {
-    files: Vec<PathBuf>,
-}
-
-impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
-        match arg {
-            Arg::File(f) => self.files.push(f),
-        }
-    }
-}
-#
-# assert_eq!(
-#     Settings::default().parse(["test"]).files,
-#     Vec::<PathBuf>::new(),
-# );
-# assert_eq!(
-#    Settings::default().parse(["test", "foo"]).files,
-#    vec![PathBuf::from("foo")],
-# );
-# assert_eq!(
-#     Settings::default().parse(["test", "foo", "bar"]).files,
-#     vec![PathBuf::from("foo"), PathBuf::from("bar")],
-# );
+# assert_eq!(Settings::default().parse(["test"]).0.sort, String::new());
+# assert_eq!(Settings::default().parse(["test", "--sort=time"]).0.sort, String::from("time"));
+# assert_eq!(Settings::default().parse(["test", "-t"]).0.sort, String::from("time"));
 ```
