@@ -1,14 +1,56 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
+//! <div style="font-size: 2em; font-family: 'Fira Sans',Arial,NanumBarunGothic,sans-serif; border: 1px solid var(--link-color); border-radius: 4px; padding: 10px;">
+//!
+//! [Click here for the guide](docs::guide)
+//!
+//! </div>
+//!
 #![doc = include_str!("../README.md")]
 
 mod error;
 pub mod internal;
 mod value;
 
+#[cfg(doc)]
+pub mod docs;
+
 pub use lexopt;
-pub use uutils_args_derive::*;
+
+// The documentation for the derive macros is written here instead of in
+// `uutils_args_derive`, because we need to be able to link to items and the
+// documentation in this crate.
+
+/// Derive macro for [`Value`](trait@crate::Value)
+///
+/// [See also the chapter on this trait in the guide](crate::docs::guide::value)
+///
+/// This macro only works on `enums` and will error at compile time when it is
+/// used on a `struct`.
+pub use uutils_args_derive::Value;
+
+/// Derive macro for [`Arguments`](trait@crate::Arguments)
+///
+/// [See also the chapter on this trait in the guide](crate::docs::guide::quick)
+///
+/// This macro only works on `enums` and will error at compile time when it is
+/// used on a `struct`.
+///
+/// /// ## Argument specifications
+///
+/// | specification  | kind       | value    |
+/// | -------------- | ---------- | -------- |
+/// | `VAL`          | positional | n.a.     |
+/// | `-s`           | short      | none     |
+/// | `-s VAL`       | short      | required |
+/// | `-s[VAL]`      | short      | optional |
+/// | `--long`       | long       | none     |
+/// | `--long=VAL`   | long       | required |
+/// | `--long[=VAL]` | long       | optional |
+/// | `long=VAL`     | dd         | required |
+///
+pub use uutils_args_derive::Arguments;
 
 pub use error::{Error, ErrorKind};
 pub use value::{Value, ValueError, ValueResult};

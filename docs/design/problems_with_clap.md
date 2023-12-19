@@ -8,9 +8,9 @@ inspiration from them.
 Before I continue, I want to note that these are not (always) general problems
 with `clap`. They are problems that show up when you want to implement the
 coreutils with it. The coreutils have some weird behaviour that you won't have
-to deal with in a new project. `clap` is still a really good library and you
+to deal with in a new project. `clap` is still a great library, and you
 should probably use it over this library, unless you need compatibility with GNU
-utils.
+utilities.
 
 ## Problem 1: No many-to-many relationship between arguments and settings
 
@@ -18,7 +18,7 @@ This is the biggest issue we have with `clap`. In `clap`, it is assumed that
 options do not interfere with each other. This means that _partially overriding_
 options are really hard to support. `rm` has `--interactive` and `-f`, which
 mostly just override each other, because they set the interactive mode and
-decide whether to print warnings. However, `--interactive=never` does nog change
+decide whether to print warnings. However, `--interactive=never` does not change
 whether warnings are printed. Hence, they cannot override completely, because
 then these two are **not** identical:
 
@@ -59,9 +59,10 @@ Changing these defaults is sometimes just a single line, but other times it
 becomes quite verbose. In particular, setting the options to override becomes
 quite verbose in some cases.
 
-[^1]: There is a setting to set it for all arguments, but it behaves differently
-than setting it individually and leads to some troubles, due to the differences
-mentioned in the next section.
+[^1]:
+    There is a setting to set it for all arguments, but it behaves differently
+    than setting it individually and leads to some troubles, due to the differences
+    mentioned in the next section.
 
 ## Problem 4: Subtle differences
 
@@ -111,7 +112,7 @@ uutils diverge.
 
 `clap`'s arguments are identified by strings. This leads to code like this:
 
-```rust
+```rust,ignore
 const OPT_NAME: &'static str = "name";
 
 // -- snip --
@@ -183,9 +184,10 @@ libraries.
   - Does not support a many-to-many relationship.
 - [`bpaf`](https://github.com/pacak/bpaf)
   - Extremely flexible, even supports `dd`-style.
-  - A different configuration between short and long options requires a workaround.
+  - A different configuration between short and long options requires a
+    workaround.
   - A many-to-many relation ship is possible, though not very ergonomic.
-  - For more information, see: https://github.com/uutils/uutils-args/issues/17
+  - For more information, see: <https://github.com/uutils/uutils-args/issues/17>
 - [`gumdrop`](https://github.com/murarth/gumdrop)
   - Does not handle invalid UTF-8.
   - Not configurable enough.

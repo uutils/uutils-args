@@ -1,7 +1,8 @@
-# `uutils-args` Design Docs
+# Design
 
-This is a series of design documents, explaining the various design goals and
-decisions. Before diving in, let's lay out the design goals of this project.
+This module contains some documents about the design of this library. In particular, it details the different kinds of arguments that are present in the coreutils and the difficulties that `clap` presents when implementing these arguments.
+
+The primary design considerations of this library are:
 
 - Must support all options in GNU coreutils.
 - Must support a many-to-many relationship between options and settings.
@@ -14,10 +15,10 @@ decisions. Before diving in, let's lay out the design goals of this project.
   fewer features to support.
 - Use outside uutils is possible but not prioritized. Hence, configurability
   beyond the coreutils is not necessary.
-- Errors must be at least as good as GNU's, but may be different (hopefully improved).
+- Errors must be at least as good as GNU's, but may be different (hopefully
+  improved).
 
-## Pages
+## Chapters
 
-1. [Arguments in coreutils](arguments_in_coreutils.md)
-2. [Problems with `clap` and other parsers](problems_with_clap.md)
-3. [Library design](design.md) (TODO once the design settles)
+1. [Arguments in the coreutils](design::coreutils)
+2. [Problems with `clap`](design::problems)

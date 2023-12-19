@@ -38,6 +38,12 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
             continue;
         }
 
+        // If none of the flags take an argument, we won't need ValueHint
+        // based on that type. So we should not attempt to call `value_hint`
+        // on it.
+        let any_flag_takes_argument =
+            short.iter().any(|f| f.value != Value::No) && long.iter().any(|f| f.value != Value::No);
+
         let short: Vec<_> = short
             .iter()
             .map(|Flag { flag, value }| {
@@ -69,10 +75,9 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
             })
             .collect();
 
-        let hint = if let Some(ty) = field {
-            quote!(Some(<#ty>::value_hint()))
-        } else {
-            quote!(None)
+        let hint = match (field, any_flag_takes_argument) {
+            (Some(ty), true) => quote!(Some(<#ty>::value_hint())),
+            _ => quote!(None),
         };
 
         arg_specs.push(quote!(
