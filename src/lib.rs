@@ -69,9 +69,6 @@ pub enum Argument<T: Arguments> {
 
 /// Defines how the arguments are parsed.
 ///
-/// If a type `T` implements this trait, we can construct an `ArgumentIter<T>`,
-/// meaning that we can parse the individual arguments to `T`.\
-///
 /// Usually, this trait will be implemented via the
 /// [derive macro](derive@Arguments) and does not need to be implemented
 /// manually.
@@ -79,19 +76,7 @@ pub trait Arguments: Sized {
     /// The exit code to exit the program with on error.
     const EXIT_CODE: i32;
 
-    /// Parse an iterator of arguments into an
-    /// [`ArgumentIter<Self>`](ArgumentIter).
-    fn parse<I>(args: I) -> ArgumentIter<Self>
-    where
-        I: IntoIterator,
-        I::Item: Into<OsString>,
-    {
-        ArgumentIter::<Self>::from_args(args)
-    }
-
     /// Parse the next argument from the lexopt parser.
-    ///
-    /// This method is called by [`ArgumentIter::next_arg`].
     fn next_arg(parser: &mut lexopt::Parser) -> Result<Option<Argument<Self>>, ErrorKind>;
 
     /// Print the help string for this command.
@@ -111,7 +96,7 @@ pub trait Arguments: Sized {
         I: IntoIterator,
         I::Item: Into<OsString>,
     {
-        let mut iter = Self::parse(args);
+        let mut iter = ArgumentIter::<Self>::from_args(args);
         while iter.next_arg()?.is_some() {}
         Ok(())
     }
@@ -121,10 +106,7 @@ pub trait Arguments: Sized {
 }
 
 /// An iterator over arguments.
-///
-/// Can be constructed by calling [`Arguments::parse`]. Usually, this method
-/// won't be used directly, but is used internally in [`Options::parse`].
-pub struct ArgumentIter<T: Arguments> {
+struct ArgumentIter<T: Arguments> {
     parser: lexopt::Parser,
     positional_arguments: Vec<OsString>,
     t: PhantomData<T>,
@@ -150,11 +132,11 @@ impl<T: Arguments> ArgumentIter<T> {
         })? {
             match arg {
                 Argument::Help => {
-                    self.help().unwrap();
+                    T::help(self.parser.bin_name().unwrap()).unwrap();
                     std::process::exit(0);
                 }
                 Argument::Version => {
-                    print!("{}", self.version());
+                    print!("{}", T::version());
                     std::process::exit(0);
                 }
                 Argument::Positional(arg) => {
@@ -164,18 +146,6 @@ impl<T: Arguments> ArgumentIter<T> {
             }
         }
         Ok(None)
-    }
-
-    fn get_positional_arguments(self) -> Vec<OsString> {
-        self.positional_arguments
-    }
-
-    fn help(&self) -> std::io::Result<()> {
-        T::help(self.parser.bin_name().unwrap())
-    }
-
-    fn version(&self) -> String {
-        T::version()
     }
 }
 
@@ -187,9 +157,8 @@ impl<T: Arguments> ArgumentIter<T> {
 /// - the [`apply`](Options::apply) method, which defines to how map that
 ///   type onto the options.
 ///
-/// By default, the [`Options::parse`] method will
-/// 1. repeatedly call [`ArgumentIter::next_arg`] and call [`Options::apply`]
-///    on the result until the arguments are exhausted.
+/// By default, the [`Options::parse`] method iterate over the arguments and
+/// call [`Options::apply`] on the result until the arguments are exhausted.
 pub trait Options<Arg: Arguments>: Sized {
     /// Apply a single argument to the options.
     fn apply(&mut self, arg: Arg);
@@ -215,11 +184,11 @@ pub trait Options<Arg: Arguments>: Sized {
 
         #[cfg(not(feature = "parse-is-complete"))]
         {
-            let mut iter = Arg::parse(args);
+            let mut iter = ArgumentIter::<Arg>::from_args(args);
             while let Some(arg) = iter.next_arg()? {
                 self.apply(arg);
             }
-            Ok((self, iter.get_positional_arguments()))
+            Ok((self, iter.positional_arguments))
         }
     }
 
