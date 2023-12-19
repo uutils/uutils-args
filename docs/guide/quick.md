@@ -1,3 +1,31 @@
+<style>
+.chapters p {
+    display: grid;
+    grid-template-columns: repeat(3, 6em);
+    justify-content: space-between;
+}
+.chapters a {
+    text-align: center;
+    font-family: "Fira Sans",Arial,NanumBarunGothic,sans-serif;
+    border: 1px solid var(--link-color);
+    border-radius: 4px;
+    padding: 3px 10px;
+}
+.chapters p a[href=""] {
+    pointer-events: none;
+    color: var(--scrollbar-thumb-background-color);
+    border: 1px solid var(--scrollbar-thumb-background-color);
+}
+
+</style>
+<div class="chapters">
+
+[Previous]()
+[Up](super)
+[Next](next)
+
+</div>
+
 # Quick Start
 
 A parser consists of two parts:
@@ -253,3 +281,11 @@ enum Arg {
 # assert_eq!(Settings::default().parse(["test", "--sort=time"]).0.sort, String::from("time"));
 # assert_eq!(Settings::default().parse(["test", "-t"]).0.sort, String::from("time"));
 ```
+
+<div class="chapters">
+
+[Previous]()
+[Up](super)
+[Next](next)
+
+</div>

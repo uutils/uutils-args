@@ -5,14 +5,24 @@
 
 #[doc = include_str!("../docs/guide/guide.md")]
 pub mod guide {
-    #[doc = include_str!("../docs/guide/quick.md")]
-    pub mod quick {}
-    #[doc = include_str!("../docs/guide/port.md")]
-    pub mod port {}
-    #[doc = include_str!("../docs/guide/completions.md")]
-    pub mod completions {}
-    #[doc = include_str!("../docs/guide/value.md")]
-    pub mod value {}
+    pub mod quick {
+        #![doc = include_str!("../docs/guide/quick.md")]
+        pub use super::port as next;
+    }
+    pub mod port {
+        #![doc = include_str!("../docs/guide/port.md")]
+        pub use super::quick as previous;
+        pub use super::value as next;
+    }
+    pub mod value {
+        #![doc = include_str!("../docs/guide/value.md")]
+        pub use super::completions as next;
+        pub use super::port as previous;
+    }
+    pub mod completions {
+        #![doc = include_str!("../docs/guide/completions.md")]
+        pub use super::value as previous;
+    }
 }
 
 #[doc = include_str!("../docs/design/design.md")]

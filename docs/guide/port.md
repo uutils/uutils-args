@@ -1,3 +1,30 @@
+<style>
+.chapters p {
+    display: grid;
+    grid-template-columns: repeat(3, 6em);
+    justify-content: space-between;
+}
+.chapters a {
+    text-align: center;
+    font-family: "Fira Sans",Arial,NanumBarunGothic,sans-serif;
+    border: 1px solid var(--link-color);
+    border-radius: 4px;
+    padding: 3px 10px;
+}
+.chapters a[href=""] {
+    pointer-events: none;
+    color: var(--scrollbar-thumb-background-color);
+    border: 1px solid var(--scrollbar-thumb-background-color);
+}
+</style>
+<div class="chapters">
+
+[Previous](previous)
+[Up](super)
+[Next](next)
+
+</div>
+
 # Porting from Clap
 
 This chapter contains information about how common patterns in `clap` parsers can be ported to `uutils-args`.
@@ -237,3 +264,11 @@ impl Options<Arg> for Settings {
 
 let a = Settings::default().parse(std::env::args_os()).0.a;
 ```
+
+<div class="chapters">
+
+[Previous](previous)
+[Up](super)
+[Next](next)
+
+</div>

@@ -1,3 +1,30 @@
+<style>
+.chapters p {
+    display: grid;
+    grid-template-columns: repeat(3, 6em);
+    justify-content: space-between;
+}
+.chapters a {
+    text-align: center;
+    font-family: "Fira Sans",Arial,NanumBarunGothic,sans-serif;
+    border: 1px solid var(--link-color);
+    border-radius: 4px;
+    padding: 3px 10px;
+}
+.chapters a[href=""] {
+    pointer-events: none;
+    color: var(--scrollbar-thumb-background-color);
+    border: 1px solid var(--scrollbar-thumb-background-color);
+}
+</style>
+<div class="chapters">
+
+[Previous](previous)
+[Up](super)
+[Next](next)
+
+</div>
+
 # Value trait
 
 Any field on the enum implementing [`Arguments`](trait@crate::Arguments) has to implement the [`Value`](trait@crate::Value) trait, which determines how it is derive from the text value. Normally, [`Value`](trait@crate::Value) only requires one method: [`from_value`](crate::Value::from_value), which takes an `&OsStr` and returns a `Result` with either `Self` or some boxed error.
@@ -55,3 +82,11 @@ assert_eq!(Color::from_value(&OsStr::new("never")).unwrap(), Color::Never);
 assert!(Color::from_value(&OsStr::new("a")).is_err());
 assert_eq!(Color::from_value(&OsStr::new("n")).unwrap(), Color::Never);
 ```
+
+<div class="chapters">
+
+[Previous](previous)
+[Up](super)
+[Next](next)
+
+</div>

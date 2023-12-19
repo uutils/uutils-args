@@ -31,7 +31,7 @@ pub use uutils_args_derive::Value;
 ///
 /// This macro only works on `enums` and will error at compile time when it is
 /// used on a `struct`.
-/// 
+///
 /// /// ## Argument specifications
 ///
 /// | specification  | kind       | value    |
