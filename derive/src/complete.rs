@@ -45,7 +45,7 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
                 let value = match value {
                     Value::No => quote!(::uutils_args_complete::Value::No),
                     Value::Optional(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
-                    Value::Required(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
+                    Value::Required(name) => quote!(::uutils_args_complete::Value::Required(#name)),
                 };
                 quote!(::uutils_args_complete::Flag {
                     flag: #flag,
@@ -60,7 +60,7 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
                 let value = match value {
                     Value::No => quote!(::uutils_args_complete::Value::No),
                     Value::Optional(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
-                    Value::Required(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
+                    Value::Required(name) => quote!(::uutils_args_complete::Value::Required(#name)),
                 };
                 quote!(::uutils_args_complete::Flag {
                     flag: #flag,
