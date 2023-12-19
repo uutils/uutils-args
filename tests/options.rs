@@ -603,3 +603,27 @@ fn deprecated() {
         -10isize
     );
 }
+
+#[test]
+#[allow(unreachable_code)]
+fn empty_value() {
+    // We just check that this compiles
+    #[derive(Value)]
+    enum V {}
+
+    #[derive(Arguments)]
+    enum Arg {
+        #[arg("--val=VAL")]
+        Val(V),
+    }
+
+    struct Settings {}
+
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, arg: Arg) {
+            match arg {
+                Arg::Val(_) => {}
+            }
+        }
+    }
+}

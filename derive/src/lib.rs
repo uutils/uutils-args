@@ -150,15 +150,17 @@ pub fn value(input: TokenStream) -> TokenStream {
             options.push(quote!(&[#(#keys),*]));
 
             let stmt = if let Some(v) = value {
-                quote!(#(| #keys)* => #v)
+                quote!(#(| #keys)* => #v,)
             } else {
                 let mut v = variant.clone();
                 v.attrs = vec![];
-                quote!(#(| #keys)* => Self::#v)
+                quote!(#(| #keys)* => Self::#v,)
             };
             match_arms.push(stmt);
         }
     }
+
+    let keys_len = all_keys.len();
 
     let expanded = quote!(
         impl #impl_generics Value for #name #ty_generics #where_clause {
@@ -191,15 +193,16 @@ pub fn value(input: TokenStream) -> TokenStream {
                 };
 
                 Ok(match opt {
-                    #(#match_arms),*,
+                    #(#match_arms)*
                     _ => unreachable!("Should be caught by (None, []) case above.")
                 })
             }
 
             #[cfg(feature = "complete")]
             fn value_hint() -> ::uutils_args_complete::ValueHint {
+                let keys: [&str; #keys_len] = [#(#all_keys),*];
                 ::uutils_args_complete::ValueHint::Strings(
-                    [#(#all_keys),*]
+                    keys
                         .into_iter()
                         .map(ToString::to_string)
                         .collect()
