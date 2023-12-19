@@ -1,7 +1,12 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-//! [Click here to check out the guide-level documentation](docs::guide)
+//! <div style="font-size: 2em; font-family: 'Fira Sans',Arial,NanumBarunGothic,sans-serif; border: 1px solid var(--link-color); border-radius: 4px; padding: 10px;">
+//!
+//! [Click here for the guide](docs::guide)
+//!
+//! </div>
+//!
 #![doc = include_str!("../README.md")]
 
 mod error;
