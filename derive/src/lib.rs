@@ -1,6 +1,9 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
+//! Derive macros for `uutils_args`. All items here are documented in that
+//! crate.
+
 mod argument;
 mod attributes;
 mod complete;
@@ -18,21 +21,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data::Enum, DeriveInput};
 
-/// Derive `Arguments`
-///
-/// ## Argument specifications
-///
-/// | specification  | kind       | value    |
-/// | -------------- | ---------- | -------- |
-/// | `VAL`          | positional | n.a.     |
-/// | `-s`           | short      | none     |
-/// | `-s VAL`       | short      | required |
-/// | `-s[VAL]`      | short      | optional |
-/// | `--long`       | long       | none     |
-/// | `--long=VAL`   | long       | required |
-/// | `--long[=VAL]` | long       | optional |
-/// | `long=VAL`     | dd         | required |
-///
+/// Documentation for this can be found in `uutils_args`.
 #[proc_macro_derive(Arguments, attributes(arg, arguments))]
 pub fn arguments(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -125,6 +114,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+/// Documentation for this can be found in `uutils_args`.
 #[proc_macro_derive(Value, attributes(value))]
 pub fn value(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
