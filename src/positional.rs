@@ -1,22 +1,27 @@
 //! Parsing of positional arguments.
 //!
-//! The signature for parsing positional arguments is one of [`&'static str`],
-//! [`Opt`], [`Many`] or a tuple of those. The [`Unpack::unpack`] method of
-//! these types parses a `Vec<OsString>` into the corresponding
-//! [`Unpack::Output`] type.
+//! The signature for parsing positional arguments is one of `&'static str`,
+//! [`Opt`], [`Many0`], [`Many1`] or a tuple of those. The [`Unpack::unpack`]
+//! method of these types parses a `Vec<T>` into the corresponding
+//! [`Unpack::Output<T>`] type.
 //!
 //! For example:
 //! ```
 //! use std::ffi::OsString;
 //! use uutils_args::positional::{Opt, Unpack};
 //!
-//! let (a, b) = ("FILE1", Opt("FILE2")).unpack(vec![OsString::from("one")]).unwrap();
-//! assert_eq!(a, OsString::from("one"));
+//! let (a, b) = ("FILE1", Opt("FILE2")).unpack(vec!["one"]).unwrap();
+//! assert_eq!(a, "one");
 //! assert_eq!(b, None);
 //!
-//! let (a, b) = ("FILE1", Opt("FILE2")).unpack(vec![OsString::from("one"), OsString::from("two")]).unwrap();
-//! assert_eq!(a, OsString::from("one"));
-//! assert_eq!(b, Some(OsString::from("two")));
+//! let (a, b) = ("FILE1", Opt("FILE2")).unpack(vec!["one", "two"]).unwrap();
+//! assert_eq!(a, "one");
+//! assert_eq!(b, Some("two"));
+//!
+//! // It works for any `Vec<T>`:
+//! let (a, b) = ("FILE1", Opt("FILE2")).unpack(vec![1, 2]).unwrap();
+//! assert_eq!(a, 1);
+//! assert_eq!(b, Some(2));
 //! ```
 //!
 //! Here are a few examples:
@@ -50,7 +55,7 @@
 //! should go. The supported tuples implement [`Unpack`].
 
 use crate::error::{Error, ErrorKind};
-use std::ffi::OsString;
+use std::fmt::Debug;
 
 /// A required argument
 type Req = &'static str;
@@ -59,61 +64,69 @@ type Req = &'static str;
 pub struct Opt<T>(pub T);
 
 /// 1 or more arguments
-pub struct Many(pub Req);
+pub struct Many1(pub Req);
+
+/// 0 or more arguments
+pub struct Many0(pub Req);
 
 /// Unpack a `Vec` into the output type
 ///
 /// See the [module documentation](crate::positional) for more information.
 pub trait Unpack {
-    type Output: ToOptional;
-    fn unpack(&self, operands: Vec<OsString>) -> Result<Self::Output, Error>;
+    type Output<T>;
+    fn unpack<T: Debug>(&self, operands: Vec<T>) -> Result<Self::Output<T>, Error>;
 }
 
 impl Unpack for () {
-    type Output = ();
+    type Output<T> = ();
 
-    fn unpack(&self, operands: Vec<OsString>) -> Result<Self::Output, Error> {
+    fn unpack<T: Debug>(&self, operands: Vec<T>) -> Result<Self::Output<T>, Error> {
         assert_empty(operands)
     }
 }
 
-impl<T: Unpack> Unpack for (T,) {
-    type Output = T::Output;
+impl<U: Unpack> Unpack for (U,) {
+    type Output<T> = U::Output<T>;
 
-    fn unpack(&self, operands: Vec<OsString>) -> Result<Self::Output, Error> {
+    fn unpack<T: Debug>(&self, operands: Vec<T>) -> Result<Self::Output<T>, Error> {
         self.0.unpack(operands)
     }
 }
 
 impl Unpack for Req {
-    type Output = OsString;
+    type Output<T> = T;
 
-    fn unpack(&self, mut operands: Vec<OsString>) -> Result<Self::Output, Error> {
+    fn unpack<T: Debug>(&self, mut operands: Vec<T>) -> Result<Self::Output<T>, Error> {
         let arg = pop_front(self, &mut operands)?;
         assert_empty(operands)?;
         Ok(arg)
     }
 }
 
-impl<T: Unpack> Unpack for Opt<T>
-where
-    T::Output: ToOptional,
-{
-    type Output = <T::Output as ToOptional>::Out;
+impl<U: Unpack> Unpack for Opt<U> {
+    type Output<T> = Option<U::Output<T>>;
 
-    fn unpack(&self, operands: Vec<OsString>) -> Result<Self::Output, Error> {
+    fn unpack<T: Debug>(&self, operands: Vec<T>) -> Result<Self::Output<T>, Error> {
         Ok(if operands.is_empty() {
-            <T::Output as ToOptional>::none()
+            None
         } else {
-            self.0.unpack(operands)?.some()
+            Some(self.0.unpack(operands)?)
         })
     }
 }
 
-impl Unpack for Many {
-    type Output = Vec<OsString>;
+impl Unpack for Many0 {
+    type Output<T> = Vec<T>;
 
-    fn unpack(&self, operands: Vec<OsString>) -> Result<Self::Output, Error> {
+    fn unpack<T: Debug>(&self, operands: Vec<T>) -> Result<Self::Output<T>, Error> {
+        Ok(operands)
+    }
+}
+
+impl Unpack for Many1 {
+    type Output<T> = Vec<T>;
+
+    fn unpack<T: Debug>(&self, operands: Vec<T>) -> Result<Self::Output<T>, Error> {
         if operands.is_empty() {
             return Err(Error {
                 exit_code: 1,
@@ -124,20 +137,20 @@ impl Unpack for Many {
     }
 }
 
-impl<T: Unpack> Unpack for (Req, T) {
-    type Output = (OsString, T::Output);
+impl<U: Unpack> Unpack for (Req, U) {
+    type Output<T> = (T, U::Output<T>);
 
-    fn unpack(&self, mut operands: Vec<OsString>) -> Result<Self::Output, Error> {
+    fn unpack<T: Debug>(&self, mut operands: Vec<T>) -> Result<Self::Output<T>, Error> {
         let arg = pop_front(self.0, &mut operands)?;
         let rest = self.1.unpack(operands)?;
         Ok((arg, rest))
     }
 }
 
-impl<T: Unpack> Unpack for (Req, Req, T) {
-    type Output = (OsString, OsString, T::Output);
+impl<U: Unpack> Unpack for (Req, Req, U) {
+    type Output<T> = (T, T, U::Output<T>);
 
-    fn unpack(&self, mut operands: Vec<OsString>) -> Result<Self::Output, Error> {
+    fn unpack<T: Debug>(&self, mut operands: Vec<T>) -> Result<Self::Output<T>, Error> {
         let arg1 = pop_front(self.0, &mut operands)?;
         let arg2 = pop_front(self.1, &mut operands)?;
         let rest = self.2.unpack(operands)?;
@@ -145,142 +158,87 @@ impl<T: Unpack> Unpack for (Req, Req, T) {
     }
 }
 
-impl<T: Unpack> Unpack for (Opt<T>, Req) {
-    type Output = (<Opt<T> as Unpack>::Output, <Req as Unpack>::Output);
+impl<U: Unpack> Unpack for (Opt<U>, Req) {
+    type Output<T> = (Option<<U as Unpack>::Output<T>>, T);
 
-    fn unpack(&self, mut operands: Vec<OsString>) -> Result<Self::Output, Error> {
+    fn unpack<T: Debug>(&self, mut operands: Vec<T>) -> Result<Self::Output<T>, Error> {
         let arg = pop_back(self.1, &mut operands)?;
         let rest = self.0.unpack(operands)?;
         Ok((rest, arg))
     }
 }
 
-impl Unpack for (Many, Req) {
-    type Output = (<Many as Unpack>::Output, <Req as Unpack>::Output);
+impl Unpack for (Many0, Req) {
+    type Output<T> = (Vec<T>, T);
 
-    fn unpack(&self, mut operands: Vec<OsString>) -> Result<Self::Output, Error> {
+    fn unpack<T: Debug>(&self, mut operands: Vec<T>) -> Result<Self::Output<T>, Error> {
         let arg = pop_back(self.1, &mut operands)?;
         let rest = self.0.unpack(operands)?;
         Ok((rest, arg))
     }
 }
 
-fn pop_front(name: &str, operands: &mut Vec<OsString>) -> Result<OsString, Error> {
+impl Unpack for (Many1, Req) {
+    type Output<T> = (Vec<T>, T);
+
+    fn unpack<T: Debug>(&self, mut operands: Vec<T>) -> Result<Self::Output<T>, Error> {
+        let arg = pop_back(self.1, &mut operands)?;
+        let rest = self.0.unpack(operands)?;
+        Ok((rest, arg))
+    }
+}
+
+fn pop_front<T: Debug>(name: &str, operands: &mut Vec<T>) -> Result<T, Error> {
     if operands.is_empty() {
         return Err(Error {
             exit_code: 1,
-            kind: ErrorKind::MissingPositionalArguments(vec![name.into()]),
+            kind: ErrorKind::MissingPositionalArguments(vec![name.to_string()]),
         });
     }
     Ok(operands.remove(0))
 }
 
-fn pop_back(name: &str, operands: &mut Vec<OsString>) -> Result<OsString, Error> {
+fn pop_back<T: Debug>(name: &str, operands: &mut Vec<T>) -> Result<T, Error> {
     operands.pop().ok_or_else(|| Error {
         exit_code: 1,
-        kind: ErrorKind::MissingPositionalArguments(vec![name.into()]),
+        kind: ErrorKind::MissingPositionalArguments(vec![name.to_string()]),
     })
 }
 
-fn assert_empty(mut operands: Vec<OsString>) -> Result<(), Error> {
+fn assert_empty<T: Debug>(mut operands: Vec<T>) -> Result<(), Error> {
     if let Some(arg) = operands.pop() {
         return Err(Error {
             exit_code: 1,
-            kind: ErrorKind::UnexpectedArgument(arg),
+            kind: ErrorKind::UnexpectedArgument(format!("{:?}", arg)),
         });
     }
     Ok(())
 }
 
-pub trait ToOptional {
-    type Out: ToOptional;
-    fn some(self) -> Self::Out;
-    fn none() -> Self::Out;
-}
-
-impl ToOptional for OsString {
-    type Out = Option<Self>;
-    fn some(self) -> Self::Out {
-        Some(self)
-    }
-    fn none() -> Self::Out {
-        None
-    }
-}
-
-impl ToOptional for () {
-    type Out = Option<Self>;
-    fn some(self) -> Self::Out {
-        Some(self)
-    }
-    fn none() -> Self::Out {
-        None
-    }
-}
-
-impl<T> ToOptional for Vec<T> {
-    type Out = Self;
-    fn some(self) -> Self::Out {
-        self
-    }
-    fn none() -> Self::Out {
-        Vec::new()
-    }
-}
-
-impl<T1, T2> ToOptional for (T1, T2) {
-    type Out = Option<Self>;
-    fn some(self) -> Self::Out {
-        Some(self)
-    }
-    fn none() -> Self::Out {
-        None
-    }
-}
-
-impl<T1, T2, T3> ToOptional for (T1, T2, T3) {
-    type Out = Option<Self>;
-    fn some(self) -> Self::Out {
-        Some(self)
-    }
-    fn none() -> Self::Out {
-        None
-    }
-}
-
-impl<T1> ToOptional for Option<T1> {
-    type Out = Self;
-    fn some(self) -> Self::Out {
-        self
-    }
-    fn none() -> Self::Out {
-        None
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use super::{Many, Opt, Unpack};
-    use std::ffi::OsString;
+    use super::{Many0, Many1, Opt, Unpack};
 
     macro_rules! a {
         ($e:expr, $t:ty) => {
-            let _: Result<$t, _> = $e.unpack(Vec::new());
+            let _: Result<$t, _> = $e.unpack(Vec::<&str>::new());
         };
     }
 
     #[track_caller]
-    fn assert_ok<U: Unpack, const N: usize>(signature: &U, expected: U::Output, operands: [&str; N])
-    where
-        U::Output: Eq + std::fmt::Debug,
+    fn assert_ok<'a, U: Unpack, const N: usize>(
+        signature: &U,
+        expected: U::Output<&'a str>,
+        operands: [&'a str; N],
+    ) where
+        U::Output<&'a str>: Eq + std::fmt::Debug,
     {
-        let operands = operands.into_iter().map(Into::into).collect();
-        assert_eq!(signature.unpack(operands).unwrap(), expected);
+        assert_eq!(signature.unpack(Vec::from(operands)).unwrap(), expected);
     }
 
     #[track_caller]
     fn assert_err<const N: usize>(signature: &impl Unpack, operands: [&str; N]) {
-        let operands = operands.into_iter().map(Into::into).collect();
+        let operands = Vec::from(operands);
         assert!(signature.unpack(operands).is_err());
     }
 
@@ -288,53 +246,44 @@ mod test {
     fn compile_tests() {
         // The five basic ones
         a!((), ());
-        a!("FOO", OsString);
-        a!(Opt("FOO"), Option<OsString>);
-        a!(Many("FOO"), Vec<OsString>);
-        a!(Opt(Many("FOO")), Vec<OsString>);
+        a!("FOO", &str);
+        a!(Opt("FOO"), Option<&str>);
+        a!(Many0("FOO"), Vec<&str>);
+        a!(Many1("FOO"), Vec<&str>);
 
         // Start building some tuples
-        a!(("FOO", "BAR"), (OsString, OsString));
-        a!(("FOO", Opt("BAR")), (OsString, Option<OsString>));
-        a!(("FOO", Many("BAR")), (OsString, Vec<OsString>));
-        a!(("FOO", Opt(Many("BAR"))), (OsString, Vec<OsString>));
+        a!(("FOO", "BAR"), (&str, &str));
+        a!(("FOO", Opt("BAR")), (&str, Option<&str>));
+        a!(("FOO", Many0("BAR")), (&str, Vec<&str>));
+        a!(("FOO", Many1("BAR")), (&str, Vec<&str>));
 
         // The other way around!
-        a!((Opt("FOO"), "BAR"), (Option<OsString>, OsString));
-        a!((Many("FOO"), "BAR"), (Vec<OsString>, OsString));
-        a!((Opt(Many("FOO")), "BAR"), (Vec<OsString>, OsString));
+        a!((Opt("FOO"), "BAR"), (Option<&str>, &str));
+        a!((Many0("FOO"), "BAR"), (Vec<&str>, &str));
+        a!((Many1("FOO"), "BAR"), (Vec<&str>, &str));
 
         // Longer tuples!
-        a!(("FOO", "BAR", "BAZ"), (OsString, OsString, OsString));
-        a!(
-            ("FOO", "BAR", Opt("BAZ")),
-            (OsString, OsString, Option<OsString>)
-        );
-        a!(
-            ("FOO", "BAR", Many("BAZ")),
-            (OsString, OsString, Vec<OsString>)
-        );
-        a!(
-            ("FOO", "BAR", Opt(Many("BAZ"))),
-            (OsString, OsString, Vec<OsString>)
-        );
+        a!(("FOO", "BAR", "BAZ"), (&str, &str, &str));
+        a!(("FOO", "BAR", Opt("BAZ")), (&str, &str, Option<&str>));
+        a!(("FOO", "BAR", Many0("BAZ")), (&str, &str, Vec<&str>));
+        a!(("FOO", "BAR", Many1("BAZ")), (&str, &str, Vec<&str>));
 
         // seq [FIRST [INCREMENT]] LAST
         a!(
             (Opt(("FIRST", Opt("INCREMENT"))), "LAST"),
-            (Option<(OsString, Option<OsString>)>, OsString)
+            (Option<(&str, Option<&str>)>, &str)
         );
 
         // mknod NAME TYPE [MAJOR MINOR]
         a!(
             ("NAME", "TYPE", Opt(("MAJOR", "MINOR"))),
-            (OsString, OsString, Option<(OsString, OsString)>)
+            (&str, &str, Option<(&str, &str)>)
         );
 
         // chroot
         a!(
-            ("NEWROOT", Opt(("COMMAND", Opt(Many("ARG"))))),
-            (OsString, Option<(OsString, Vec<OsString>)>)
+            ("NEWROOT", Opt(("COMMAND", Many0("ARG")))),
+            (&str, Option<(&str, Vec<&str>)>)
         );
     }
 
@@ -349,7 +298,7 @@ mod test {
     fn required() {
         let s = "FOO";
         assert_err(&s, []);
-        assert_ok(&s, "foo".into(), ["foo"]);
+        assert_ok(&s, "foo", ["foo"]);
         assert_err(&s, ["foo", "bar"]);
         assert_err(&s, ["foo", "bar", "baz"]);
     }
@@ -358,35 +307,27 @@ mod test {
     fn optional() {
         let s = Opt("FOO");
         assert_ok(&s, None, []);
-        assert_ok(&s, Some("foo".into()), ["foo"]);
+        assert_ok(&s, Some("foo"), ["foo"]);
         assert_err(&s, ["foo", "bar"]);
         assert_err(&s, ["foo", "bar", "baz"]);
     }
 
     #[test]
-    fn many() {
-        let s = Many("FOO");
+    fn many1() {
+        let s = Many1("FOO");
         assert_err(&s, []);
-        assert_ok(&s, vec!["foo".into()], ["foo"]);
-        assert_ok(&s, vec!["foo".into(), "bar".into()], ["foo", "bar"]);
-        assert_ok(
-            &s,
-            vec!["foo".into(), "bar".into(), "baz".into()],
-            ["foo", "bar", "baz"],
-        );
+        assert_ok(&s, vec!["foo"], ["foo"]);
+        assert_ok(&s, vec!["foo", "bar"], ["foo", "bar"]);
+        assert_ok(&s, vec!["foo", "bar", "baz"], ["foo", "bar", "baz"]);
     }
 
     #[test]
-    fn opt_many() {
-        let s = Opt(Many("FOO"));
+    fn many0() {
+        let s = Many0("FOO");
         assert_ok(&s, vec![], []);
-        assert_ok(&s, vec!["foo".into()], ["foo"]);
-        assert_ok(&s, vec!["foo".into(), "bar".into()], ["foo", "bar"]);
-        assert_ok(
-            &s,
-            vec!["foo".into(), "bar".into(), "baz".into()],
-            ["foo", "bar", "baz"],
-        );
+        assert_ok(&s, vec!["foo"], ["foo"]);
+        assert_ok(&s, vec!["foo", "bar"], ["foo", "bar"]);
+        assert_ok(&s, vec!["foo", "bar", "baz"], ["foo", "bar", "baz"]);
     }
 
     #[test]
@@ -394,7 +335,7 @@ mod test {
         let s = ("FOO", "BAR");
         assert_err(&s, []);
         assert_err(&s, ["foo"]);
-        assert_ok(&s, ("foo".into(), "bar".into()), ["foo", "bar"]);
+        assert_ok(&s, ("foo", "bar"), ["foo", "bar"]);
         assert_err(&s, ["foo", "bar", "baz"]);
     }
 }
