@@ -38,7 +38,7 @@ impl When {
             Self::Always => true,
             Self::Never => false,
             // Should be atty::is(atty::Stream::Stdout), but I don't want to
-            // pull that depenency in just for this test.
+            // pull that dependency in just for this test.
             Self::Auto => true,
         }
     }

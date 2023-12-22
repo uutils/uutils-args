@@ -1,4 +1,9 @@
-use uutils_args::{Arguments, Options};
+use std::ffi::OsString;
+
+use uutils_args::{
+    positional::{Opt, Unpack},
+    Arguments, Options,
+};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -39,30 +44,29 @@ impl Options<Arg> for Settings {
     }
 }
 
+fn parse<I>(args: I) -> Result<(Settings, Option<OsString>), uutils_args::Error>
+where
+    I: IntoIterator,
+    I::Item: Into<OsString>,
+{
+    let (s, ops) = Settings::default().parse(args)?;
+    let file = Opt("FILE").unpack(ops)?;
+    Ok((s, file))
+}
+
 #[test]
 fn wrap() {
+    assert_eq!(parse(["base32"]).unwrap().0.wrap, Some(76));
+    assert_eq!(parse(["base32", "-w0"]).unwrap().0.wrap, None);
+    assert_eq!(parse(["base32", "-w100"]).unwrap().0.wrap, Some(100));
+    assert_eq!(parse(["base32", "--wrap=100"]).unwrap().0.wrap, Some(100));
+}
+
+#[test]
+fn file() {
+    assert_eq!(parse(["base32"]).unwrap().1, None);
     assert_eq!(
-        Settings::default().parse(["base32"]).unwrap().0.wrap,
-        Some(76)
-    );
-    assert_eq!(
-        Settings::default().parse(["base32", "-w0"]).unwrap().0.wrap,
-        None
-    );
-    assert_eq!(
-        Settings::default()
-            .parse(["base32", "-w100"])
-            .unwrap()
-            .0
-            .wrap,
-        Some(100)
-    );
-    assert_eq!(
-        Settings::default()
-            .parse(["base32", "--wrap=100"])
-            .unwrap()
-            .0
-            .wrap,
-        Some(100)
+        parse(["base32", "file"]).unwrap().1,
+        Some(OsString::from("file"))
     );
 }
