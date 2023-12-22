@@ -30,15 +30,15 @@
 //! ()               // no arguments
 //! "FOO"            // one required argument with output `OsString`
 //! Opt("FOO")       // one optional argument with output `Option<OsString>`
-//! Many("FOO")      // one or more arguments with output `Vec<OsString>`
-//! Opt(Many("FOO")) // zero or more arguments with output `Vec<OsString>`
+//! Many1("FOO")     // one or more arguments with output `Vec<OsString>`
+//! Many0("FOO")     // zero or more arguments with output `Vec<OsString>`
 //! ("FOO", "FOO")   // two required arguments with output (`OsString`, `OsString`)
 //! ```
 //!
 //! This allows for the construction of complex signatures. The signature
 //!
 //! ```ignore
-//! ("FOO", Opt(Many("BAR")))
+//! ("FOO", Many0("BAR"))
 //! ```
 //!
 //! specifies that there is first a required argument "FOO" and any number of
@@ -48,7 +48,7 @@
 //! signature
 //!
 //! ```ignore
-//! (Many("FOO"), Many("BAR"))
+//! (Many0("FOO"), Many0("BAR"))
 //! ```
 //!
 //! does not make sense, because it's unclear where the positional arguments
@@ -337,5 +337,25 @@ mod test {
         assert_err(&s, ["foo"]);
         assert_ok(&s, ("foo", "bar"), ["foo", "bar"]);
         assert_err(&s, ["foo", "bar", "baz"]);
+    }
+
+    #[test]
+    fn seq() {
+        let s = (Opt(("FIRST", Opt("INCREMENT"))), "LAST");
+        assert_err(&s, []);
+        assert_ok(&s, (None, "1"), ["1"]);
+        assert_ok(&s, (Some(("1", None)), "2"), ["1", "2"]);
+        assert_ok(&s, (Some(("1", Some("2"))), "3"), ["1", "2", "3"]);
+        assert_err(&s, ["1", "2", "3", "4"]);
+    }
+
+    #[test]
+    fn mknod() {
+        let s = ("NAME", "TYPE", Opt(("MAJOR", "MINOR")));
+        assert_err(&s, []);
+        assert_err(&s, ["1"]);
+        assert_ok(&s, ("1", "2", None), ["1", "2"]);
+        assert_err(&s, ["1", "2", "3"]);
+        assert_ok(&s, ("1", "2", Some(("3", "4"))), ["1", "2", "3", "4"]);
     }
 }
