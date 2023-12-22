@@ -62,26 +62,52 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn binary() {
-    assert!(!Settings::default().parse(["b2sum"]).0.binary);
-    assert!(!Settings::default().parse(["b2sum", "--text"]).0.binary);
-    assert!(!Settings::default().parse(["b2sum", "-t"]).0.binary);
+    assert!(!Settings::default().parse(["b2sum"]).unwrap().0.binary);
+    assert!(
+        !Settings::default()
+            .parse(["b2sum", "--text"])
+            .unwrap()
+            .0
+            .binary
+    );
+    assert!(!Settings::default().parse(["b2sum", "-t"]).unwrap().0.binary);
     assert!(
         !Settings::default()
             .parse(["b2sum", "--binary", "--text"])
+            .unwrap()
             .0
             .binary
     );
-    assert!(!Settings::default().parse(["b2sum", "-b", "-t"]).0.binary);
+    assert!(
+        !Settings::default()
+            .parse(["b2sum", "-b", "-t"])
+            .unwrap()
+            .0
+            .binary
+    );
 
-    assert!(Settings::default().parse(["b2sum", "--binary"]).0.binary);
-    assert!(Settings::default().parse(["b2sum", "-b"]).0.binary);
+    assert!(
+        Settings::default()
+            .parse(["b2sum", "--binary"])
+            .unwrap()
+            .0
+            .binary
+    );
+    assert!(Settings::default().parse(["b2sum", "-b"]).unwrap().0.binary);
     assert!(
         Settings::default()
             .parse(["b2sum", "--text", "--binary"])
+            .unwrap()
             .0
             .binary
     );
-    assert!(Settings::default().parse(["b2sum", "-t", "-b"]).0.binary);
+    assert!(
+        Settings::default()
+            .parse(["b2sum", "-t", "-b"])
+            .unwrap()
+            .0
+            .binary
+    );
 }
 
 #[test]
@@ -89,6 +115,7 @@ fn check_output() {
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--warn"])
+            .unwrap()
             .0
             .check_output,
         CheckOutput::Warn
@@ -96,6 +123,7 @@ fn check_output() {
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--quiet"])
+            .unwrap()
             .0
             .check_output,
         CheckOutput::Quiet
@@ -103,6 +131,7 @@ fn check_output() {
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--status"])
+            .unwrap()
             .0
             .check_output,
         CheckOutput::Status
@@ -110,6 +139,7 @@ fn check_output() {
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--status", "--warn"])
+            .unwrap()
             .0
             .check_output,
         CheckOutput::Warn
@@ -117,6 +147,7 @@ fn check_output() {
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--status", "--warn"])
+            .unwrap()
             .0
             .check_output,
         CheckOutput::Warn
@@ -125,6 +156,7 @@ fn check_output() {
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--warn", "--quiet"])
+            .unwrap()
             .0
             .check_output,
         CheckOutput::Quiet
@@ -133,6 +165,7 @@ fn check_output() {
     assert_eq!(
         Settings::default()
             .parse(["b2sum", "--quiet", "--status"])
+            .unwrap()
             .0
             .check_output,
         CheckOutput::Status
@@ -142,7 +175,10 @@ fn check_output() {
 #[test]
 fn files() {
     assert_eq!(
-        Settings::default().parse(["b2sum", "foo", "bar"]).1,
+        Settings::default()
+            .parse(["b2sum", "foo", "bar"])
+            .unwrap()
+            .1,
         vec![OsString::from("foo"), OsString::from("bar")]
     );
 }

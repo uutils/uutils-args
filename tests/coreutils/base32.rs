@@ -41,14 +41,28 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn wrap() {
-    assert_eq!(Settings::default().parse(["base32"]).0.wrap, Some(76));
-    assert_eq!(Settings::default().parse(["base32", "-w0"]).0.wrap, None);
     assert_eq!(
-        Settings::default().parse(["base32", "-w100"]).0.wrap,
+        Settings::default().parse(["base32"]).unwrap().0.wrap,
+        Some(76)
+    );
+    assert_eq!(
+        Settings::default().parse(["base32", "-w0"]).unwrap().0.wrap,
+        None
+    );
+    assert_eq!(
+        Settings::default()
+            .parse(["base32", "-w100"])
+            .unwrap()
+            .0
+            .wrap,
         Some(100)
     );
     assert_eq!(
-        Settings::default().parse(["base32", "--wrap=100"]).0.wrap,
+        Settings::default()
+            .parse(["base32", "--wrap=100"])
+            .unwrap()
+            .0
+            .wrap,
         Some(100)
     );
 }

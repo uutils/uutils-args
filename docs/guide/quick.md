@@ -66,14 +66,14 @@ impl Options<Arg> for Settings {
     }
 }
 
-let (settings, operands) = Settings::default().parse(["test"]);
+let (settings, operands) = Settings::default().parse(["test"]).unwrap();
 assert!(!settings.force);
 assert_eq!(operands, Vec::<OsString>::new());
 
-let (settings, operands) = Settings::default().parse(["test", "-f"]);
+let (settings, operands) = Settings::default().parse(["test", "-f"]).unwrap();
 assert!(settings.force);
 
-let (settings, operands) = Settings::default().parse(["test", "foo"]);
+let (settings, operands) = Settings::default().parse(["test", "foo"]).unwrap();
 assert!(!settings.force);
 assert_eq!(operands, vec![OsString::from("foo")]);
 ```
@@ -108,17 +108,16 @@ impl Options<Arg> for Settings {
     }
 }
 
-let (settings, operands) = Settings::default().parse(["test"]);
+let (settings, operands) = Settings::default().parse(["test"]).unwrap();
 assert!(!settings.force);
 assert_eq!(operands, Vec::<OsString>::new());
 
-let (settings, operands) = Settings::default().parse(["test", "-f", "some-operand"]);
+let (settings, operands) = Settings::default().parse(["test", "-f", "some-operand"]).unwrap();
 assert!(settings.force);
-
 assert_eq!(operands, vec!["some-operand"]);
-let (settings, operands) = Settings::default().parse(["test", "-f", "-F", "some-other-operand"]);
-assert!(!settings.force);
 
+let (settings, operands) = Settings::default().parse(["test", "-f", "-F", "some-other-operand"]).unwrap();
+assert!(!settings.force);
 assert_eq!(operands, vec!["some-other-operand"]);
 ```
 
@@ -169,11 +168,11 @@ enum Arg {
 # }
 #
 # assert_eq!(
-#     Settings::default().parse(["test"]).0.name,
+#     Settings::default().parse(["test"]).unwrap().0.name,
 #     OsString::new(),
 # );
 # assert_eq!(
-#     Settings::default().parse(["test", "--name=John"]).0.name,
+#     Settings::default().parse(["test", "--name=John"]).unwrap().0.name,
 #     OsString::from("John"),
 # );
 ```
@@ -206,11 +205,11 @@ enum Arg {
 # }
 #
 # assert_eq!(
-#     Settings::default().parse(["test", "--name"]).0.name,
+#     Settings::default().parse(["test", "--name"]).unwrap().0.name,
 #     OsString::from("anonymous"),
 # );
 # assert_eq!(
-#     Settings::default().parse(["test", "--name=John"]).0.name,
+#     Settings::default().parse(["test", "--name=John"]).unwrap().0.name,
 #     OsString::from("John"),
 # );
 ```
@@ -242,9 +241,9 @@ enum Arg {
 #     }
 # }
 #
-# assert!(!Settings::default().parse(["test"]).0.force);
-# assert!(Settings::default().parse(["test", "-f"]).0.force);
-# assert!(!Settings::default().parse(["test", "-F"]).0.force);
+# assert!(!Settings::default().parse(["test"]).unwrap().0.force);
+# assert!(Settings::default().parse(["test", "-f"]).unwrap().0.force);
+# assert!(!Settings::default().parse(["test", "-F"]).unwrap().0.force);
 ```
 
 This is particularly interesting for defining "shortcut" arguments. For example, `ls` takes a `--sort=WORD` argument, that defines how the files should be sorted. But it also has shorthands like `-t`, which is the same as `--sort=time`. All of these can be implemented on one variant:
@@ -277,9 +276,9 @@ enum Arg {
 #     }
 # }
 #
-# assert_eq!(Settings::default().parse(["test"]).0.sort, String::new());
-# assert_eq!(Settings::default().parse(["test", "--sort=time"]).0.sort, String::from("time"));
-# assert_eq!(Settings::default().parse(["test", "-t"]).0.sort, String::from("time"));
+# assert_eq!(Settings::default().parse(["test"]).unwrap().0.sort, String::new());
+# assert_eq!(Settings::default().parse(["test", "--sort=time"]).unwrap().0.sort, String::from("time"));
+# assert_eq!(Settings::default().parse(["test", "-t"]).unwrap().0.sort, String::from("time"));
 ```
 
 <div class="chapters">

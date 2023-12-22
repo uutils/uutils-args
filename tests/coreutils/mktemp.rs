@@ -48,35 +48,37 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn suffix() {
-    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix=hello"]);
+    let (s, _operands) = Settings::default()
+        .parse(["mktemp", "--suffix=hello"])
+        .unwrap();
     assert_eq!(s.suffix.unwrap(), "hello");
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix="]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix="]).unwrap();
     assert_eq!(s.suffix.unwrap(), "");
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix="]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix="]).unwrap();
     assert_eq!(s.suffix.unwrap(), "");
 
-    let (s, _operands) = Settings::default().parse(["mktemp"]);
+    let (s, _operands) = Settings::default().parse(["mktemp"]).unwrap();
     assert_eq!(s.suffix, None);
 }
 
 #[test]
 fn tmpdir() {
-    let (s, _operands) = Settings::default().parse(["mktemp", "--tmpdir"]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "--tmpdir"]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new("."));
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "--tmpdir="]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "--tmpdir="]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "-p", "foo"]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "-p", "foo"]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "-pfoo"]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "-pfoo"]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "-p", ""]);
+    let (s, _operands) = Settings::default().parse(["mktemp", "-p", ""]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
 
-    assert!(Settings::default().try_parse(["mktemp", "-p"]).is_err());
+    assert!(Settings::default().parse(["mktemp", "-p"]).is_err());
 }

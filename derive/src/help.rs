@@ -74,27 +74,27 @@ pub fn help_string(
     }
 
     let options = if !options.is_empty() {
-        quote!(::uutils_args::internal::print_flags(&mut w, #indent, #width, [#(#options),*])?;)
+        quote!(::uutils_args::internal::print_flags(&mut w, #indent, #width, [#(#options),*]);)
     } else {
         quote!()
     };
 
     quote!(
-        let mut w = ::std::io::stdout();
-        use ::std::io::Write;
+        let mut w = String::new();
+        use ::std::fmt::Write;
         writeln!(w, "{} {}",
             option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_PKG_NAME")),
             env!("CARGO_PKG_VERSION"),
-        )?;
+        ).unwrap();
 
-        writeln!(w, "{}", #summary)?;
+        writeln!(w, "{}", #summary).unwrap();
 
-        writeln!(w, "\nUsage:\n  {}", format!(#usage, bin_name))?;
+        writeln!(w, "\nUsage:\n  {}", format!(#usage, bin_name)).unwrap();
 
         #options
 
-        writeln!(w, "{}", #after_options)?;
-        Ok(())
+        writeln!(w, "{}", #after_options).unwrap();
+        w
     )
 }
 

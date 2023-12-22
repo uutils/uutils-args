@@ -75,27 +75,27 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn show() {
-    let (s, _) = Settings::default().parse(["cat", "-v"]);
+    let (s, _) = Settings::default().parse(["cat", "-v"]).unwrap();
     assert!(!s.show_ends && !s.show_tabs && s.show_nonprinting);
 
-    let (s, _) = Settings::default().parse(["cat", "-E"]);
+    let (s, _) = Settings::default().parse(["cat", "-E"]).unwrap();
     assert!(s.show_ends && !s.show_tabs && !s.show_nonprinting);
 
-    let (s, _) = Settings::default().parse(["cat", "-T"]);
+    let (s, _) = Settings::default().parse(["cat", "-T"]).unwrap();
     assert!(!s.show_ends && s.show_tabs && !s.show_nonprinting);
 
-    let (s, _) = Settings::default().parse(["cat", "-e"]);
+    let (s, _) = Settings::default().parse(["cat", "-e"]).unwrap();
     assert!(s.show_ends && !s.show_tabs && s.show_nonprinting);
 
-    let (s, _) = Settings::default().parse(["cat", "-t"]);
+    let (s, _) = Settings::default().parse(["cat", "-t"]).unwrap();
     assert!(!s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let (s, _) = Settings::default().parse(["cat", "-A"]);
+    let (s, _) = Settings::default().parse(["cat", "-A"]).unwrap();
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let (s, _) = Settings::default().parse(["cat", "-te"]);
+    let (s, _) = Settings::default().parse(["cat", "-te"]).unwrap();
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 
-    let (s, _) = Settings::default().parse(["cat", "-vET"]);
+    let (s, _) = Settings::default().parse(["cat", "-vET"]).unwrap();
     assert!(s.show_ends && s.show_tabs && s.show_nonprinting);
 }

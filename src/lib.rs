@@ -67,20 +67,7 @@ pub enum Argument<T: Arguments> {
     Custom(T),
 }
 
-fn exit_if_err<T>(res: Result<T, Error>) -> T {
-    match res {
-        Ok(v) => v,
-        Err(err) => {
-            eprintln!("{err}");
-            std::process::exit(err.exit_code);
-        }
-    }
-}
-
 /// Defines how the arguments are parsed.
-///
-/// If a type `T` implements this trait, we can construct an `ArgumentIter<T>`,
-/// meaning that we can parse the individual arguments to `T`.\
 ///
 /// Usually, this trait will be implemented via the
 /// [derive macro](derive@Arguments) and does not need to be implemented
@@ -89,51 +76,27 @@ pub trait Arguments: Sized {
     /// The exit code to exit the program with on error.
     const EXIT_CODE: i32;
 
-    /// Parse an iterator of arguments into an
-    /// [`ArgumentIter<Self>`](ArgumentIter).
-    fn parse<I>(args: I) -> ArgumentIter<Self>
-    where
-        I: IntoIterator,
-        I::Item: Into<OsString>,
-    {
-        ArgumentIter::<Self>::from_args(args)
-    }
-
     /// Parse the next argument from the lexopt parser.
-    ///
-    /// This method is called by [`ArgumentIter::next_arg`].
     fn next_arg(parser: &mut lexopt::Parser) -> Result<Option<Argument<Self>>, ErrorKind>;
 
     /// Print the help string for this command.
     ///
     /// The `bin_name` specifies the name that executable was called with.
-    fn help(bin_name: &str) -> std::io::Result<()>;
+    fn help(bin_name: &str) -> String;
 
     /// Get the version string for this command.
     fn version() -> String;
-
-    /// Check all arguments immediately and exit on errors.
-    ///
-    /// This is useful if you want to validate the arguments. This method will
-    /// exit if `--help` or `--version` are passed and if any errors are found.
-    fn check<I>(args: I)
-    where
-        I: IntoIterator,
-        I::Item: Into<OsString>,
-    {
-        exit_if_err(Self::try_check(args))
-    }
 
     /// Check all arguments immediately and return any errors.
     ///
     /// This is useful if you want to validate the arguments. This method will
     /// exit if `--help` or `--version` are passed.
-    fn try_check<I>(args: I) -> Result<(), Error>
+    fn check<I>(args: I) -> Result<(), Error>
     where
         I: IntoIterator,
         I::Item: Into<OsString>,
     {
-        let mut iter = Self::parse(args);
+        let mut iter = ArgumentIter::<Self>::from_args(args);
         while iter.next_arg()?.is_some() {}
         Ok(())
     }
@@ -143,11 +106,7 @@ pub trait Arguments: Sized {
 }
 
 /// An iterator over arguments.
-///
-/// Can be constructed by calling [`Arguments::parse`]. Usually, this method
-/// won't be used directly, but is used internally in [`Options::parse`] and
-/// [`Options::try_parse`].
-pub struct ArgumentIter<T: Arguments> {
+struct ArgumentIter<T: Arguments> {
     parser: lexopt::Parser,
     positional_arguments: Vec<OsString>,
     t: PhantomData<T>,
@@ -173,11 +132,11 @@ impl<T: Arguments> ArgumentIter<T> {
         })? {
             match arg {
                 Argument::Help => {
-                    self.help().unwrap();
+                    print!("{}", T::help(self.parser.bin_name().unwrap()));
                     std::process::exit(0);
                 }
                 Argument::Version => {
-                    print!("{}", self.version());
+                    print!("{}", T::version());
                     std::process::exit(0);
                 }
                 Argument::Positional(arg) => {
@@ -187,18 +146,6 @@ impl<T: Arguments> ArgumentIter<T> {
             }
         }
         Ok(None)
-    }
-
-    fn get_positional_arguments(self) -> Vec<OsString> {
-        self.positional_arguments
-    }
-
-    fn help(&self) -> std::io::Result<()> {
-        T::help(self.parser.bin_name().unwrap())
-    }
-
-    fn version(&self) -> String {
-        T::version()
     }
 }
 
@@ -210,24 +157,15 @@ impl<T: Arguments> ArgumentIter<T> {
 /// - the [`apply`](Options::apply) method, which defines to how map that
 ///   type onto the options.
 ///
-/// By default, the [`Options::parse`] method will
-/// 1. repeatedly call [`ArgumentIter::next_arg`] and call [`Options::apply`]
-///    on the result until the arguments are exhausted.
+/// By default, the [`Options::parse`] method iterate over the arguments and
+/// call [`Options::apply`] on the result until the arguments are exhausted.
 pub trait Options<Arg: Arguments>: Sized {
     /// Apply a single argument to the options.
     fn apply(&mut self, arg: Arg);
 
     /// Parse an iterator of arguments into the options
-    fn parse<I>(self, args: I) -> (Self, Vec<OsString>)
-    where
-        I: IntoIterator,
-        I::Item: Into<OsString>,
-    {
-        exit_if_err(self.try_parse(args))
-    }
-
     #[allow(unused_mut)]
-    fn try_parse<I>(mut self, args: I) -> Result<(Self, Vec<OsString>), Error>
+    fn parse<I>(mut self, args: I) -> Result<(Self, Vec<OsString>), Error>
     where
         I: IntoIterator,
         I::Item: Into<OsString>,
@@ -246,11 +184,11 @@ pub trait Options<Arg: Arguments>: Sized {
 
         #[cfg(not(feature = "parse-is-complete"))]
         {
-            let mut iter = Arg::parse(args);
+            let mut iter = ArgumentIter::<Arg>::from_args(args);
             while let Some(arg) = iter.next_arg()? {
                 self.apply(arg);
             }
-            Ok((self, iter.get_positional_arguments()))
+            Ok((self, iter.positional_arguments))
         }
     }
 
