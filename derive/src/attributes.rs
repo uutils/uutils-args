@@ -13,6 +13,7 @@ pub struct ArgumentsAttr {
     pub file: Option<String>,
     pub exit_code: i32,
     pub parse_echo_style: bool,
+    pub options_first: bool,
 }
 
 impl Default for ArgumentsAttr {
@@ -23,6 +24,7 @@ impl Default for ArgumentsAttr {
             file: None,
             exit_code: 1,
             parse_echo_style: false,
+            options_first: false,
         }
     }
 }
@@ -54,6 +56,9 @@ impl ArgumentsAttr {
                 }
                 "parse_echo_style" => {
                     args.parse_echo_style = true;
+                }
+                "options_first" => {
+                    args.options_first = true;
                 }
                 _ => return Err(meta.error("unrecognized argument for arguments attribute")),
             };

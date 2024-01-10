@@ -67,6 +67,20 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         quote!(parser.next()?)
     };
 
+    // If options_first is set and we find the first positional argument, we
+    // immediately return all of them.
+    let positional = if arguments_attr.options_first {
+        quote!(
+            // Unwrap is fine because this is called when we have just parsed a
+            // value and therefore are not partially within an option.
+            let mut values = parser.raw_args().unwrap().collect::<Vec<OsString>>();
+            values.insert(0, value);
+            Ok(Some(::uutils_args::Argument::MultiPositional(values)))
+        )
+    } else {
+        quote!(Ok(Some(::uutils_args::Argument::Positional(value))))
+    };
+
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
             const EXIT_CODE: i32 = #exit_code;
@@ -91,7 +105,7 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 match arg {
                     lexopt::Arg::Short(short) => { #short },
                     lexopt::Arg::Long(long) => { #long },
-                    lexopt::Arg::Value(value) => { Ok(Some(::uutils_args::Argument::Positional(value))) },
+                    lexopt::Arg::Value(value) => { #positional },
                 }
             }
 
