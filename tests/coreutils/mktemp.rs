@@ -1,6 +1,12 @@
-use std::path::{Path, PathBuf};
+use std::{
+    ffi::OsString,
+    path::{Path, PathBuf},
+};
 
-use uutils_args::{Arguments, Options};
+use uutils_args::{
+    positional::{Opt, Unpack},
+    Arguments, Options,
+};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -46,39 +52,52 @@ impl Options<Arg> for Settings {
     }
 }
 
+fn parse<I>(args: I) -> Result<(Settings, Option<OsString>), uutils_args::Error>
+where
+    I: IntoIterator,
+    I::Item: Into<OsString>,
+{
+    let (s, ops) = Settings::default().parse(args)?;
+    let file = Opt("FILE").unpack(ops)?;
+    Ok((s, file))
+}
+
 #[test]
 fn suffix() {
-    let (s, _operands) = Settings::default()
-        .parse(["mktemp", "--suffix=hello"])
-        .unwrap();
+    let (s, _template) = parse(["mktemp", "--suffix=hello"]).unwrap();
     assert_eq!(s.suffix.unwrap(), "hello");
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix="]).unwrap();
+    let (s, _template) = parse(["mktemp", "--suffix="]).unwrap();
     assert_eq!(s.suffix.unwrap(), "");
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "--suffix="]).unwrap();
+    let (s, _template) = parse(["mktemp", "--suffix="]).unwrap();
     assert_eq!(s.suffix.unwrap(), "");
 
-    let (s, _operands) = Settings::default().parse(["mktemp"]).unwrap();
+    let (s, _template) = parse(["mktemp"]).unwrap();
     assert_eq!(s.suffix, None);
 }
 
 #[test]
 fn tmpdir() {
-    let (s, _operands) = Settings::default().parse(["mktemp", "--tmpdir"]).unwrap();
+    let (s, _template) = parse(["mktemp", "--tmpdir"]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new("."));
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "--tmpdir="]).unwrap();
+    let (s, _template) = parse(["mktemp", "--tmpdir="]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "-p", "foo"]).unwrap();
+    let (s, _template) = parse(["mktemp", "-p", "foo"]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "-pfoo"]).unwrap();
+    let (s, _template) = parse(["mktemp", "-pfoo"]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new("foo"));
 
-    let (s, _operands) = Settings::default().parse(["mktemp", "-p", ""]).unwrap();
+    let (s, _template) = parse(["mktemp", "-p", ""]).unwrap();
     assert_eq!(s.tmp_dir.unwrap(), Path::new(""));
 
-    assert!(Settings::default().parse(["mktemp", "-p"]).is_err());
+    assert!(parse(["mktemp", "-p"]).is_err());
+}
+
+#[test]
+fn too_many_arguments() {
+    assert!(parse(["mktemp", "foo", "bar"]).is_err());
 }

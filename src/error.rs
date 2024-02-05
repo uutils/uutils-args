@@ -28,7 +28,7 @@ pub enum ErrorKind {
     UnexpectedOption(String, Vec<String>),
 
     /// No more positional arguments were expected, but one was given anyway.
-    UnexpectedArgument(OsString),
+    UnexpectedArgument(String),
 
     /// A value was passed to an option that didn't expect a value.
     UnexpectedValue {
@@ -99,7 +99,7 @@ impl Display for ErrorKind {
                 Ok(())
             }
             ErrorKind::UnexpectedArgument(arg) => {
-                write!(f, "Found an invalid argument '{}'.", arg.to_string_lossy())
+                write!(f, "Found an invalid argument '{}'.", arg)
             }
             ErrorKind::UnexpectedValue { option, value } => {
                 write!(
@@ -144,7 +144,9 @@ impl From<lexopt::Error> for ErrorKind {
         match other {
             lexopt::Error::MissingValue { option } => Self::MissingValue { option },
             lexopt::Error::UnexpectedOption(s) => Self::UnexpectedOption(s, Vec::new()),
-            lexopt::Error::UnexpectedArgument(s) => Self::UnexpectedArgument(s),
+            lexopt::Error::UnexpectedArgument(s) => {
+                Self::UnexpectedArgument(s.to_string_lossy().to_string())
+            }
             lexopt::Error::UnexpectedValue { option, value } => {
                 Self::UnexpectedValue { option, value }
             }

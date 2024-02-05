@@ -11,6 +11,7 @@
 
 mod error;
 pub mod internal;
+pub mod positional;
 mod value;
 
 #[cfg(doc)]
@@ -64,6 +65,7 @@ pub enum Argument<T: Arguments> {
     Help,
     Version,
     Positional(OsString),
+    MultiPositional(Vec<OsString>),
     Custom(T),
 }
 
@@ -141,6 +143,9 @@ impl<T: Arguments> ArgumentIter<T> {
                 }
                 Argument::Positional(arg) => {
                     self.positional_arguments.push(arg);
+                }
+                Argument::MultiPositional(args) => {
+                    self.positional_arguments.extend(args);
                 }
                 Argument::Custom(arg) => return Ok(Some(arg)),
             }

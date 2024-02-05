@@ -1,6 +1,9 @@
 use std::ffi::OsString;
 
-use uutils_args::{Arguments, Options};
+use uutils_args::{
+    positional::{Many1, Unpack},
+    Arguments, Options,
+};
 
 #[derive(Clone, Arguments)]
 enum Arg {
@@ -35,19 +38,24 @@ impl Options<Arg> for Settings {
     }
 }
 
-fn parse(args: &[&str]) -> Settings {
-    let (mut settings, operands) = Settings::default().parse(args).unwrap();
-    settings.names = operands;
-    if !settings.multiple {
-        assert_eq!(settings.names.len(), 2);
-        settings.suffix = settings.names.pop().unwrap();
+fn parse(args: &[&str]) -> Result<Settings, uutils_args::Error> {
+    let (mut settings, operands) = Settings::default().parse(args)?;
+
+    if settings.multiple {
+        let names = Many1("FILE").unpack(operands)?;
+        settings.names = names;
+    } else {
+        let (names, suffix) = ("FILE", "SUFFIX").unpack(operands)?;
+        settings.names = vec![names];
+        settings.suffix = suffix;
     }
-    settings
+
+    Ok(settings)
 }
 
 #[test]
 fn name_and_suffix() {
-    let settings = parse(&["basename", "foobar", "bar"]);
+    let settings = parse(&["basename", "foobar", "bar"]).unwrap();
     assert!(!settings.zero);
     assert_eq!(settings.names, vec!["foobar"]);
     assert_eq!(settings.suffix, "bar");
@@ -55,7 +63,7 @@ fn name_and_suffix() {
 
 #[test]
 fn zero_name_and_suffix() {
-    let settings = parse(&["basename", "-z", "foobar", "bar"]);
+    let settings = parse(&["basename", "-z", "foobar", "bar"]).unwrap();
     assert!(settings.zero);
     assert_eq!(settings.names, vec!["foobar"]);
     assert_eq!(settings.suffix, "bar");
@@ -63,7 +71,7 @@ fn zero_name_and_suffix() {
 
 #[test]
 fn all_and_names() {
-    let settings = parse(&["basename", "-a", "foobar", "bar"]);
+    let settings = parse(&["basename", "-a", "foobar", "bar"]).unwrap();
     assert!(settings.multiple);
     assert!(!settings.zero);
     assert_eq!(settings.names, vec!["foobar", "bar"]);
@@ -72,7 +80,7 @@ fn all_and_names() {
 
 #[test]
 fn option_like_names() {
-    let settings = parse(&["basename", "-a", "--", "-a", "-z", "--suffix=SUFFIX"]);
+    let settings = parse(&["basename", "-a", "--", "-a", "-z", "--suffix=SUFFIX"]).unwrap();
     assert!(settings.multiple);
     assert!(!settings.zero);
     assert_eq!(settings.names, vec!["-a", "-z", "--suffix=SUFFIX"]);
