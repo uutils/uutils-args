@@ -30,3 +30,6 @@ mod ls;
 
 #[path = "coreutils/tail.rs"]
 mod tail;
+
+#[path = "coreutils/shuf.rs"]
+mod shuf;
