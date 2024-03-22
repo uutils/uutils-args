@@ -62,13 +62,14 @@ struct Settings {
     outfile: Option<PathBuf>,
     ibs: usize,
     obs: usize,
+    cbs: usize,
     skip: u64,
     seek: u64,
     count: usize,
-    _iconv: Vec<String>,
-    _iflags: Vec<String>,
-    _oconv: Vec<String>,
-    _oflags: Vec<String>,
+    iconv: Vec<String>,
+    iflags: Vec<String>,
+    oconv: Vec<String>,
+    oflags: Vec<String>,
     status: Option<StatusLevel>,
 }
 
@@ -77,15 +78,16 @@ impl Default for Settings {
         Self {
             ibs: 512,
             obs: 512,
+            cbs: 512,
             infile: Default::default(),
             outfile: Default::default(),
             skip: Default::default(),
             seek: Default::default(),
             count: Default::default(),
-            _iconv: Default::default(),
-            _iflags: Default::default(),
-            _oconv: Default::default(),
-            _oflags: Default::default(),
+            iconv: Default::default(),
+            iflags: Default::default(),
+            oconv: Default::default(),
+            oflags: Default::default(),
             status: Default::default(),
         }
     }
@@ -102,14 +104,21 @@ impl Options<Arg> for Settings {
                 self.ibs = b;
                 self.obs = b;
             }
-            Arg::Cbs(_) => todo!(),
+            Arg::Cbs(b) => self.cbs = b,
             Arg::Skip(b) => self.skip = b,
             Arg::Seek(b) => self.seek = b,
             Arg::Count(n) => self.count = n,
             Arg::Status(level) => self.status = Some(level),
-            Arg::Conv(_) => todo!(),
-            Arg::Iflag(_) => todo!(),
-            Arg::Oflag(_) => todo!(),
+            Arg::Conv(c) => {
+                self.iconv.push(c.clone());
+                self.oconv.push(c);
+            }
+            Arg::Iflag(f) => {
+                self.iflags.push(f);
+            }
+            Arg::Oflag(f) => {
+                self.oflags.push(f);
+            }
         }
     }
 }

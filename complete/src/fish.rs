@@ -108,6 +108,7 @@ mod test {
                         value: Value::No,
                     }],
                     long: vec![],
+                    dd_style: vec![],
                     help: "some flag",
                     value: Some(hint),
                 }],

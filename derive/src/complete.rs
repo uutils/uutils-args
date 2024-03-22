@@ -33,16 +33,21 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
             continue;
         };
 
-        let Flags { short, long, .. } = flags;
-        if short.is_empty() && long.is_empty() {
+        let Flags {
+            short,
+            long,
+            dd_style,
+        } = flags;
+        if short.is_empty() && long.is_empty() && dd_style.is_empty() {
             continue;
         }
 
         // If none of the flags take an argument, we won't need ValueHint
         // based on that type. So we should not attempt to call `value_hint`
         // on it.
-        let any_flag_takes_argument =
-            short.iter().any(|f| f.value != Value::No) && long.iter().any(|f| f.value != Value::No);
+        let any_flag_takes_argument = !dd_style.is_empty()
+            && short.iter().any(|f| f.value != Value::No)
+            && long.iter().any(|f| f.value != Value::No);
 
         let short: Vec<_> = short
             .iter()
@@ -75,6 +80,11 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
             })
             .collect();
 
+        let dd_style: Vec<_> = dd_style
+            .iter()
+            .map(|(flag, value)| quote!((#flag, #value)))
+            .collect();
+
         let hint = match (field, any_flag_takes_argument) {
             (Some(ty), true) => quote!(Some(<#ty>::value_hint())),
             _ => quote!(None),
@@ -84,6 +94,7 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
             ::uutils_args_complete::Arg {
                 short: vec![#(#short),*],
                 long: vec![#(#long),*],
+                dd_style: vec![#(#dd_style),*],
                 help: #help,
                 value: #hint,
             }

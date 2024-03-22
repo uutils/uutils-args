@@ -41,6 +41,7 @@ pub struct Command<'a> {
 pub struct Arg<'a> {
     pub short: Vec<Flag<'a>>,
     pub long: Vec<Flag<'a>>,
+    pub dd_style: Vec<(&'a str, &'a str)>,
     pub help: &'a str,
     pub value: Option<ValueHint>,
 }

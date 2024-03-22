@@ -54,6 +54,14 @@ pub fn render(c: &Command) -> String {
                 Value::No => {}
             }
         }
+        for (flag, value) in &arg.dd_style {
+            if !flags.is_empty() {
+                flags.push(roman(", "));
+            }
+            flags.push(bold(*flag));
+            flags.push(roman("="));
+            flags.push(italic(*value));
+        }
         page.text(flags);
         page.text([roman(arg.help)]);
     }

@@ -58,6 +58,10 @@ fn options(c: &Command) -> String {
             flags.push(format!("<code>-{flag}{value_str}</code>"));
         }
 
+        for (flag, value) in &arg.dd_style {
+            flags.push(format!("<code>{flag}={value}</code>"));
+        }
+
         out.push_str(&flags.join(", "));
         out.push_str("</dt>\n");
         out.push_str(&format!("<dd>\n\n{}\n\n</dd>\n", arg.help));
