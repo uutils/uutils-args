@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use uutils_args::{Arguments, Options, Value};
 
-#[derive(Value)]
+#[derive(Value, Debug)]
 enum Number {
     #[value]
     One,
@@ -27,13 +27,22 @@ enum Arg {
     /// Give it a path!
     #[arg("-p P", "--path=P")]
     Path(PathBuf),
+
+    /// A dd_style argument!
+    #[arg("if=file")]
+    File(PathBuf),
 }
 
 struct Settings;
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, _arg: Arg) {
-        panic!("Compile with the 'parse-is-complete' feature!")
+    fn apply(&mut self, arg: Arg) {
+        match arg {
+            Arg::Flag => println!("Got flag"),
+            Arg::Number(n) => println!("Got number {n:?}"),
+            Arg::Path(p) => println!("Got path {}", p.display()),
+            Arg::File(f) => println!("Got file {}", f.display()),
+        }
     }
 }
 
