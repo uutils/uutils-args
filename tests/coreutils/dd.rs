@@ -32,7 +32,7 @@ enum Arg {
     Bs(usize),
 
     #[arg("cbs=BYTES")]
-    Cbs(usize),
+    Cbs(#[allow(unused)] usize),
 
     #[arg("skip=BYTES", "iseek=BYTES")]
     Skip(u64),
@@ -47,13 +47,13 @@ enum Arg {
     Status(StatusLevel),
 
     #[arg("conv=CONVERSIONS")]
-    Conv(String),
+    Conv(#[allow(unused)] String),
 
     #[arg("iflag=FLAGS")]
-    Iflag(String),
+    Iflag(#[allow(unused)] String),
 
     #[arg("oflag=FLAGS")]
-    Oflag(String),
+    Oflag(#[allow(unused)] String),
 }
 
 #[derive(Debug, PartialEq, Eq)]

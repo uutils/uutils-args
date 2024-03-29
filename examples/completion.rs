@@ -22,12 +22,12 @@ enum Arg {
     // Completion is derived from the `Number` type, through the `Value` trait
     /// Give it a number!
     #[arg("-n N", "--number=N")]
-    Number(Number),
+    Number(#[allow(unused)] Number),
 
     // Completion is derived from the `PathBuf` type
     /// Give it a path!
     #[arg("-p P", "--path=P")]
-    Path(PathBuf),
+    Path(#[allow(unused)] PathBuf),
 }
 
 struct Settings;
