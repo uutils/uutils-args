@@ -517,3 +517,36 @@ fn enum_flag() {
         SomeEnum::Baz,
     );
 }
+
+#[test]
+fn simple_error() {
+    #[derive(Arguments)]
+    enum Arg {
+        #[arg("-f", "--foo")]
+        Foo,
+    }
+
+    #[derive(Debug, Default)]
+    struct Settings {}
+
+    impl Options<Arg> for Settings {
+        fn apply(&mut self, _arg: Arg) -> Result<(), uutils_args::Error> {
+            Err(uutils_args::Error {
+                exit_code: 42,
+                kind: uutils_args::ErrorKind::UnexpectedArgument(
+                    "This is an example error".to_owned(),
+                ),
+            })
+        }
+    }
+
+    let settings_or_error = Settings::default().parse(["test", "-f"]);
+    let the_error = settings_or_error.expect_err("should have propagated error");
+    assert_eq!(the_error.exit_code, 42);
+    match the_error.kind {
+        uutils_args::ErrorKind::UnexpectedArgument(err_str) => {
+            assert_eq!(err_str, "This is an example error")
+        }
+        _ => panic!("wrong error kind: {:?}", the_error.kind),
+    }
+}
