@@ -166,7 +166,7 @@ impl<T: Arguments> ArgumentIter<T> {
 /// call [`Options::apply`] on the result until the arguments are exhausted.
 pub trait Options<Arg: Arguments>: Sized {
     /// Apply a single argument to the options.
-    fn apply(&mut self, arg: Arg);
+    fn apply(&mut self, arg: Arg) -> Result<(), Error>;
 
     /// Parse an iterator of arguments into the options
     #[allow(unused_mut)]
@@ -191,7 +191,7 @@ pub trait Options<Arg: Arguments>: Sized {
         {
             let mut iter = ArgumentIter::<Arg>::from_args(args);
             while let Some(arg) = iter.next_arg()? {
-                self.apply(arg);
+                self.apply(arg)?;
             }
             Ok((self, iter.positional_arguments))
         }

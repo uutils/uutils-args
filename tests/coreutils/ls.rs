@@ -360,7 +360,7 @@ impl Default for Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::All => self.which_files = Files::All,
             Arg::AlmostAll => self.which_files = Files::AlmostAll,
@@ -417,6 +417,7 @@ impl Options<Arg> for Settings {
             }
             Arg::GroupDirectoriesFirst => self.group_directories_first = true,
         }
+        Ok(())
     }
 }
 

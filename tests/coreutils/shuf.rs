@@ -23,11 +23,12 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Echo => self.echo = true,
             Arg::Zero => self.zero = true,
         }
+        Ok(())
     }
 }
 

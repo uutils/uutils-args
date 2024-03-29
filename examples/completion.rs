@@ -33,7 +33,7 @@ enum Arg {
 struct Settings;
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, _arg: Arg) {
+    fn apply(&mut self, _arg: Arg) -> Result<(), uutils_args::Error> {
         panic!("Compile with the 'parse-is-complete' feature!")
     }
 }

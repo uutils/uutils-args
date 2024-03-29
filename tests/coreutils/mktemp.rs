@@ -40,7 +40,7 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Directory => self.directory = true,
             Arg::DryRun => self.dry_run = true,
@@ -49,6 +49,7 @@ impl Options<Arg> for Settings {
             Arg::TreatAsTemplate => self.treat_as_template = true,
             Arg::TmpDir(dir) => self.tmp_dir = Some(dir),
         }
+        Ok(())
     }
 }
 

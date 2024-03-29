@@ -14,10 +14,11 @@ fn one_flag() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::Foo => self.foo = true,
             }
+            Ok(())
         }
     }
 
@@ -42,11 +43,12 @@ fn two_flags() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::A => self.a = true,
                 Arg::B => self.b = true,
             }
+            Ok(())
         }
     }
 
@@ -82,8 +84,9 @@ fn long_and_short_flag() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Foo: Arg) {
+        fn apply(&mut self, Arg::Foo: Arg) -> Result<(), uutils_args::Error> {
             self.foo = true;
+            Ok(())
         }
     }
 
@@ -106,8 +109,9 @@ fn short_alias() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Foo: Arg) {
+        fn apply(&mut self, Arg::Foo: Arg) -> Result<(), uutils_args::Error> {
             self.foo = true;
+            Ok(())
         }
     }
 
@@ -128,8 +132,9 @@ fn long_alias() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Foo: Arg) {
+        fn apply(&mut self, Arg::Foo: Arg) -> Result<(), uutils_args::Error> {
             self.foo = true;
+            Ok(())
         }
     }
 
@@ -153,11 +158,12 @@ fn short_and_long_alias() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::Foo => self.foo = true,
                 Arg::Bar => self.bar = true,
             }
+            Ok(())
         }
     }
 
@@ -209,7 +215,7 @@ fn xyz_map_to_abc() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::X => {
                     self.a = true;
@@ -225,6 +231,7 @@ fn xyz_map_to_abc() {
                     self.c = true;
                 }
             }
+            Ok(())
         }
     }
 
@@ -282,11 +289,12 @@ fn non_rust_ident() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::FooBar => self.a = true,
                 Arg::Super => self.b = true,
             }
+            Ok(())
         }
     }
 
@@ -312,8 +320,9 @@ fn number_flag() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::One: Arg) {
+        fn apply(&mut self, Arg::One: Arg) -> Result<(), uutils_args::Error> {
             self.one = true;
+            Ok(())
         }
     }
 
@@ -336,11 +345,12 @@ fn false_bool() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             self.foo = match arg {
                 Arg::A => true,
                 Arg::B => false,
-            }
+            };
+            Ok(())
         }
     }
 
@@ -378,8 +388,9 @@ fn verbosity() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Verbosity: Arg) {
+        fn apply(&mut self, Arg::Verbosity: Arg) -> Result<(), uutils_args::Error> {
             self.verbosity += 1;
+            Ok(())
         }
     }
 
@@ -429,12 +440,13 @@ fn infer_long_args() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::All => self.all = true,
                 Arg::AlmostAll => self.almost_all = true,
                 Arg::Author => self.author = true,
             }
+            Ok(())
         }
     }
 
@@ -482,12 +494,13 @@ fn enum_flag() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             self.foo = match arg {
                 Arg::Foo => SomeEnum::Foo,
                 Arg::Bar => SomeEnum::Bar,
                 Arg::Baz => SomeEnum::Baz,
             };
+            Ok(())
         }
     }
 

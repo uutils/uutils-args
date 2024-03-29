@@ -92,7 +92,7 @@ impl Default for Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Infile(f) => self.infile = Some(f),
             Arg::Outfile(f) => self.outfile = Some(f),
@@ -111,6 +111,7 @@ impl Options<Arg> for Settings {
             Arg::Iflag(_f) => todo!(),
             Arg::Oflag(_f) => todo!(),
         }
+        Ok(())
     }
 }
 

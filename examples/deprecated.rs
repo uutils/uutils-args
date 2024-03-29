@@ -34,11 +34,12 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Min(n) => self.n1 = n,
             Arg::Plus(n) => self.n2 = n,
         }
+        Ok(())
     }
 }
 
