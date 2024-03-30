@@ -13,6 +13,7 @@
 //!  - Some information is removed because it is irrelevant for completion and documentation
 //!  - This struct is meant to exist at runtime of the program
 //!
+mod bash;
 mod fish;
 mod man;
 mod md;
@@ -75,7 +76,8 @@ pub fn render(c: &Command, shell: &str) -> String {
         "zsh" => zsh::render(c),
         "nu" | "nushell" => nu::render(c),
         "man" => man::render(c),
-        "sh" | "bash" | "csh" | "elvish" | "powershell" => panic!("shell '{shell}' completion is not implemented yet!"),
+        "bash" => bash::render(c),
+        "sh" | "csh" | "elvish" | "powershell" => panic!("shell '{shell}' completion is not implemented yet!"),
         _ => panic!("unknown option '{shell}'! Expected one of: \"md\", \"fish\", \"zsh\", \"nu[shell]\", \"man\", \"sh\", \"bash\", \"csh\", \"elvish\", \"powershell\""),
     }
 }
