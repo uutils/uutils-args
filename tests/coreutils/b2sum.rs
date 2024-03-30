@@ -46,7 +46,7 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Binary => self.binary = true,
             Arg::Check => self.check = true,
@@ -57,6 +57,7 @@ impl Options<Arg> for Settings {
             Arg::Strict => self.strict = true,
             Arg::Warn => self.check_output = CheckOutput::Warn,
         }
+        Ok(())
     }
 }
 

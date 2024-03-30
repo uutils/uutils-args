@@ -16,8 +16,9 @@ fn string_option() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Message(s): Arg) {
-            self.message = s
+        fn apply(&mut self, Arg::Message(s): Arg) -> Result<(), uutils_args::Error> {
+            self.message = s;
+            Ok(())
         }
     }
 
@@ -56,8 +57,9 @@ fn enum_option() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Format(f): Arg) {
+        fn apply(&mut self, Arg::Format(f): Arg) -> Result<(), uutils_args::Error> {
             self.format = f;
+            Ok(())
         }
     }
 
@@ -103,8 +105,9 @@ fn enum_option_with_fields() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Indent(i): Arg) {
+        fn apply(&mut self, Arg::Indent(i): Arg) -> Result<(), uutils_args::Error> {
             self.indent = i;
+            Ok(())
         }
     }
 
@@ -160,8 +163,9 @@ fn enum_with_complex_from_value() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Indent(i): Arg) {
+        fn apply(&mut self, Arg::Indent(i): Arg) -> Result<(), uutils_args::Error> {
             self.indent = i;
+            Ok(())
         }
     }
 
@@ -208,8 +212,9 @@ fn color() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Color(c): Arg) {
+        fn apply(&mut self, Arg::Color(c): Arg) -> Result<(), uutils_args::Error> {
             self.color = c.unwrap_or(Color::Always);
+            Ok(())
         }
     }
 
@@ -283,7 +288,7 @@ fn actions() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::Message(m) => {
                     self.last_message = m.clone();
@@ -292,6 +297,7 @@ fn actions() {
                 Arg::Send => self.send = true,
                 Arg::Receive => self.send = false,
             }
+            Ok(())
         }
     }
 
@@ -317,11 +323,12 @@ fn width() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Width(w): Arg) {
+        fn apply(&mut self, Arg::Width(w): Arg) -> Result<(), uutils_args::Error> {
             self.width = match w {
                 0 => None,
                 x => Some(x),
-            }
+            };
+            Ok(())
         }
     }
 
@@ -367,7 +374,7 @@ fn integers() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             self.n = match arg {
                 Arg::U8(x) => x as i128,
                 Arg::U16(x) => x as i128,
@@ -379,7 +386,8 @@ fn integers() {
                 Arg::I32(x) => x as i128,
                 Arg::I64(x) => x as i128,
                 Arg::I128(x) => x,
-            }
+            };
+            Ok(())
         }
     }
 
@@ -454,8 +462,9 @@ fn ls_classify() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::Classify(c): Arg) {
+        fn apply(&mut self, Arg::Classify(c): Arg) -> Result<(), uutils_args::Error> {
             self.classify = c;
+            Ok(())
         }
     }
 
@@ -507,8 +516,9 @@ fn mktemp_tmpdir() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, Arg::TmpDir(dir): Arg) {
+        fn apply(&mut self, Arg::TmpDir(dir): Arg) -> Result<(), uutils_args::Error> {
             self.tmpdir = Some(dir);
+            Ok(())
         }
     }
 
@@ -581,11 +591,12 @@ fn deprecated() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::Min(n) => self.n1 = n,
                 Arg::Plus(n) => self.n2 = n,
             }
+            Ok(())
         }
     }
 
@@ -620,10 +631,11 @@ fn empty_value() {
     struct Settings {}
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::Val(_) => {}
             }
+            Ok(())
         }
     }
 }

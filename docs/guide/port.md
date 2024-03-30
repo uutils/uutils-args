@@ -94,10 +94,11 @@ enum Arg {
 struct Settings { a: bool }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::A => self.a = true,
         }
+        Ok(())
     }
 }
 
@@ -137,10 +138,11 @@ impl Default for Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::A => self.a = false,
         }
+        Ok(())
     }
 }
 
@@ -175,10 +177,11 @@ enum Arg {
 struct Settings { a: u8 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::A => self.a += 1,
         }
+        Ok(())
     }
 }
 
@@ -215,10 +218,11 @@ enum Arg {
 struct Settings { a: OsString }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::A(s) => self.a = s,
         }
+        Ok(())
     }
 }
 
@@ -255,10 +259,11 @@ enum Arg {
 struct Settings { a: Vec<OsString> }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::A(s) => self.a.push(s),
         }
+        Ok(())
     }
 }
 

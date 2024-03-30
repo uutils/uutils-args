@@ -108,7 +108,7 @@ uutils and when we opened as issue for it, it was discarded. This makes sense
 from `clap`'s perspective, but it shows that the priorities between `clap` and
 uutils diverge.
 
-## Problem 6: It's stringly typed
+## Problem 7: It's stringly typed
 
 `clap`'s arguments are identified by strings. This leads to code like this:
 
@@ -135,20 +135,30 @@ deal, but a bit annoying.
 
 Of course, we wouldn't have this problem if we were able to use the derive API.
 
-## Problem 7: Reading help string from a file
+## Problem 8: Reading help string from a file
 
 In `uutils` our help strings can get quite long. Therefore, we like to extract
 those to an external file. With `clap` this means that we need to do some custom
 preprocessing on this file to extract the information for the several pieces of
 the help string that `clap` supports.
 
-## Problem 8: No markdown support
+## Problem 9: No markdown support
 
 Granted, this is not really a problem, but more of a nice-to-have. We have
 online documentation for the utils, based on the help strings and these are
 rendered from markdown. Ideally, our argument parser supports markdown too, so
 that we can have nicely rendered help strings which have (roughly) the same
 appearance in the terminal and online.
+
+## Problem 10: No position-dependent argument-error prioritization
+
+This is the question of which error to print if both `-A` and `-B` are given,
+and both are individually an error somehow. In case of the GNU tools, only the
+first error is printed, and then the program is aborted.
+
+This also is not really a problem, but since it can be reasonably easily
+achieved by simply raising an error during argument application, this enables
+matching more closely the exact behavior of the GNU tools.
 
 ## Good things about `clap`
 

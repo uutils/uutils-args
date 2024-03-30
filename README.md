@@ -67,11 +67,12 @@ struct Settings {
 // To implement `Options`, we only need to provide the `apply` method.
 // The `parse` method will be automatically generated.
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Caps => self.caps = true,
             Arg::ExclamationMarks(n) => self.exclamation_marks += n,
         }
+        Ok(())
     }
 }
 
