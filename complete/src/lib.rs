@@ -76,6 +76,6 @@ pub fn render(c: &Command, shell: &str) -> String {
         "nu" | "nushell" => nu::render(c),
         "man" => man::render(c),
         "sh" | "bash" | "csh" | "elvish" | "powershell" => panic!("shell '{shell}' completion is not implemented yet!"),
-        _ => panic!("unknown option '{shell}'! Expected one of: \"md\", \"fish\", \"zsh\", \"man\", \"sh\", \"bash\", \"csh\", \"elvish\", \"powershell\""),
+        _ => panic!("unknown option '{shell}'! Expected one of: \"md\", \"fish\", \"zsh\", \"nu[shell]\", \"man\", \"sh\", \"bash\", \"csh\", \"elvish\", \"powershell\""),
     }
 }
