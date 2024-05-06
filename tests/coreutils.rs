@@ -13,6 +13,9 @@ mod basename;
 #[path = "coreutils/cat.rs"]
 mod cat;
 
+#[path = "coreutils/cksum.rs"]
+mod cksum;
+
 #[path = "coreutils/dd.rs"]
 mod dd;
 
