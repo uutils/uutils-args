@@ -102,14 +102,14 @@ impl Options<Arg> for Settings {
                 self.ibs = b;
                 self.obs = b;
             }
-            Arg::Cbs(_) => todo!(),
+            Arg::Cbs(_b) => todo!(),
             Arg::Skip(b) => self.skip = b,
             Arg::Seek(b) => self.seek = b,
             Arg::Count(n) => self.count = n,
             Arg::Status(level) => self.status = Some(level),
-            Arg::Conv(_) => todo!(),
-            Arg::Iflag(_) => todo!(),
-            Arg::Oflag(_) => todo!(),
+            Arg::Conv(_c) => todo!(),
+            Arg::Iflag(_f) => todo!(),
+            Arg::Oflag(_f) => todo!(),
         }
     }
 }
