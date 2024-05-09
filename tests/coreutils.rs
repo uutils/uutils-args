@@ -25,6 +25,9 @@ mod dd;
 #[path = "coreutils/echo.rs"]
 mod echo;
 
+#[path = "coreutils/fmt.rs"]
+mod fmt;
+
 #[path = "coreutils/head.rs"]
 mod head;
 
