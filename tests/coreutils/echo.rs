@@ -24,12 +24,13 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::NoNewline => self.trailing_newline = false,
             Arg::EnableEscape => self.escape = true,
             Arg::DisableEscape => self.escape = false,
         }
+        Ok(())
     }
 }
 

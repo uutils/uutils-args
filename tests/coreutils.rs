@@ -16,6 +16,9 @@ mod cat;
 #[path = "coreutils/cksum.rs"]
 mod cksum;
 
+#[path = "coreutils/date.rs"]
+mod date;
+
 #[path = "coreutils/dd.rs"]
 mod dd;
 

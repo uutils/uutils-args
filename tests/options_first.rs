@@ -18,10 +18,11 @@ fn timeout_like() {
     }
 
     impl Options<Arg> for Settings {
-        fn apply(&mut self, arg: Arg) {
+        fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
             match arg {
                 Arg::Verbose => self.verbose = true,
             }
+            Ok(())
         }
     }
 
