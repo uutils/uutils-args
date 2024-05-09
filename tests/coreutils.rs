@@ -16,11 +16,17 @@ mod cat;
 #[path = "coreutils/cksum.rs"]
 mod cksum;
 
+#[path = "coreutils/date.rs"]
+mod date;
+
 #[path = "coreutils/dd.rs"]
 mod dd;
 
 #[path = "coreutils/echo.rs"]
 mod echo;
+
+#[path = "coreutils/fmt.rs"]
+mod fmt;
 
 #[path = "coreutils/head.rs"]
 mod head;

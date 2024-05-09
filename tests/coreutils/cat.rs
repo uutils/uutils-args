@@ -48,7 +48,7 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::ShowAll => {
                 self.show_tabs = true;
@@ -70,6 +70,7 @@ impl Options<Arg> for Settings {
             Arg::NumberNonblank => self.number = NumberingMode::NonEmpty,
             Arg::SqueezeBlank => self.squeeze_blank = true,
         }
+        Ok(())
     }
 }
 

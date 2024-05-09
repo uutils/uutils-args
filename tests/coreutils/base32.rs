@@ -34,13 +34,14 @@ impl Default for Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Decode => self.decode = true,
             Arg::IgnoreGarbage => self.ignore_garbage = true,
             Arg::Wrap(0) => self.wrap = None,
             Arg::Wrap(x) => self.wrap = Some(x),
         }
+        Ok(())
     }
 }
 

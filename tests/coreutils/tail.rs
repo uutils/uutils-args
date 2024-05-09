@@ -244,7 +244,7 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Bytes(n) => {
                 self.mode = Mode::Bytes;
@@ -268,6 +268,7 @@ impl Options<Arg> for Settings {
             Arg::Zero => self.zero = true,
             Arg::PresumeInputPipe => self.presume_input_pipe = true,
         }
+        Ok(())
     }
 }
 

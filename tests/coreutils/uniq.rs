@@ -65,7 +65,7 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::SkipFields(n) => {
                 self.skip_fields = Some(n);
@@ -100,6 +100,7 @@ impl Options<Arg> for Settings {
             Arg::ZeroTerminated => {
                 self.zero_terminated = true;
             }
-        }
+        };
+        Ok(())
     }
 }
