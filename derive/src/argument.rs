@@ -13,7 +13,6 @@ use crate::{
 pub struct Argument {
     pub ident: Ident,
     pub field: Option<syn::Type>,
-    pub name: String,
     pub arg_type: ArgType,
     pub help: String,
 }
@@ -41,7 +40,6 @@ pub fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
 
 pub fn parse_argument(v: Variant) -> Vec<Argument> {
     let ident = v.ident;
-    let name = ident.to_string();
     let attributes = get_arg_attributes(&v.attrs).unwrap();
 
     // Return early because we don't need to check the fields if it's not used.
@@ -94,7 +92,6 @@ pub fn parse_argument(v: Variant) -> Vec<Argument> {
             Argument {
                 ident: ident.clone(),
                 field: field.clone(),
-                name: name.clone(),
                 arg_type,
                 help: arg_help,
             }

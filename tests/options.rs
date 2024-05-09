@@ -286,7 +286,7 @@ fn actions() {
         fn apply(&mut self, arg: Arg) {
             match arg {
                 Arg::Message(m) => {
-                    self.last_message = m.clone();
+                    self.last_message.clone_from(&m);
                     self.messages.push(m);
                 }
                 Arg::Send => self.send = true,
@@ -617,6 +617,7 @@ fn empty_value() {
         Val(V),
     }
 
+    #[allow(dead_code)]
     struct Settings {}
 
     impl Options<Arg> for Settings {
