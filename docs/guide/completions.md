@@ -33,7 +33,7 @@ Shell completions and documentation can be generated automatically by this crate
 cargo run --features parse-is-complete -- [shell]
 ```
 
-The `[shell]` value here can be `fish`, `zsh`, `bash`, `powershell`, `elvish` or `nu`.
+The `[shell]` value here can be `fish`, `zsh`, `nu`, `sh`, `bash`, `csh`, `elvish`, or `powershell`.
 
 > **Note**: Some of these remain unimplemented as of writing.
 
