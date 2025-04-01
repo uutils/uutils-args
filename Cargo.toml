@@ -1,7 +1,7 @@
 [package]
 name = "uutils-args"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["Terts Diepraam"]
 license = "MIT"
 
