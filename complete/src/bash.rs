@@ -63,7 +63,10 @@ mod test {
             ],
             ..Command::default()
         };
-        assert_eq!(render(&c), "complete -F _comp_uu_foo 'foo';_comp_uu_foo(){ local cur;_init_completion||return;COMPREPLY=();if [[ \"$cur\" != \"-*\" ]]; then _filedir;fi;COMPREPLY+=($(compgen -W \"-a --all -x \" -- \"$cur\"));}\n")
+        assert_eq!(
+            render(&c),
+            "complete -F _comp_uu_foo 'foo';_comp_uu_foo(){ local cur;_init_completion||return;COMPREPLY=();if [[ \"$cur\" != \"-*\" ]]; then _filedir;fi;COMPREPLY+=($(compgen -W \"-a --all -x \" -- \"$cur\"));}\n"
+        )
     }
 
     #[test]
@@ -79,6 +82,9 @@ mod test {
             }],
             ..Command::default()
         };
-        assert_eq!(render(&c), "complete -F _comp_uu_bracket '[';_comp_uu_bracket(){ local cur;_init_completion||return;COMPREPLY=();if [[ \"$cur\" != \"-*\" ]]; then _filedir;fi;COMPREPLY+=($(compgen -W \"-x \" -- \"$cur\"));}\n")
+        assert_eq!(
+            render(&c),
+            "complete -F _comp_uu_bracket '[';_comp_uu_bracket(){ local cur;_init_completion||return;COMPREPLY=();if [[ \"$cur\" != \"-*\" ]]; then _filedir;fi;COMPREPLY+=($(compgen -W \"-x \" -- \"$cur\"));}\n"
+        )
     }
 }

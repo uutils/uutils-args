@@ -2,7 +2,7 @@
 // file that was distributed with this source code.
 
 use crate::{Command, Flag, Value};
-use roff::{bold, italic, roman, Roff};
+use roff::{Roff, bold, italic, roman};
 
 pub fn render(c: &Command) -> String {
     let mut page = Roff::new();

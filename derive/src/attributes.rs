@@ -2,7 +2,7 @@
 // file that was distributed with this source code.
 
 use syn::{
-    meta::ParseNestedMeta, parse::ParseStream, Attribute, Expr, Ident, LitInt, LitStr, Token,
+    Attribute, Expr, Ident, LitInt, LitStr, Token, meta::ParseNestedMeta, parse::ParseStream,
 };
 
 use crate::flags::Flags;
@@ -141,7 +141,7 @@ impl OptionAttr {
                     return Err(syn::Error::new_spanned(
                         ident,
                         "unrecognized argument for option attribute",
-                    ))
+                    ));
                 }
             }
             Ok(())
@@ -186,27 +186,29 @@ impl ValueAttr {
             return Ok(value_attr);
         }
 
-        attr.parse_args_with(|s: ParseStream| loop {
-            if let Ok(litstr) = s.parse::<LitStr>() {
-                value_attr.keys.push(litstr.value());
-            } else {
-                let ident = s.parse::<Ident>()?;
-                match ident.to_string().as_str() {
-                    "value" => {
-                        s.parse::<Token![=]>()?;
-                        let p = s.parse::<Expr>()?;
-                        value_attr.value = Some(p);
+        attr.parse_args_with(|s: ParseStream| {
+            loop {
+                if let Ok(litstr) = s.parse::<LitStr>() {
+                    value_attr.keys.push(litstr.value());
+                } else {
+                    let ident = s.parse::<Ident>()?;
+                    match ident.to_string().as_str() {
+                        "value" => {
+                            s.parse::<Token![=]>()?;
+                            let p = s.parse::<Expr>()?;
+                            value_attr.value = Some(p);
+                        }
+                        _ => return Err(s.error("unrecognized keyword in value attribute")),
                     }
-                    _ => return Err(s.error("unrecognized keyword in value attribute")),
                 }
-            }
 
-            if s.is_empty() {
-                return Ok(());
-            }
-            s.parse::<Token![,]>()?;
-            if s.is_empty() {
-                return Ok(());
+                if s.is_empty() {
+                    return Ok(());
+                }
+                s.parse::<Token![,]>()?;
+                if s.is_empty() {
+                    return Ok(());
+                }
             }
         })?;
 
@@ -244,7 +246,7 @@ fn assert_expr_is_array_of_litstr(expr: Expr, flag: &str) -> syn::Result<Vec<Str
             return Err(syn::Error::new_spanned(
                 expr,
                 format!("Argument to `{flag}` must be an array"),
-            ))
+            ));
         }
     };
 
@@ -259,7 +261,7 @@ fn assert_expr_is_array_of_litstr(expr: Expr, flag: &str) -> syn::Result<Vec<Str
                 return Err(syn::Error::new_spanned(
                     elem,
                     format!("Argument to `{flag}` must be an array of string literals"),
-                ))
+                ));
             }
         };
         strings.push(val);

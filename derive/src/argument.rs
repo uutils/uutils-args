@@ -187,7 +187,7 @@ pub fn long_handling(args: &[Argument], help_flags: &Flags) -> TokenStream {
             ArgType::Option {
                 flags,
                 takes_value,
-                ref default,
+                default,
                 hidden: _,
             } => (flags, takes_value, default),
             ArgType::Free { .. } => continue,
