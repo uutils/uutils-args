@@ -1,9 +1,16 @@
+[![Discord](https://img.shields.io/badge/discord-join-7289DA.svg?logo=discord&longCache=true&style=flat)](https://discord.gg/wQVJbvJ)
+[![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/uutils/uutils-args/blob/main/LICENSE)
+[![dependency status](https://deps.rs/repo/github/uutils/uutils-args/status.svg)](https://deps.rs/repo/github/uutils/uutils-args)
+
+[![CodeCov](https://codecov.io/gh/uutils/uutils-args/branch/master/graph/badge.svg)](https://codecov.io/gh/uutils/uutils-args)
+![MSRV](https://img.shields.io/badge/MSRV-1.85.0-brightgreen)
+
 # uutils-args
 
-Argument parsing for the [uutils coreutils](https://www.github.com/uutils/coreutils) project.
+Argument parsing for the [uutils](https://www.github.com/uutils/) projects.
 
 It is designed to be flexible, while providing default
-behaviour that aligns with GNU coreutils.
+behaviour that aligns with GNU coreutils and other tools.
 
 ## Features
 
