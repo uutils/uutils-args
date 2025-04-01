@@ -188,7 +188,7 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Bytes(n) => {
                 self.mode = Mode::Bytes;
@@ -202,6 +202,7 @@ impl Options<Arg> for Settings {
             Arg::Verbose => self.verbose = true,
             Arg::Zero => self.zero = true,
         }
+        Ok(())
     }
 }
 

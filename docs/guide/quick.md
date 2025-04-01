@@ -59,10 +59,11 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Force => self.force = true,
         }
+        Ok(())
     }
 }
 
@@ -100,11 +101,12 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Force => self.force = true,
             Arg::NoForce => self.force = false,
         }
+        Ok(())
     }
 }
 
@@ -160,10 +162,11 @@ enum Arg {
 # }
 #
 # impl Options<Arg> for Settings {
-#     fn apply(&mut self, arg: Arg) {
+#     fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
 #         match arg {
 #             Arg::Name(name) => self.name = name,
 #         }
+#         Ok(())
 #     }
 # }
 #
@@ -197,10 +200,11 @@ enum Arg {
 # }
 #
 # impl Options<Arg> for Settings {
-#     fn apply(&mut self, arg: Arg) {
+#     fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
 #         match arg {
 #             Arg::Name(name) => self.name = name,
 #         }
+#         Ok(())
 #     }
 # }
 #
@@ -234,10 +238,11 @@ enum Arg {
 # }
 #
 # impl Options<Arg> for Settings {
-#     fn apply(&mut self, arg: Arg) {
+#     fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
 #         match arg {
 #             Arg::Force(b) => self.force = b,
 #         }
+#         Ok(())
 #     }
 # }
 #
@@ -269,10 +274,11 @@ enum Arg {
 # }
 #
 # impl Options<Arg> for Settings {
-#     fn apply(&mut self, arg: Arg) {
+#     fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
 #         match arg {
 #             Arg::Sort(s) => self.sort = s,
 #         }
+#         Ok(())
 #     }
 # }
 #

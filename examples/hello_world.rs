@@ -22,12 +22,13 @@ struct Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Name(n) => self.name = n,
             Arg::Count(c) => self.count = c,
             Arg::Hidden => {}
         }
+        Ok(())
     }
 }
 

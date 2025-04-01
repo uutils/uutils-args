@@ -32,7 +32,7 @@ enum Arg {
     Bs(usize),
 
     #[arg("cbs=BYTES")]
-    Cbs(usize),
+    Cbs(#[allow(unused)] usize),
 
     #[arg("skip=BYTES", "iseek=BYTES")]
     Skip(u64),
@@ -47,13 +47,13 @@ enum Arg {
     Status(StatusLevel),
 
     #[arg("conv=CONVERSIONS")]
-    Conv(String),
+    Conv(#[allow(unused)] String),
 
     #[arg("iflag=FLAGS")]
-    Iflag(String),
+    Iflag(#[allow(unused)] String),
 
     #[arg("oflag=FLAGS")]
-    Oflag(String),
+    Oflag(#[allow(unused)] String),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -92,7 +92,7 @@ impl Default for Settings {
 }
 
 impl Options<Arg> for Settings {
-    fn apply(&mut self, arg: Arg) {
+    fn apply(&mut self, arg: Arg) -> Result<(), uutils_args::Error> {
         match arg {
             Arg::Infile(f) => self.infile = Some(f),
             Arg::Outfile(f) => self.outfile = Some(f),
@@ -111,6 +111,7 @@ impl Options<Arg> for Settings {
             Arg::Iflag(_f) => todo!(),
             Arg::Oflag(_f) => todo!(),
         }
+        Ok(())
     }
 }
 
