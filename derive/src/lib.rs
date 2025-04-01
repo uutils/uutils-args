@@ -19,7 +19,7 @@ use help::{help_handling, help_string, version_handling};
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data::Enum, DeriveInput};
+use syn::{Data::Enum, DeriveInput, parse_macro_input};
 
 /// Documentation for this can be found in `uutils_args`.
 #[proc_macro_derive(Arguments, attributes(arg, arguments))]

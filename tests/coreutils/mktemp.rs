@@ -4,8 +4,8 @@ use std::{
 };
 
 use uutils_args::{
-    positional::{Opt, Unpack},
     Arguments, Options,
+    positional::{Opt, Unpack},
 };
 
 #[derive(Clone, Arguments)]

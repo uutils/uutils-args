@@ -62,9 +62,11 @@ impl Flags {
                     .strip_prefix('=')
                     .and_then(|s| s.strip_suffix(']'))
                     .unwrap();
-                assert!(optional
-                    .chars()
-                    .all(|c: char| c.is_alphanumeric() || c == '-'));
+                assert!(
+                    optional
+                        .chars()
+                        .all(|c: char| c.is_alphanumeric() || c == '-')
+                );
                 Value::Optional(optional.into())
             } else {
                 panic!("Invalid long flag '{flag}'");
@@ -88,14 +90,18 @@ impl Flags {
             let value = if val.is_empty() {
                 Value::No
             } else if let Some(optional) = val.strip_prefix('[').and_then(|s| s.strip_suffix(']')) {
-                assert!(optional
-                    .chars()
-                    .all(|c: char| c.is_alphanumeric() || c == '-'));
+                assert!(
+                    optional
+                        .chars()
+                        .all(|c: char| c.is_alphanumeric() || c == '-')
+                );
                 Value::Optional(optional.into())
             } else if let Some(required) = val.strip_prefix(' ') {
-                assert!(required
-                    .chars()
-                    .all(|c: char| c.is_alphanumeric() || c == '-'));
+                assert!(
+                    required
+                        .chars()
+                        .all(|c: char| c.is_alphanumeric() || c == '-')
+                );
                 Value::Required(required.into())
             } else {
                 panic!("Invalid short flag '{flag}'")
