@@ -117,7 +117,6 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 #version_string
             }
 
-            #[cfg(feature = "complete")]
             fn complete() -> ::uutils_args_complete::Command<'static> {
                 use ::uutils_args::Value;
                 #complete_command
@@ -212,7 +211,6 @@ pub fn value(input: TokenStream) -> TokenStream {
                 })
             }
 
-            #[cfg(feature = "complete")]
             fn value_hint() -> ::uutils_args_complete::ValueHint {
                 let keys: [&str; #keys_len] = [#(#all_keys),*];
                 ::uutils_args_complete::ValueHint::Strings(
