@@ -17,7 +17,7 @@ lexopt = "0.3.0"
 
 [features]
 parse-is-complete = ["complete"]
-complete = ["uutils-args-complete"]
+complete = ["uutils-args-complete", "uutils-args-derive/complete"]
 
 [workspace]
 members = ["derive", "complete"]

@@ -81,6 +81,17 @@ pub fn arguments(input: TokenStream) -> TokenStream {
         quote!(Ok(Some(::uutils_args::Argument::Positional(value))))
     };
 
+    let complete_fn = if cfg!(feature = "complete") {
+        quote!(
+            fn complete() -> ::uutils_args_complete::Command<'static> {
+                use ::uutils_args::Value;
+                #complete_command
+            }
+        )
+    } else {
+        quote!()
+    };
+
     let expanded = quote!(
         impl #impl_generics Arguments for #name #ty_generics #where_clause {
             const EXIT_CODE: i32 = #exit_code;
@@ -117,11 +128,10 @@ pub fn arguments(input: TokenStream) -> TokenStream {
                 #version_string
             }
 
-            #[cfg(feature = "complete")]
-            fn complete() -> ::uutils_args_complete::Command<'static> {
-                use ::uutils_args::Value;
-                #complete_command
-            }
+            // "#[cfg(feature = "complete")] fn complete()"
+            // However, this would attempt to evaluate the feature "complete" in the context of the caller.
+            // Therefore, we must evaluate whether the feature is true or not while this macro is running.
+            #complete_fn
         }
     );
 
@@ -176,6 +186,22 @@ pub fn value(input: TokenStream) -> TokenStream {
 
     let keys_len = all_keys.len();
 
+    let value_hint_fn = if cfg!(feature = "complete") {
+        quote!(
+            fn value_hint() -> ::uutils_args_complete::ValueHint {
+                let keys: [&str; #keys_len] = [#(#all_keys),*];
+                ::uutils_args_complete::ValueHint::Strings(
+                    keys
+                        .into_iter()
+                        .map(ToString::to_string)
+                        .collect()
+                )
+            }
+        )
+    } else {
+        quote!()
+    };
+
     let expanded = quote!(
         impl #impl_generics Value for #name #ty_generics #where_clause {
             fn from_value(value: &::std::ffi::OsStr) -> ::uutils_args::ValueResult<Self> {
@@ -212,16 +238,8 @@ pub fn value(input: TokenStream) -> TokenStream {
                 })
             }
 
-            #[cfg(feature = "complete")]
-            fn value_hint() -> ::uutils_args_complete::ValueHint {
-                let keys: [&str; #keys_len] = [#(#all_keys),*];
-                ::uutils_args_complete::ValueHint::Strings(
-                    keys
-                        .into_iter()
-                        .map(ToString::to_string)
-                        .collect()
-                )
-            }
+            // See impl Arguments::complete (fn value_hint())
+            #value_hint_fn
         }
     );
 
