@@ -60,8 +60,9 @@ impl Flags {
             } else if sep == '[' {
                 let optional = val
                     .strip_prefix('=')
-                    .and_then(|s| s.strip_suffix(']'))
-                    .unwrap();
+                    .expect("expected '=' after '[' in flag pattern")
+                    .strip_suffix(']')
+                    .expect("expected final ']' in flag pattern");
                 assert!(
                     optional
                         .chars()
@@ -74,8 +75,6 @@ impl Flags {
 
             self.long.push(Flag { flag: f, value });
         } else if let Some(s) = flag.strip_prefix('-') {
-            assert!(!s.is_empty());
-
             // There are three possible patterns:
             //   -f
             //   -f value
@@ -83,7 +82,9 @@ impl Flags {
 
             // First we trim up to the = or [
             let mut chars = s.chars();
-            let f = chars.next().unwrap();
+            let f = chars
+                .next()
+                .expect("flag name must be non-empty (cannot be just '-')");
             let val: String = chars.collect();
 
             // Now check the cases:

@@ -152,7 +152,8 @@ pub fn value(input: TokenStream) -> TokenStream {
                 continue;
             }
 
-            let ValueAttr { keys, value } = ValueAttr::parse(&attr).unwrap();
+            let ValueAttr { keys, value } =
+                ValueAttr::parse(&attr).expect("expected comma-separated list of string literals");
 
             let keys = if keys.is_empty() {
                 vec![variant_name.to_lowercase()]
