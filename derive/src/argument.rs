@@ -40,7 +40,8 @@ pub fn parse_arguments_attr(attrs: &[Attribute]) -> ArgumentsAttr {
 
 pub fn parse_argument(v: Variant) -> Vec<Argument> {
     let ident = v.ident;
-    let attributes = get_arg_attributes(&v.attrs).unwrap();
+    let attributes = get_arg_attributes(&v.attrs)
+        .expect("can't parse arg attributes, expected one or more strings");
 
     // Return early because we don't need to check the fields if it's not used.
     if attributes.is_empty() {

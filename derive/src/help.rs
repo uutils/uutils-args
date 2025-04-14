@@ -100,12 +100,14 @@ pub fn help_string(
 
 pub fn read_help_file(file: &str) -> (String, String, String) {
     let path = Path::new(file);
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let manifest_dir =
+        std::env::var("CARGO_MANIFEST_DIR").expect("can only run in paths that are valid UTF-8");
     let mut location = PathBuf::from(manifest_dir);
     location.push(path);
     let mut contents = String::new();
-    let mut f = std::fs::File::open(location).unwrap();
-    f.read_to_string(&mut contents).unwrap();
+    let mut f = std::fs::File::open(location).expect("cannot open help-string file");
+    f.read_to_string(&mut contents)
+        .expect("cannot read from help-string file");
 
     (
         parse_about(&contents),
