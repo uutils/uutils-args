@@ -1,0 +1,34 @@
+error: proc-macro derive panicked
+ --> tests/derive/arg_just_minus.rs:3:10
+  |
+3 | #[derive(Arguments)]
+  |          ^^^^^^^^^
+  |
+  = help: message: flag name must be non-empty (cannot be just '-')
+
+error[E0277]: the trait bound `Arg: uutils_args::Arguments` is not satisfied
+  --> tests/derive/arg_just_minus.rs:11:6
+   |
+11 | impl Options<Arg> for Settings {
+   |      ^^^^^^^^^^^^ the trait `uutils_args::Arguments` is not implemented for `Arg`
+   |
+note: required by a bound in `Options`
+  --> src/lib.rs
+   |
+   | pub trait Options<Arg: Arguments>: Sized {
+   |                        ^^^^^^^^^ required by this bound in `Options`
+
+error[E0277]: the trait bound `Arg: uutils_args::Arguments` is not satisfied
+  --> tests/derive/arg_just_minus.rs:18:17
+   |
+18 |     Settings {}.parse(std::env::args_os()).unwrap();
+   |                 ^^^^^ the trait `uutils_args::Arguments` is not implemented for `Arg`
+   |
+note: required by a bound in `uutils_args::Options::parse`
+  --> src/lib.rs
+   |
+   | pub trait Options<Arg: Arguments>: Sized {
+   |                        ^^^^^^^^^ required by this bound in `Options::parse`
+...
+   |     fn parse<I>(mut self, args: I) -> Result<(Self, Vec<OsString>), Error>
+   |        ----- required by a bound in this associated function

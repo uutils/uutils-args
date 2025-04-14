@@ -1,0 +1,16 @@
+error[E0425]: cannot find function `banana` in this scope
+ --> tests/derive/arg_bare_keyword.rs:5:11
+  |
+5 |     #[arg(banana)] // Oops!
+  |           ^^^^^^ not found in this scope
+
+error[E0618]: expected function, found `Arg`
+ --> tests/derive/arg_bare_keyword.rs:3:10
+  |
+3 | #[derive(Arguments)]
+  |          ^^^^^^^^^ call expression requires function
+...
+6 |     Something,
+  |     --------- `Arg::Something` defined here
+  |
+  = note: this error originates in the derive macro `Arguments` (in Nightly builds, run with -Z macro-backtrace for more info)
