@@ -103,7 +103,6 @@ pub trait Arguments: Sized {
         Ok(())
     }
 
-    #[cfg(feature = "complete")]
     fn complete() -> uutils_args_complete::Command<'static>;
 }
 
@@ -197,7 +196,6 @@ pub trait Options<Arg: Arguments>: Sized {
         }
     }
 
-    #[cfg(feature = "complete")]
     fn complete(shell: &str) -> String {
         uutils_args_complete::render(&Arg::complete(), shell)
     }

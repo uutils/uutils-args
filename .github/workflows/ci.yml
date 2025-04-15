@@ -20,7 +20,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --features complete --workspace
+      - run: cargo test --workspace
 
   rustfmt:
     name: Rustfmt
@@ -48,7 +48,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - name: Clippy check
-        run: cargo clippy --all-targets --features complete --workspace -- -D warnings
+        run: cargo clippy --all-targets --workspace -- -D warnings
 
   docs:
     name: Docs
