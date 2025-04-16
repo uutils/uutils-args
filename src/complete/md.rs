@@ -1,7 +1,7 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use crate::{Command, Flag, Value};
+use crate::complete::{Command, Flag, Value};
 
 /// Render command to a markdown file for mdbook
 pub fn render(c: &Command) -> String {

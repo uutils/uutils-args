@@ -9,6 +9,7 @@
 //!
 #![doc = include_str!("../README.md")]
 
+pub mod complete;
 mod error;
 pub mod internal;
 pub mod positional;
@@ -103,7 +104,7 @@ pub trait Arguments: Sized {
         Ok(())
     }
 
-    fn complete() -> uutils_args_complete::Command<'static>;
+    fn complete() -> complete::Command<'static>;
 }
 
 /// An iterator over arguments.
@@ -197,7 +198,7 @@ pub trait Options<Arg: Arguments>: Sized {
     }
 
     fn complete(shell: &str) -> String {
-        uutils_args_complete::render(&Arg::complete(), shell)
+        complete::render(&Arg::complete(), shell)
     }
 }
 

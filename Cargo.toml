@@ -10,13 +10,13 @@ repository = "https://github.com/uutils/uutils-args"
 readme = "README.md"
 
 [dependencies]
-uutils-args-derive = { version = "0.1.0", path = "derive" }
-uutils-args-complete = { version = "0.1.0", path = "complete" }
-strsim = "0.11.1"
 lexopt = "0.3.0"
+roff = "0.2.1"
+strsim = "0.11.1"
+uutils-args-derive = { version = "0.1.0", path = "derive" }
 
 [features]
 parse-is-complete = []
 
 [workspace]
-members = ["derive", "complete"]
+members = ["derive"]

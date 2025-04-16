@@ -1,7 +1,7 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use crate::{Command, Flag};
+use crate::complete::{Command, Flag};
 
 /// Create completion script for `bash`
 ///
@@ -35,7 +35,7 @@ pub fn render(c: &Command) -> String {
 #[cfg(test)]
 mod test {
     use super::render;
-    use crate::{Arg, Command, Flag, Value};
+    use crate::complete::{Arg, Command, Flag, Value};
 
     #[test]
     fn simple() {

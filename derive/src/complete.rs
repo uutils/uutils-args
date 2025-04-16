@@ -49,11 +49,15 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
             .map(|Flag { flag, value }| {
                 let flag = flag.to_string();
                 let value = match value {
-                    Value::No => quote!(::uutils_args_complete::Value::No),
-                    Value::Optional(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
-                    Value::Required(name) => quote!(::uutils_args_complete::Value::Required(#name)),
+                    Value::No => quote!(::uutils_args::complete::Value::No),
+                    Value::Optional(name) => {
+                        quote!(::uutils_args::complete::Value::Optional(#name))
+                    }
+                    Value::Required(name) => {
+                        quote!(::uutils_args::complete::Value::Required(#name))
+                    }
                 };
-                quote!(::uutils_args_complete::Flag {
+                quote!(::uutils_args::complete::Flag {
                     flag: #flag,
                     value: #value
                 })
@@ -64,11 +68,15 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
             .iter()
             .map(|Flag { flag, value }| {
                 let value = match value {
-                    Value::No => quote!(::uutils_args_complete::Value::No),
-                    Value::Optional(name) => quote!(::uutils_args_complete::Value::Optional(#name)),
-                    Value::Required(name) => quote!(::uutils_args_complete::Value::Required(#name)),
+                    Value::No => quote!(::uutils_args::complete::Value::No),
+                    Value::Optional(name) => {
+                        quote!(::uutils_args::complete::Value::Optional(#name))
+                    }
+                    Value::Required(name) => {
+                        quote!(::uutils_args::complete::Value::Required(#name))
+                    }
                 };
-                quote!(::uutils_args_complete::Flag {
+                quote!(::uutils_args::complete::Flag {
                     flag: #flag,
                     value: #value
                 })
@@ -81,7 +89,7 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
         };
 
         arg_specs.push(quote!(
-            ::uutils_args_complete::Arg {
+            ::uutils_args::complete::Arg {
                 short: vec![#(#short),*],
                 long: vec![#(#long),*],
                 help: #help,
@@ -90,7 +98,7 @@ pub fn complete(args: &[Argument], file: &Option<String>) -> TokenStream {
         ))
     }
 
-    quote!(::uutils_args_complete::Command {
+    quote!(::uutils_args::complete::Command {
         name: option_env!("CARGO_BIN_NAME").unwrap_or(env!("CARGO_PKG_NAME")),
         summary: #summary,
         after_options: #after_options,
