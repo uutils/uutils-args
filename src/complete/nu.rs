@@ -1,7 +1,7 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use crate::{Arg, Command, Flag, Value, ValueHint};
+use crate::complete::{Arg, Command, Flag, Value, ValueHint};
 use std::fmt::Write;
 
 /// Create completion script for `nushell`

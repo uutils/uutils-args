@@ -1,7 +1,7 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
-use crate::{Command, Flag, ValueHint};
+use crate::complete::{Command, Flag, ValueHint};
 
 /// Create completion script for `fish`
 ///
@@ -45,7 +45,7 @@ fn render_value_hint(value: &ValueHint) -> String {
 #[cfg(test)]
 mod test {
     use super::render;
-    use crate::{Arg, Command, Flag, Value, ValueHint};
+    use crate::complete::{Arg, Command, Flag, Value, ValueHint};
 
     #[test]
     fn short() {

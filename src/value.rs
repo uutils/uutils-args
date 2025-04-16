@@ -1,12 +1,12 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
+use crate::complete::ValueHint;
 use crate::error::{Error, ErrorKind};
 use std::{
     ffi::{OsStr, OsString},
     path::PathBuf,
 };
-use uutils_args_complete::ValueHint;
 
 pub type ValueResult<T> = Result<T, Box<dyn std::error::Error + Send + Sync + 'static>>;
 
@@ -95,7 +95,7 @@ where
         Ok(Some(T::from_value(value)?))
     }
 
-    fn value_hint() -> uutils_args_complete::ValueHint {
+    fn value_hint() -> ValueHint {
         T::value_hint()
     }
 }
