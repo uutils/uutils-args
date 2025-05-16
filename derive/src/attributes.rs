@@ -69,6 +69,7 @@ impl ArgumentsAttr {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum ArgAttr {
     Option(OptionAttr),
     Free(FreeAttr),
