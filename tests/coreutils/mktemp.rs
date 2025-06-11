@@ -4,7 +4,7 @@ use std::{
 };
 
 use uutils_args::{
-    Arguments, Options,
+    Arguments, Options, Parsed,
     positional::{Opt, Unpack},
 };
 
@@ -58,7 +58,11 @@ where
     I: IntoIterator,
     I::Item: Into<OsString>,
 {
-    let (s, ops) = Settings::default().parse(args)?;
+    let Parsed::<Settings> {
+        settings: s,
+        operands: ops,
+        ..
+    } = Settings::default().parse(args)?;
     let file = Opt("FILE").unpack(ops)?;
     Ok((s, file))
 }

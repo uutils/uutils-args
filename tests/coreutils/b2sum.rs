@@ -63,27 +63,33 @@ impl Options<Arg> for Settings {
 
 #[test]
 fn binary() {
-    assert!(!Settings::default().parse(["b2sum"]).unwrap().0.binary);
+    assert!(!Settings::default().parse(["b2sum"]).unwrap().trim().binary);
     assert!(
         !Settings::default()
             .parse(["b2sum", "--text"])
             .unwrap()
-            .0
+            .trim()
             .binary
     );
-    assert!(!Settings::default().parse(["b2sum", "-t"]).unwrap().0.binary);
+    assert!(
+        !Settings::default()
+            .parse(["b2sum", "-t"])
+            .unwrap()
+            .trim()
+            .binary
+    );
     assert!(
         !Settings::default()
             .parse(["b2sum", "--binary", "--text"])
             .unwrap()
-            .0
+            .trim()
             .binary
     );
     assert!(
         !Settings::default()
             .parse(["b2sum", "-b", "-t"])
             .unwrap()
-            .0
+            .trim()
             .binary
     );
 
@@ -91,22 +97,28 @@ fn binary() {
         Settings::default()
             .parse(["b2sum", "--binary"])
             .unwrap()
-            .0
+            .trim()
             .binary
     );
-    assert!(Settings::default().parse(["b2sum", "-b"]).unwrap().0.binary);
+    assert!(
+        Settings::default()
+            .parse(["b2sum", "-b"])
+            .unwrap()
+            .trim()
+            .binary
+    );
     assert!(
         Settings::default()
             .parse(["b2sum", "--text", "--binary"])
             .unwrap()
-            .0
+            .trim()
             .binary
     );
     assert!(
         Settings::default()
             .parse(["b2sum", "-t", "-b"])
             .unwrap()
-            .0
+            .trim()
             .binary
     );
 }
@@ -117,7 +129,7 @@ fn check_output() {
         Settings::default()
             .parse(["b2sum", "--warn"])
             .unwrap()
-            .0
+            .trim()
             .check_output,
         CheckOutput::Warn
     );
@@ -125,7 +137,7 @@ fn check_output() {
         Settings::default()
             .parse(["b2sum", "--quiet"])
             .unwrap()
-            .0
+            .trim()
             .check_output,
         CheckOutput::Quiet
     );
@@ -133,7 +145,7 @@ fn check_output() {
         Settings::default()
             .parse(["b2sum", "--status"])
             .unwrap()
-            .0
+            .trim()
             .check_output,
         CheckOutput::Status
     );
@@ -141,7 +153,7 @@ fn check_output() {
         Settings::default()
             .parse(["b2sum", "--status", "--warn"])
             .unwrap()
-            .0
+            .trim()
             .check_output,
         CheckOutput::Warn
     );
@@ -149,7 +161,7 @@ fn check_output() {
         Settings::default()
             .parse(["b2sum", "--status", "--warn"])
             .unwrap()
-            .0
+            .trim()
             .check_output,
         CheckOutput::Warn
     );
@@ -158,7 +170,7 @@ fn check_output() {
         Settings::default()
             .parse(["b2sum", "--warn", "--quiet"])
             .unwrap()
-            .0
+            .trim()
             .check_output,
         CheckOutput::Quiet
     );
@@ -167,7 +179,7 @@ fn check_output() {
         Settings::default()
             .parse(["b2sum", "--quiet", "--status"])
             .unwrap()
-            .0
+            .trim()
             .check_output,
         CheckOutput::Status
     );
@@ -179,7 +191,7 @@ fn files() {
         Settings::default()
             .parse(["b2sum", "foo", "bar"])
             .unwrap()
-            .1,
+            .operands,
         vec![OsString::from("foo"), OsString::from("bar")]
     );
 }

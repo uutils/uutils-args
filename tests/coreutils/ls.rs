@@ -424,7 +424,7 @@ impl Options<Arg> for Settings {
 #[test]
 fn default() {
     assert_eq!(
-        Settings::default().parse(["ls"]).unwrap().0,
+        Settings::default().parse(["ls"]).unwrap().trim(),
         Settings {
             format: Format::Columns,
             sort: Sort::Name,
@@ -455,95 +455,120 @@ fn default() {
 
 #[test]
 fn color() {
-    let (s, _operands) = Settings::default().parse(["ls", "--color"]).unwrap();
+    let s = Settings::default().parse(["ls", "--color"]).unwrap().trim();
     assert!(s.color);
 
-    let (s, _operands) = Settings::default().parse(["ls", "--color=always"]).unwrap();
+    let s = Settings::default()
+        .parse(["ls", "--color=always"])
+        .unwrap()
+        .trim();
     assert!(s.color);
 
-    let (s, _operands) = Settings::default().parse(["ls", "--color=never"]).unwrap();
+    let s = Settings::default()
+        .parse(["ls", "--color=never"])
+        .unwrap()
+        .trim();
     assert!(!s.color);
 }
 
 #[test]
 fn format() {
-    let (s, _operands) = Settings::default().parse(["ls", "-l"]).unwrap();
+    let s = Settings::default().parse(["ls", "-l"]).unwrap().trim();
     assert_eq!(s.format, Format::Long);
 
-    let (s, _operands) = Settings::default().parse(["ls", "-m"]).unwrap();
+    let s = Settings::default().parse(["ls", "-m"]).unwrap().trim();
     assert_eq!(s.format, Format::Commas);
 
-    let (s, _operands) = Settings::default()
+    let s = Settings::default()
         .parse(["ls", "--format=across"])
-        .unwrap();
+        .unwrap()
+        .trim();
     assert_eq!(s.format, Format::Across);
 
-    let (s, _operands) = Settings::default().parse(["ls", "--format=acr"]).unwrap();
+    let s = Settings::default()
+        .parse(["ls", "--format=acr"])
+        .unwrap()
+        .trim();
     assert_eq!(s.format, Format::Across);
 
-    let (s, _operands) = Settings::default().parse(["ls", "-o"]).unwrap();
+    let s = Settings::default().parse(["ls", "-o"]).unwrap().trim();
     assert_eq!(s.format, Format::Long);
     assert!(s.long_no_group && !s.long_no_owner && !s.long_numeric_uid_gid);
 
-    let (s, _operands) = Settings::default().parse(["ls", "-g"]).unwrap();
+    let s = Settings::default().parse(["ls", "-g"]).unwrap().trim();
     assert_eq!(s.format, Format::Long);
     assert!(!s.long_no_group && s.long_no_owner && !s.long_numeric_uid_gid);
 
-    let (s, _operands) = Settings::default().parse(["ls", "-n"]).unwrap();
+    let s = Settings::default().parse(["ls", "-n"]).unwrap().trim();
     assert_eq!(s.format, Format::Long);
     assert!(!s.long_no_group && !s.long_no_owner && s.long_numeric_uid_gid);
 
-    let (s, _operands) = Settings::default().parse(["ls", "-og"]).unwrap();
+    let s = Settings::default().parse(["ls", "-og"]).unwrap().trim();
     assert_eq!(s.format, Format::Long);
     assert!(s.long_no_group && s.long_no_owner && !s.long_numeric_uid_gid);
 
-    let (s, _operands) = Settings::default().parse(["ls", "-on"]).unwrap();
+    let s = Settings::default().parse(["ls", "-on"]).unwrap().trim();
     assert_eq!(s.format, Format::Long);
     assert!(s.long_no_group && !s.long_no_owner && s.long_numeric_uid_gid);
 
-    let (s, _operands) = Settings::default().parse(["ls", "-onCl"]).unwrap();
+    let s = Settings::default().parse(["ls", "-onCl"]).unwrap().trim();
     assert_eq!(s.format, Format::Long);
     assert!(s.long_no_group && !s.long_no_owner && s.long_numeric_uid_gid);
 }
 
 #[test]
 fn time() {
-    let (s, _operands) = Settings::default().parse(["ls", "--time=access"]).unwrap();
+    let s = Settings::default()
+        .parse(["ls", "--time=access"])
+        .unwrap()
+        .trim();
     assert_eq!(s.time, Time::Access);
 
-    let (s, _operands) = Settings::default().parse(["ls", "--time=a"]).unwrap();
+    let s = Settings::default()
+        .parse(["ls", "--time=a"])
+        .unwrap()
+        .trim();
     assert_eq!(s.time, Time::Access);
 }
 
 #[test]
 fn classify() {
-    let (s, _operands) = Settings::default()
+    let s = Settings::default()
         .parse(["ls", "--indicator-style=classify"])
-        .unwrap();
+        .unwrap()
+        .trim();
     assert_eq!(s.indicator_style, IndicatorStyle::Classify);
 
-    let (s, _operands) = Settings::default().parse(["ls", "--classify"]).unwrap();
+    let s = Settings::default()
+        .parse(["ls", "--classify"])
+        .unwrap()
+        .trim();
     assert_eq!(s.indicator_style, IndicatorStyle::Classify);
 
-    let (s, _operands) = Settings::default()
+    let s = Settings::default()
         .parse(["ls", "--classify=always"])
-        .unwrap();
+        .unwrap()
+        .trim();
     assert_eq!(s.indicator_style, IndicatorStyle::Classify);
 
-    let (s, _operands) = Settings::default()
+    let s = Settings::default()
         .parse(["ls", "--classify=none"])
-        .unwrap();
+        .unwrap()
+        .trim();
     assert_eq!(s.indicator_style, IndicatorStyle::None);
 
-    let (s, _operands) = Settings::default().parse(["ls", "-F"]).unwrap();
+    let s = Settings::default().parse(["ls", "-F"]).unwrap().trim();
     assert_eq!(s.indicator_style, IndicatorStyle::Classify);
 }
 
 #[test]
 fn sort() {
-    let (s, _operands) = Settings::default().parse(["ls", "--sort=time"]).unwrap();
+    let s = Settings::default()
+        .parse(["ls", "--sort=time"])
+        .unwrap()
+        .trim();
     assert_eq!(s.sort, Sort::Time);
 
-    let (s, _operands) = Settings::default().parse(["ls", "-X"]).unwrap();
+    let s = Settings::default().parse(["ls", "-X"]).unwrap().trim();
     assert_eq!(s.sort, Sort::Extension);
 }

@@ -1,7 +1,7 @@
 use std::ffi::OsString;
 
 use uutils_args::{
-    Arguments, Options,
+    Arguments, Options, Parsed,
     positional::{Opt, Unpack},
 };
 
@@ -50,9 +50,11 @@ where
     I: IntoIterator,
     I::Item: Into<OsString>,
 {
-    let (s, ops) = Settings::default().parse(args)?;
-    let file = Opt("FILE").unpack(ops)?;
-    Ok((s, file))
+    let Parsed::<Settings> {
+        settings, operands, ..
+    } = Settings::default().parse(args)?;
+    let file = Opt("FILE").unpack(operands)?;
+    Ok((settings, file))
 }
 
 #[test]

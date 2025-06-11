@@ -26,7 +26,7 @@ fn string_option() {
         Settings::default()
             .parse(["test", "--message=hello"])
             .unwrap()
-            .0
+            .trim()
             .message,
         "hello"
     );
@@ -67,7 +67,7 @@ fn enum_option() {
         Settings::default()
             .parse(["test", "--format=bar"])
             .unwrap()
-            .0
+            .trim()
             .format,
         Format::Bar
     );
@@ -76,7 +76,7 @@ fn enum_option() {
         Settings::default()
             .parse(["test", "--format", "baz"])
             .unwrap()
-            .0
+            .trim()
             .format,
         Format::Baz
     );
@@ -115,7 +115,7 @@ fn enum_option_with_fields() {
         Settings::default()
             .parse(["test", "-i=thin"])
             .unwrap()
-            .0
+            .trim()
             .indent,
         Indent::Spaces(4)
     );
@@ -123,7 +123,7 @@ fn enum_option_with_fields() {
         Settings::default()
             .parse(["test", "-i=wide"])
             .unwrap()
-            .0
+            .trim()
             .indent,
         Indent::Spaces(8)
     );
@@ -173,7 +173,7 @@ fn enum_with_complex_from_value() {
         Settings::default()
             .parse(["test", "-i=tabs"])
             .unwrap()
-            .0
+            .trim()
             .indent,
         Indent::Tabs
     );
@@ -181,7 +181,7 @@ fn enum_with_complex_from_value() {
         Settings::default()
             .parse(["test", "-i=4"])
             .unwrap()
-            .0
+            .trim()
             .indent,
         Indent::Spaces(4)
     );
@@ -222,7 +222,7 @@ fn color() {
         Settings::default()
             .parse(["test", "--color=yes"])
             .unwrap()
-            .0
+            .trim()
             .color,
         Color::Always
     );
@@ -230,7 +230,7 @@ fn color() {
         Settings::default()
             .parse(["test", "--color=always"])
             .unwrap()
-            .0
+            .trim()
             .color,
         Color::Always
     );
@@ -238,7 +238,7 @@ fn color() {
         Settings::default()
             .parse(["test", "--color=no"])
             .unwrap()
-            .0
+            .trim()
             .color,
         Color::Never
     );
@@ -246,7 +246,7 @@ fn color() {
         Settings::default()
             .parse(["test", "--color=never"])
             .unwrap()
-            .0
+            .trim()
             .color,
         Color::Never
     );
@@ -254,7 +254,7 @@ fn color() {
         Settings::default()
             .parse(["test", "--color=auto"])
             .unwrap()
-            .0
+            .trim()
             .color,
         Color::Auto
     );
@@ -262,7 +262,7 @@ fn color() {
         Settings::default()
             .parse(["test", "--color"])
             .unwrap()
-            .0
+            .trim()
             .color,
         Color::Always
     )
@@ -301,9 +301,10 @@ fn actions() {
         }
     }
 
-    let (settings, _operands) = Settings::default()
+    let settings = Settings::default()
         .parse(["test", "-m=Hello", "-m=World", "--send"])
-        .unwrap();
+        .unwrap()
+        .trim();
     assert_eq!(settings.messages, vec!["Hello", "World"]);
     assert_eq!(settings.last_message, "World");
     assert!(settings.send);
@@ -333,11 +334,19 @@ fn width() {
     }
 
     assert_eq!(
-        Settings::default().parse(["test", "-w=0"]).unwrap().0.width,
+        Settings::default()
+            .parse(["test", "-w=0"])
+            .unwrap()
+            .trim()
+            .width,
         None
     );
     assert_eq!(
-        Settings::default().parse(["test", "-w=1"]).unwrap().0.width,
+        Settings::default()
+            .parse(["test", "-w=1"])
+            .unwrap()
+            .trim()
+            .width,
         Some(1)
     );
 }
@@ -392,44 +401,84 @@ fn integers() {
     }
 
     assert_eq!(
-        Settings::default().parse(["test", "--u8=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--u8=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
     assert_eq!(
-        Settings::default().parse(["test", "--u16=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--u16=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
     assert_eq!(
-        Settings::default().parse(["test", "--u32=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--u32=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
     assert_eq!(
-        Settings::default().parse(["test", "--u64=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--u64=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
     assert_eq!(
-        Settings::default().parse(["test", "--u128=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--u128=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
 
     assert_eq!(
-        Settings::default().parse(["test", "--i8=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--i8=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
     assert_eq!(
-        Settings::default().parse(["test", "--i16=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--i16=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
     assert_eq!(
-        Settings::default().parse(["test", "--i32=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--i32=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
     assert_eq!(
-        Settings::default().parse(["test", "--i64=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--i64=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
     assert_eq!(
-        Settings::default().parse(["test", "--i128=5"]).unwrap().0.n,
+        Settings::default()
+            .parse(["test", "--i128=5"])
+            .unwrap()
+            .trim()
+            .n,
         5
     );
 }
@@ -469,14 +518,14 @@ fn ls_classify() {
     }
 
     assert_eq!(
-        Settings::default().parse(["test"]).unwrap().0.classify,
+        Settings::default().parse(["test"]).unwrap().trim().classify,
         When::Auto
     );
     assert_eq!(
         Settings::default()
             .parse(["test", "--classify=never"])
             .unwrap()
-            .0
+            .trim()
             .classify,
         When::Never,
     );
@@ -484,7 +533,7 @@ fn ls_classify() {
         Settings::default()
             .parse(["test", "--classify"])
             .unwrap()
-            .0
+            .trim()
             .classify,
         When::Always,
     );
@@ -492,7 +541,7 @@ fn ls_classify() {
         Settings::default()
             .parse(["test", "-F"])
             .unwrap()
-            .0
+            .trim()
             .classify,
         When::Always,
     );
@@ -522,13 +571,22 @@ fn mktemp_tmpdir() {
         }
     }
 
-    let (settings, _operands) = Settings::default().parse(["test", "-p", "X"]).unwrap();
+    let settings = Settings::default()
+        .parse(["test", "-p", "X"])
+        .unwrap()
+        .trim();
     assert_eq!(settings.tmpdir.unwrap(), "X");
 
-    let (settings, _operands) = Settings::default().parse(["test", "--tmpdir=X"]).unwrap();
+    let settings = Settings::default()
+        .parse(["test", "--tmpdir=X"])
+        .unwrap()
+        .trim();
     assert_eq!(settings.tmpdir.unwrap(), "X");
 
-    let (settings, _operands) = Settings::default().parse(["test", "--tmpdir"]).unwrap();
+    let settings = Settings::default()
+        .parse(["test", "--tmpdir"])
+        .unwrap()
+        .trim();
     assert_eq!(settings.tmpdir.unwrap(), "/tmp");
 
     assert!(Settings::default().parse(["test", "-p"]).is_err());
@@ -601,16 +659,28 @@ fn deprecated() {
     }
 
     assert_eq!(
-        Settings::default().parse(["test", "-10"]).unwrap().0.n1,
+        Settings::default()
+            .parse(["test", "-10"])
+            .unwrap()
+            .trim()
+            .n1,
         10usize
     );
     assert!(Settings::default().parse(["test", "--10"]).is_err());
     assert_eq!(
-        Settings::default().parse(["test", "+10"]).unwrap().0.n2,
+        Settings::default()
+            .parse(["test", "+10"])
+            .unwrap()
+            .trim()
+            .n2,
         10isize
     );
     assert_eq!(
-        Settings::default().parse(["test", "+-10"]).unwrap().0.n2,
+        Settings::default()
+            .parse(["test", "+-10"])
+            .unwrap()
+            .trim()
+            .n2,
         -10isize
     );
 }

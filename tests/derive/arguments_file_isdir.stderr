@@ -30,5 +30,5 @@ note: required by a bound in `uutils_args::Options::parse`
    | pub trait Options<Arg: Arguments>: Sized {
    |                        ^^^^^^^^^ required by this bound in `Options::parse`
 ...
-   |     fn parse<I>(mut self, args: I) -> Result<(Self, Vec<OsString>), Error>
+   |     fn parse<I>(mut self, args: I) -> Result<Parsed<Self>, Error>
    |        ----- required by a bound in this associated function

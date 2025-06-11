@@ -1,6 +1,6 @@
 use std::ffi::OsString;
 
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Options, Parsed};
 
 #[test]
 fn timeout_like() {
@@ -26,7 +26,11 @@ fn timeout_like() {
         }
     }
 
-    let (settings, command) = Settings::default()
+    let Parsed::<Settings> {
+        settings,
+        operands: command,
+        ..
+    } = Settings::default()
         .parse(["timeout", "-v", "10", "foo", "-v"])
         .unwrap();
 
@@ -40,7 +44,11 @@ fn timeout_like() {
         ]
     );
 
-    let (settings, command) = Settings::default()
+    let Parsed::<Settings> {
+        settings,
+        operands: command,
+        ..
+    } = Settings::default()
         .parse(["timeout", "10", "foo", "-v"])
         .unwrap();
 
@@ -54,7 +62,11 @@ fn timeout_like() {
         ]
     );
 
-    let (settings, command) = Settings::default()
+    let Parsed::<Settings> {
+        settings,
+        operands: command,
+        ..
+    } = Settings::default()
         .parse(["timeout", "--", "10", "-v"])
         .unwrap();
 

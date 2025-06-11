@@ -206,29 +206,31 @@ impl Options<Arg> for Settings {
     }
 }
 
-fn parse_head<I>(iter: I) -> Result<(Settings, Vec<OsString>), uutils_args::Error>
+fn parse_head<I>(iter: I) -> Result<(Settings, Option<PathBuf>, Vec<OsString>), uutils_args::Error>
 where
     I: IntoIterator + Clone,
     I::Item: Into<OsString>,
 {
     match parse_deprecated(iter.clone()) {
-        Some(s) => Ok(s),
-        None => Settings::default().parse(iter),
+        Some(s) => Ok((s.0, None, s.1)),
+        None => Settings::default()
+            .parse(iter)
+            .map(|p| (p.settings, p.bin_path, p.operands)),
     }
 }
 
 #[test]
 fn shorthand() {
-    let (s, _operands) = parse_head(["head", "-20", "some_file"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-20", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
     assert_eq!(s.mode, Mode::Lines);
 
-    let (s, _operands) = parse_head(["head", "-100cq", "some_file"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-100cq", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(100));
     assert_eq!(s.mode, Mode::Bytes);
 
     // Corner case where the shorthand does not apply
-    let (s, operands) = parse_head(["head", "-c", "42"]).unwrap();
+    let (s, _bin_path, operands) = parse_head(["head", "-c", "42"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(42));
     assert_eq!(s.mode, Mode::Bytes);
     assert_eq!(operands, Vec::<PathBuf>::new());
@@ -236,34 +238,34 @@ fn shorthand() {
 
 #[test]
 fn standard_input() {
-    let (_s, operands) = parse_head(["head", "-"]).unwrap();
+    let (_s, _bin_path, operands) = parse_head(["head", "-"]).unwrap();
     assert_eq!(operands, vec![PathBuf::from("-")])
 }
 
 #[test]
 fn normal_format() {
-    let (s, _operands) = parse_head(["head", "-c", "20", "some_file"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-c", "20", "some_file"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
     assert_eq!(s.mode, Mode::Bytes);
 }
 
 #[test]
 fn signum() {
-    let (s, _operands) = parse_head(["head", "-n", "20"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-n", "20"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
-    let (s, _operands) = parse_head(["head", "-n", "-20"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-n", "-20"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20));
-    let (s, _operands) = parse_head(["head", "-n", "+20"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-n", "+20"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(20));
 
-    let (s, _operands) = parse_head(["head", "-n", "20b"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-n", "20b"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(20 * 512));
-    let (s, _operands) = parse_head(["head", "-n", "+20b"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-n", "+20b"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(20 * 512));
 
-    let (s, _operands) = parse_head(["head", "-n", "b"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-n", "b"]).unwrap();
     assert_eq!(s.number, SigNum::Negative(512));
-    let (s, _operands) = parse_head(["head", "-n", "+b"]).unwrap();
+    let (s, _bin_path, _operands) = parse_head(["head", "-n", "+b"]).unwrap();
     assert_eq!(s.number, SigNum::Positive(512));
 
     assert!(parse_head(["head", "-n", "20invalid_suffix"]).is_err());

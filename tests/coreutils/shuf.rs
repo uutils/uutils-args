@@ -1,6 +1,6 @@
 use std::{ffi::OsString, path::PathBuf};
 use uutils_args::{
-    Arguments, Options,
+    Arguments, Options, Parsed,
     positional::{Many0, Opt, Unpack},
 };
 
@@ -33,7 +33,11 @@ impl Options<Arg> for Settings {
 }
 
 fn parse(args: &[&str]) -> Result<Settings, uutils_args::Error> {
-    let (mut settings, operands) = Settings::default().parse(args)?;
+    let Parsed::<Settings> {
+        mut settings,
+        operands,
+        ..
+    } = Settings::default().parse(args)?;
 
     if settings.echo {
         settings.echo_args = Many0("ARG").unpack(operands)?;

@@ -44,7 +44,7 @@ To represent the program configuration we create a struct called `Settings`, whi
 Any arguments that are not flags are returned as well as part of the tuple returned by `parse`. These do not have special treatment in this library.
 
 ```rust
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Options, Parsed};
 use std::ffi::OsString;
 
 #[derive(Arguments)]
@@ -67,14 +67,14 @@ impl Options<Arg> for Settings {
     }
 }
 
-let (settings, operands) = Settings::default().parse(["test"]).unwrap();
+let Parsed::<Settings> { settings, bin_path: _, operands } = Settings::default().parse(["test"]).unwrap();
 assert!(!settings.force);
 assert_eq!(operands, Vec::<OsString>::new());
 
-let (settings, operands) = Settings::default().parse(["test", "-f"]).unwrap();
+let Parsed::<Settings> { settings, bin_path: _, operands } = Settings::default().parse(["test", "-f"]).unwrap();
 assert!(settings.force);
 
-let (settings, operands) = Settings::default().parse(["test", "foo"]).unwrap();
+let Parsed::<Settings> { settings, bin_path: _, operands } = Settings::default().parse(["test", "foo"]).unwrap();
 assert!(!settings.force);
 assert_eq!(operands, vec![OsString::from("foo")]);
 ```
@@ -84,7 +84,7 @@ assert_eq!(operands, vec![OsString::from("foo")]);
 Of course, we can define multiple flags. If these arguments change the same fields of `Settings`, then they will override. This is important: by default none of the arguments will "conflict", they will always simply be processed in order.
 
 ```rust
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Options, Parsed};
 use std::ffi::OsString;
 
 #[derive(Arguments)]
@@ -110,15 +110,15 @@ impl Options<Arg> for Settings {
     }
 }
 
-let (settings, operands) = Settings::default().parse(["test"]).unwrap();
+let Parsed::<Settings> { settings, bin_path: _, operands } = Settings::default().parse(["test"]).unwrap();
 assert!(!settings.force);
 assert_eq!(operands, Vec::<OsString>::new());
 
-let (settings, operands) = Settings::default().parse(["test", "-f", "some-operand"]).unwrap();
+let Parsed::<Settings> { settings, bin_path: _, operands } = Settings::default().parse(["test", "-f", "some-operand"]).unwrap();
 assert!(settings.force);
 assert_eq!(operands, vec!["some-operand"]);
 
-let (settings, operands) = Settings::default().parse(["test", "-f", "-F", "some-other-operand"]).unwrap();
+let Parsed::<Settings> { settings, bin_path: _, operands } = Settings::default().parse(["test", "-f", "-F", "some-other-operand"]).unwrap();
 assert!(!settings.force);
 assert_eq!(operands, vec!["some-other-operand"]);
 ```
@@ -171,11 +171,11 @@ enum Arg {
 # }
 #
 # assert_eq!(
-#     Settings::default().parse(["test"]).unwrap().0.name,
+#     Settings::default().parse(["test"]).unwrap().trim().name,
 #     OsString::new(),
 # );
 # assert_eq!(
-#     Settings::default().parse(["test", "--name=John"]).unwrap().0.name,
+#     Settings::default().parse(["test", "--name=John"]).unwrap().trim().name,
 #     OsString::from("John"),
 # );
 ```
@@ -209,11 +209,11 @@ enum Arg {
 # }
 #
 # assert_eq!(
-#     Settings::default().parse(["test", "--name"]).unwrap().0.name,
+#     Settings::default().parse(["test", "--name"]).unwrap().trim().name,
 #     OsString::from("anonymous"),
 # );
 # assert_eq!(
-#     Settings::default().parse(["test", "--name=John"]).unwrap().0.name,
+#     Settings::default().parse(["test", "--name=John"]).unwrap().trim().name,
 #     OsString::from("John"),
 # );
 ```
@@ -246,9 +246,9 @@ enum Arg {
 #     }
 # }
 #
-# assert!(!Settings::default().parse(["test"]).unwrap().0.force);
-# assert!(Settings::default().parse(["test", "-f"]).unwrap().0.force);
-# assert!(!Settings::default().parse(["test", "-F"]).unwrap().0.force);
+# assert!(!Settings::default().parse(["test"]).unwrap().trim().force);
+# assert!(Settings::default().parse(["test", "-f"]).unwrap().trim().force);
+# assert!(!Settings::default().parse(["test", "-F"]).unwrap().trim().force);
 ```
 
 This is particularly interesting for defining "shortcut" arguments. For example, `ls` takes a `--sort=WORD` argument, that defines how the files should be sorted. But it also has shorthands like `-t`, which is the same as `--sort=time`. All of these can be implemented on one variant:
@@ -282,9 +282,9 @@ enum Arg {
 #     }
 # }
 #
-# assert_eq!(Settings::default().parse(["test"]).unwrap().0.sort, String::new());
-# assert_eq!(Settings::default().parse(["test", "--sort=time"]).unwrap().0.sort, String::from("time"));
-# assert_eq!(Settings::default().parse(["test", "-t"]).unwrap().0.sort, String::from("time"));
+# assert_eq!(Settings::default().parse(["test"]).unwrap().trim().sort, String::new());
+# assert_eq!(Settings::default().parse(["test", "--sort=time"]).unwrap().trim().sort, String::from("time"));
+# assert_eq!(Settings::default().parse(["test", "-t"]).unwrap().trim().sort, String::from("time"));
 ```
 
 <div class="chapters">

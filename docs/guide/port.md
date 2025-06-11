@@ -102,7 +102,7 @@ impl Options<Arg> for Settings {
     }
 }
 
-let a = Settings::default().parse(std::env::args_os()).unwrap().0.a;
+let a = Settings::default().parse(std::env::args_os()).unwrap().trim().a;
 ```
 
 ### `ArgAction::SetFalse`
@@ -146,7 +146,7 @@ impl Options<Arg> for Settings {
     }
 }
 
-let a = Settings::default().parse(std::env::args_os()).unwrap().0.a;
+let a = Settings::default().parse(std::env::args_os()).unwrap().trim().a;
 ```
 
 ### `ArgAction::Count`
@@ -185,7 +185,7 @@ impl Options<Arg> for Settings {
     }
 }
 
-let a = Settings::default().parse(std::env::args_os()).unwrap().0.a;
+let a = Settings::default().parse(std::env::args_os()).unwrap().trim().a;
 ```
 
 ### `ArgAction::Set`
@@ -226,7 +226,7 @@ impl Options<Arg> for Settings {
     }
 }
 
-let a = Settings::default().parse(std::env::args_os()).unwrap().0.a;
+let a = Settings::default().parse(std::env::args_os()).unwrap().trim().a;
 ```
 
 ### `ArgAction::Append`
@@ -267,7 +267,7 @@ impl Options<Arg> for Settings {
     }
 }
 
-let a = Settings::default().parse(std::env::args_os()).unwrap().0.a;
+let a = Settings::default().parse(std::env::args_os()).unwrap().trim().a;
 ```
 
 <div class="chapters">

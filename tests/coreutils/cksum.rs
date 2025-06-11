@@ -89,7 +89,7 @@ fn assert_format(args: &[&str], expected: ResultingFormat) {
     full_argv.extend(args);
     let result = Settings::default().parse(full_argv).unwrap();
     assert_eq!(
-        (result.0.format(), result.1.as_slice()),
+        (result.settings.format(), result.operands.as_slice()),
         (expected, [].as_slice()),
         "{:?}",
         args

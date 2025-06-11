@@ -1,7 +1,7 @@
 use std::ffi::OsString;
 
 use uutils_args::{
-    Arguments, Options,
+    Arguments, Options, Parsed,
     positional::{Many1, Unpack},
 };
 
@@ -40,7 +40,11 @@ impl Options<Arg> for Settings {
 }
 
 fn parse(args: &[&str]) -> Result<Settings, uutils_args::Error> {
-    let (mut settings, operands) = Settings::default().parse(args)?;
+    let Parsed::<Settings> {
+        mut settings,
+        operands,
+        ..
+    } = Settings::default().parse(args)?;
 
     if settings.multiple {
         let names = Many1("FILE").unpack(operands)?;

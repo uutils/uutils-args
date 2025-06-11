@@ -57,7 +57,7 @@ pub use uutils_args_derive::Arguments;
 pub use error::{Error, ErrorKind};
 pub use value::{Value, ValueError, ValueResult};
 
-use std::{ffi::OsString, marker::PhantomData};
+use std::{borrow::Borrow, ffi::OsString, marker::PhantomData, path::PathBuf};
 
 /// A wrapper around a type implementing [`Arguments`] that adds `Help`
 /// and `Version` variants.
@@ -114,6 +114,21 @@ struct ArgumentIter<T: Arguments> {
     t: PhantomData<T>,
 }
 
+/// A parsed settings with bin_path and operands from arguments.
+pub struct Parsed<S> {
+    pub bin_path: Option<PathBuf>,
+    pub operands: Vec<OsString>,
+    pub settings: S,
+}
+
+impl<S> Parsed<S> {
+    /// A parsed settings without bin_path and operands
+    pub fn trim(self) -> S {
+        let Self { settings, .. } = self;
+        settings
+    }
+}
+
 impl<T: Arguments> ArgumentIter<T> {
     fn from_args<I>(args: I) -> Self
     where
@@ -134,7 +149,17 @@ impl<T: Arguments> ArgumentIter<T> {
         })? {
             match arg {
                 Argument::Help => {
-                    print!("{}", T::help(self.parser.bin_name().unwrap()));
+                    print!(
+                        "{}",
+                        T::help(
+                            self.bin_path()
+                                .unwrap()
+                                .file_name()
+                                .unwrap_or_default()
+                                .to_string_lossy()
+                                .borrow()
+                        )
+                    );
                     std::process::exit(0);
                 }
                 Argument::Version => {
@@ -151,6 +176,10 @@ impl<T: Arguments> ArgumentIter<T> {
             }
         }
         Ok(None)
+    }
+
+    pub fn bin_path(&self) -> Option<PathBuf> {
+        self.parser.bin_name().map(PathBuf::from)
     }
 }
 
@@ -170,7 +199,7 @@ pub trait Options<Arg: Arguments>: Sized {
 
     /// Parse an iterator of arguments into the options
     #[allow(unused_mut)]
-    fn parse<I>(mut self, args: I) -> Result<(Self, Vec<OsString>), Error>
+    fn parse<I>(mut self, args: I) -> Result<Parsed<Self>, Error>
     where
         I: IntoIterator,
         I::Item: Into<OsString>,
@@ -193,7 +222,11 @@ pub trait Options<Arg: Arguments>: Sized {
             while let Some(arg) = iter.next_arg()? {
                 self.apply(arg)?;
             }
-            Ok((self, iter.positional_arguments))
+            Ok(Parsed::<Self> {
+                bin_path: iter.bin_path(),
+                operands: iter.positional_arguments,
+                settings: self,
+            })
         }
     }
 

@@ -48,7 +48,7 @@ For more information on these traits, see their respective documentation:
 Below is a minimal example of a full CLI application using this library.
 
 ```rust
-use uutils_args::{Arguments, Options};
+use uutils_args::{Arguments, Options, Parsed};
 
 #[derive(Arguments)]
 enum Arg {
@@ -84,7 +84,7 @@ impl Options<Arg> for Settings {
 }
 
 fn run(args: &[&str]) -> String {
-    let (s, operands) = Settings::default().parse(args).unwrap();
+    let Parsed::<Settings>{ settings: s, bin_path, operands } = Settings::default().parse(args).unwrap();
     let text = operands.iter().map(|s| s.to_string_lossy()).collect::<Vec<_>>().join(" ");
     let mut output = if s.caps {
         text.to_uppercase()

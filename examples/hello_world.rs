@@ -33,12 +33,13 @@ impl Options<Arg> for Settings {
 }
 
 fn main() -> Result<(), uutils_args::Error> {
-    let (settings, _operands) = Settings {
+    let settings = Settings {
         name: String::new(),
         count: 1,
     }
     .parse(std::env::args_os())
-    .unwrap();
+    .unwrap()
+    .trim();
 
     for _ in 0..settings.count {
         println!("Hello, {}!", settings.name);
