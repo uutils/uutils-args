@@ -134,14 +134,14 @@ pub fn print_flags(
                 }
             };
             let help_indent = " ".repeat(width - flags.len() + 2);
-            writeln!(w, "{}{}", help_indent, line).unwrap();
+            writeln!(w, "{help_indent}{line}").unwrap();
         } else {
             writeln!(w).unwrap();
         }
 
         let help_indent = " ".repeat(width + indent_size + 2);
         for line in help_lines {
-            writeln!(w, "{}{}", help_indent, line).unwrap();
+            writeln!(w, "{help_indent}{line}").unwrap();
         }
     }
 }

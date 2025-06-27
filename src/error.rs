@@ -105,7 +105,7 @@ impl Display for ErrorKind {
                 Ok(())
             }
             ErrorKind::UnexpectedArgument(arg) => {
-                write!(f, "Found an invalid argument '{}'.", arg)
+                write!(f, "Found an invalid argument '{arg}'.")
             }
             ErrorKind::UnexpectedValue { option, value } => {
                 write!(

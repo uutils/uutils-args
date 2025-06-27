@@ -209,7 +209,7 @@ fn assert_empty<T: Debug>(mut operands: Vec<T>) -> Result<(), Error> {
     if let Some(arg) = operands.pop() {
         return Err(Error {
             exit_code: 1,
-            kind: ErrorKind::UnexpectedArgument(format!("{:?}", arg)),
+            kind: ErrorKind::UnexpectedArgument(format!("{arg:?}")),
         });
     }
     Ok(())
