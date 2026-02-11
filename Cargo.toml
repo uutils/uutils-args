@@ -11,7 +11,7 @@ readme = "README.md"
 
 [dependencies]
 lexopt = "0.3.0"
-roff = "0.2.1"
+roff = "1.0.0"
 strsim = "0.11.1"
 uutils-args-derive = { version = "0.1.0", path = "derive" }
 
